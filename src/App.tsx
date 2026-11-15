@@ -3,6 +3,7 @@ import { useShowStore } from './store/useShowStore';
 import { useClockStore, formatDuration } from './store/useClockStore';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
+import { VirtualStagePreview } from './components/stage/VirtualStagePreview';
 import { ImportModal } from './components/importer/ImportModal';
 import { exportToLightStageBlob } from './services/persistence';
 import {
@@ -17,9 +18,10 @@ import {
   SplitSquareVertical,
   Upload,
   Download,
+  Eye,
 } from 'lucide-react';
 
-export type ViewMode = 'rundown' | 'timeline' | 'split';
+export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
 
 export const App: React.FC = () => {
   const show = useShowStore((s) => s.show);
@@ -240,6 +242,18 @@ export const App: React.FC = () => {
               <Columns className="h-3.5 w-3.5 rotate-90" />
               <span>Timeline</span>
             </button>
+            <button
+              onClick={() => setViewMode('stage')}
+              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
+                viewMode === 'stage'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Stage 2D Preview"
+            >
+              <Eye className="h-3.5 w-3.5" />
+              <span>Stage 2D</span>
+            </button>
           </div>
 
           {/* Import / Export Buttons */}
@@ -278,13 +292,19 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {viewMode === 'stage' && (
+          <div className="flex-1 overflow-hidden">
+            <VirtualStagePreview />
+          </div>
+        )}
+
         {viewMode === 'split' && (
           <div className="flex flex-1 flex-col overflow-hidden">
             {/* Top: Rundown Table */}
             <div className="flex-[3] border-b border-slate-800 overflow-hidden">
               <RundownTable />
             </div>
-            {/* Bottom: Timeline Tracks */}
+            {/* Bottom: Timeline Tracks or Stage */}
             <div className="flex-[2] overflow-hidden">
               <TimelineTracks />
             </div>

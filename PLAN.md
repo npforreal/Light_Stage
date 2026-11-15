@@ -2,21 +2,6 @@
 
 > Lịch sử cũ nằm trong `archive/PLAN.md` (chỉ đọc khi cần tra cứu).
 
-## Đợt 4: Sân khấu ảo 2D (Virtual Stage Preview)
-
-### Mục tiêu đợt
-Mô phỏng 2D trực quan hệ thống màn hình LED và giàn đèn với khả năng đổi trạng thái động theo cue đang kích hoạt.
-
-### Giai đoạn 4.1: Preset & Cấu hình Bố cục Sân khấu
-- [ ] Cung cấp thư viện preset sân khấu thông dụng: End Stage (Tiêu chuẩn), Festival/Concert, Arena/Thrust.
-- [ ] Bảng cấu hình nhanh: Thêm/bớt màn hình LED (Main, Cánh, Sàn), vị trí giàn truss đèn (FOH, Mid, Back, Floor).
-
-### Giai đoạn 4.2: Mô phỏng 2D Động (Top-down & Mặt trước)
-- [ ] Render 2D bằng SVG/Canvas 60fps góc nhìn Mặt trước (Front View) và Từ trên xuống (Top-down View).
-- [ ] Tích hợp phản ứng thời gian thực (Reactive state): Khi gọi Cue (GO), màn hình ảo đổi màu/hiển thị tên visual, các bóng đèn ảo bật sáng theo preset.
-
----
-
 ## Đợt 5: Hệ thống Điều phối Thời gian, Phím tắt Sân khấu & Xuất Báo cáo
 
 ### Mục tiêu đợt

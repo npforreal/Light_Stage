@@ -3,6 +3,30 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-15 — Hoàn thành & Kiểm chứng Sân khấu ảo 2D Virtual Stage Preview (Đợt 4)
+
+### Thay đổi
+- Xây dựng mô hình dữ liệu bố cục sân khấu & store quản lý (`src/types/virtualStage.ts` & `src/store/useStageStore.ts`):
+  - Hỗ trợ 3 preset kiến trúc sân khấu tiêu chuẩn: End Stage (Standard Nhà hát/Hội trường), Festival/Concert (sân khấu ngoài trời với cánh LED lớn), và Thrust/Catwalk (sân khấu sàn diễn thời trang mở rộng).
+  - Định nghĩa chi tiết hệ thống màn hình LED (Main LED, Left/Right Wings, Floor LED, Banner) và giàn truss đèn (Back truss, Mid truss, FOH truss, Floor edge).
+  - Cung cấp bảng cấu hình nhanh (toggle hiển thị từng màn hình, từng giàn truss, đổi camera view và preset).
+- Xây dựng component mô phỏng 2D thời gian thực (`src/components/stage/VirtualStagePreview.tsx`):
+  - Render SVG hiệu năng cao 60fps góc nhìn kép: Mặt trước (Front View) và Từ trên xuống (Top-down Plan View).
+  - Phản ứng thời gian thực (Reactive cue highlights): Khi kích hoạt GO, màn hình LED ảo phát sáng sống động kèm hiển thị nội dung visual loop; giàn đèn chiếu các chùm nón sáng (beam cones) theo màu sắc và cường độ preset của cue hiện hành.
+  - Tích hợp thanh công cụ điều khiển: Chuyển camera, chọn preset sân khấu, và mở khay cấu hình thiết bị linh hoạt.
+- Tích hợp vào App chính: Bổ sung chế độ xem 'Stage 2D' vào thanh chuyển View Mode.
+- Thêm 9 unit tests cho Stage store và VirtualStagePreview, nâng tổng số kiểm thử toàn dự án lên 63/63 tests passing.
+
+### Quyết định kỹ thuật
+- Áp dụng triệt để nguyên lý ponytail: Sử dụng 100% SVG thuần kết hợp CSS transitions thay vì nhúng Three.js / WebGL cồng kềnh, tối ưu triệt để RAM và CPU (bundle size chỉ tăng nhẹ lên 297kB), không gây quá tải tài nguyên máy vận hành show.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: 0 errors.
+- `npx vitest run`: 11/11 test suites passed, 63/63 tests passed (1.18s).
+- `npm run build`: Production bundle Vite 6 hoàn tất trong 878ms.
+- `bash scripts/check.sh --fast`: All quality gate checks passed.
+- `python3 scripts/audit_workflow.py`: prime workflow health.
+
 ## 2026-11-15 — Hoàn thành & Kiểm chứng Giao diện Chế độ Kép Dual View: Rundown Table & Timeline Tracks (Đợt 3)
 
 ### Thay đổi
@@ -55,24 +79,4 @@
 - `npm run build`: Production bundle hoàn tất trong 840ms.
 - `bash scripts/check.sh --fast`: All quality gate checks passed.
 - `python3 scripts/audit_workflow.py`: prime workflow health.
-
-## 2026-11-15 — Hoàn thành & Kiểm chứng Core Domain Data Model, Zustand State Store & Persistence Engine (Giai đoạn 1.2)
-
-### Thay đổi
-- Định nghĩa schema TypeScript domain sân khấu chuẩn (`src/types/stage.ts`): Show, Act, Cue với đầy đủ trạng thái playback (Pending, Standby, Go, Hold, Skip, Completed), các phân hệ kỹ thuật (LX - Ánh sáng, VX - Visual LED, SQ - Âm thanh, ST - Sân khấu/Action), DeviceSpecification và hàm tính toán tải thiết bị.
-- Xây dựng Zustand store quản lý trạng thái show & cue state machine (`src/store/useShowStore.ts`): Playback controls (standbyCue, goCue, holdCue, skipCue, resetCue), quản lý CRUD Act/Cue, và selector thống kê thiết bị (peak usage & totals).
-- Xây dựng Zustand store quản lý đồng hồ & đếm ngược (`src/store/useClockStore.ts`): Master elapsed clock, Cue countdown/elapsed timer, cờ cảnh báo overrun thời gian, tiện ích format thời gian chính xác tới phần mười giây.
-- Xây dựng engine tuần tự hóa & phục hồi `.lightstage` (`src/services/persistence.ts`): Parser với kiểm tra phiên bản schema, xuất file Blob, và cơ chế auto-save dự phòng chống mất nguồn với localStorage.
-- Xây dựng bộ kiểm thử đơn vị toàn diện: 29/29 tests bao phủ domain models, playback state transitions, clock/countdown và file serialization/auto-save.
-
-### Quyết định kỹ thuật
-- Tách biệt rõ ràng giữa state điều phối cue (`useShowStore`) và state đồng hồ realtime tần số cao (`useClockStore`) nhằm tránh re-render thừa cho bảng rundown.
-- Schema `.lightstage` có versioning (`schemaVersion: 1`) cùng cơ chế fallback linh hoạt (hỗ trợ cả wrapper envelope và raw show object), kiểm soát chặt chẽ schema không tương thích.
-
-### Kiểm chứng & Kết quả
-- `npm run type-check`: TypeScript sạch 100%, 0 lỗi.
-- `npx vitest run`: 5/5 test suites passed, 29/29 tests passed (thời gian thực thi 773ms).
-- `npm run build`: Production bundle Vite 6 hoàn tất thành công trong 797ms.
-- `bash scripts/check.sh --fast`: Quality gate passed toàn bộ.
-- `python3 scripts/audit_workflow.py`: ALL CHECKS PASSED, cấu trúc workflow và token discipline đạt chuẩn.
 

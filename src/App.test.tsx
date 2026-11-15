@@ -13,6 +13,7 @@ describe("App Dual View Integration", () => {
     expect(screen.getByTitle("Cue Rundown List")).toBeInTheDocument();
     expect(screen.getByTitle("Split Dual View")).toBeInTheDocument();
     expect(screen.getByTitle("Timeline Tracks")).toBeInTheDocument();
+    expect(screen.getByTitle("Stage 2D Preview")).toBeInTheDocument();
   });
 
   it("switches view modes on button click", () => {
@@ -27,5 +28,10 @@ describe("App Dual View Integration", () => {
     fireEvent.click(timelineBtn);
 
     expect(screen.getByText("Timeline Tracks")).toBeInTheDocument();
+
+    const stageBtn = screen.getByTitle("Stage 2D Preview");
+    fireEvent.click(stageBtn);
+
+    expect(screen.getByText("Front View")).toBeInTheDocument();
   });
 });
