@@ -35,3 +35,21 @@ Xây dựng engine đọc/ghi Excel/CSV, thuật toán Regex/NLP tự động b�
 
 ---
 
+## Đợt 3: Giao diện Chế độ Kép (Dual View: Rundown Table & Timeline Tracks)
+
+### Mục tiêu đợt
+Xây dựng giao diện hiển thị tác vụ sân khấu trực quan kép: Bảng Cue Rundown chi tiết để gọi cue và Timeline Tracks theo thời gian tuyến tính.
+
+### Giai đoạn 3.1: Bảng Rundown / Cue List Chuyên nghiệp
+- [x] Dựng bảng Rundown ảo hóa (virtual scrolling) hỗ trợ show lớn hàng trăm cues mượt mà.
+- [x] Hiển thị trạng thái màu chuẩn sân khấu: Active/Go (viền xanh), Standby (viền hổ phách), Completed (xám).
+- [x] Tích hợp tính năng chỉnh sửa trực tiếp nội dung (Inline edit) và kéo thả sắp xếp cue.
+- [x] Bộ lọc góc nhìn theo vai trò kỹ thuật viên (Master View, Lighting View, Visual View, Sound View).
+
+### Giai đoạn 3.2: Timeline Tracks Tuyến tính
+- [x] Xây dựng các dải timeline song song (Lanes: Master, LX, VX, SQ) với tỷ lệ thời gian thực.
+- [x] Thanh Playhead di chuyển mượt mà theo đồng hồ show, hỗ trợ phóng to/thu nhỏ (Zoom in/out).
+- [x] Tương tác click trên timeline để nhảy nhanh (Jump to cue) hoặc đặt mốc chạy thử.
+
+---
+

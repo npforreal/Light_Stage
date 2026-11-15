@@ -2,24 +2,6 @@
 
 > Lịch sử cũ nằm trong `archive/PLAN.md` (chỉ đọc khi cần tra cứu).
 
-## Đợt 3: Giao diện Chế độ Kép (Dual View: Rundown Table & Timeline Tracks)
-
-### Mục tiêu đợt
-Xây dựng giao diện hiển thị tác vụ sân khấu trực quan kép: Bảng Cue Rundown chi tiết để gọi cue và Timeline Tracks theo thời gian tuyến tính.
-
-### Giai đoạn 3.1: Bảng Rundown / Cue List Chuyên nghiệp
-- [ ] Dựng bảng Rundown ảo hóa (virtual scrolling) hỗ trợ show lớn hàng trăm cues mượt mà.
-- [ ] Hiển thị trạng thái màu chuẩn sân khấu: Active/Go (viền xanh), Standby (viền hổ phách), Completed (xám).
-- [ ] Tích hợp tính năng chỉnh sửa trực tiếp nội dung (Inline edit) và kéo thả sắp xếp cue.
-- [ ] Bộ lọc góc nhìn theo vai trò kỹ thuật viên (Master View, Lighting View, Visual View, Sound View).
-
-### Giai đoạn 3.2: Timeline Tracks Tuyến tính
-- [ ] Xây dựng các dải timeline song song (Lanes: Master, LX, VX, SQ) với tỷ lệ thời gian thực.
-- [ ] Thanh Playhead di chuyển mượt mà theo đồng hồ show, hỗ trợ phóng to/thu nhỏ (Zoom in/out).
-- [ ] Tương tác click trên timeline để nhảy nhanh (Jump to cue) hoặc đặt mốc chạy thử.
-
----
-
 ## Đợt 4: Sân khấu ảo 2D (Virtual Stage Preview)
 
 ### Mục tiêu đợt
