@@ -2,24 +2,6 @@
 
 > Lịch sử cũ nằm trong `archive/PLAN.md` (chỉ đọc khi cần tra cứu).
 
-## Đợt 1: Khởi động, Khung kiến trúc & Nền tảng Core Data Engine
-
-### Mục tiêu đợt
-Khởi tạo nền tảng desktop Tauri v2 (Rust + React/TS + TailwindCSS), xây dựng toàn bộ data models chuẩn cho nghiệp vụ sân khấu, bộ máy auto-save và schema `.lightstage`.
-
-### Giai đoạn 1.1: Khởi tạo khung & Chuẩn hóa Workflow
-- [x] Thiết lập workflow chuẩn: AGENTS.md, PLAN.md, PROGRESS.md, scripts/ và git pre-commit hook.
-- [x] Thống nhất kiến trúc qua /grill-me: Tauri v2 + React/TS, Dual View, Sân khấu ảo 2D, File .lightstage.
-- [x] Khởi tạo dự án Tauri v2 (Vite + React 19 + TypeScript + TailwindCSS), cấu hình linter, format và test runner.
-- [x] Cấu hình script kiểm tra chất lượng code (`check.sh`) cho cả TypeScript và Rust.
-
-### Giai đoạn 1.2: Thiết kế Core Domain Data Model & Persistence
-- [ ] Thiết kế schema chuẩn (`types/stage.ts`): Show, Act, Cue (Pending/Standby/Go/Hold/Skip), Department Cues (LX, VX, SQ, ST).
-- [ ] Xây dựng State Management (Zustand store): Playback controller, active cue state machine, master & countdown clocks.
-- [ ] Xây dựng bộ lưu trữ & phục hồi: File dự án `.lightstage` (JSON schema) và cơ chế auto-save dự phòng chống mất điện.
-
----
-
 ## Đợt 2: Smart Excel Parser & Bộ đếm Thiết bị Tự động (Lighting & LED Counter)
 
 ### Mục tiêu đợt
