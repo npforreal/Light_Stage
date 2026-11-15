@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Git Pre-commit Hook for Agentic Engineering Workflow
+# Enforces:
+# 1. Prevention of committed secret files (.env, private keys)
+# 2. Fast quality gate execution (scripts/check.sh --fast)
+# Enable once per clone: git config core.hooksPath .githooks
+# Usage: invoked automatically by git; bypass only with documented reason (git commit --no-verify)
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# 1. Secret prevention check
+STAGED_SECRETS=$(git diff --cached --name-only | grep -E '(^|/)(\.env|\.env\..*|.*\.pem|.*\.key|.*\.secret)$' | grep -v '\.example$' || true)
+if [ -n "$STAGED_SECRETS" ]; then
+    echo "ERROR: Attempting to commit secret or sensitive files:" >&2
+    echo "$STAGED_SECRETS" >&2
+    echo "Aborting commit. Keep secrets out of Git!" >&2
+    exit 1
+fi
+
+# 2. Run Fast Quality Gate if scripts/check.sh exists
+if [ -x "scripts/check.sh" ] || [ -f "scripts/check.sh" ]; then
+    out="$(bash "scripts/check.sh" --fast 2>&1)" && {
+        echo "pre-commit: fast quality gate OK"
+        exit 0
+    }
+    printf '%s\n' "$out" | grep -E "FAIL|ERROR|failed|NEW" | head -20
+    echo "pre-commit: fast quality gate FAILED (run: bash scripts/check.sh --fast)"
+    exit 1
+fi
+
+exit 0

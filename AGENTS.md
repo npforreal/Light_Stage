@@ -38,7 +38,10 @@
    - Khi hoàn tất một đợt/giai đoạn: Chạy `python3 scripts/archive_logs.py` để chuyển log cũ sang `archive/`.
 
 ## 4. Công cụ Tự động & Quản lý Chất lượng
-- `bash scripts/check.sh [--fast]`: Fast quality gate (linter, unit test, audit).
+- `bash scripts/check.sh [--fast]`: Fast quality gate (TypeScript, unit tests, cargo check, workflow audit, drift guard).
 - `python3 scripts/audit_workflow.py`: Workflow doctor quét phình token, cấu trúc file và secret leak.
+- `python3 scripts/guard_check.py`: Drift guard kiểm tra đăng ký tool (R1), usage header (R2), quyền hạn (R5), layout thư mục (R6) với cơ chế ratchet baseline.
+- `python3 scripts/entropy_report.py`: Báo cáo entropy định kỳ phát hiện tool mồ côi, code trùng lặp.
 - `python3 scripts/handoff.py`: Trích xuất snapshot trạng thái gọn gàng để bàn giao phiên / trước `/compact`.
-- **Git Commit**: Commit nguyên tử theo Conventional Commits; hook `.git/hooks/pre-commit` tự động bảo vệ secret và chạy quality gate. Không tự ý push remote.
+- `python3 scripts/archive_logs.py`: Lưu trữ lossless log cũ sang `archive/`.
+- **Git Commit & Hooks**: Tracked hook `.githooks/pre-commit` (kích hoạt bằng `git config core.hooksPath .githooks`) tự động ngăn chặn commit secret và chạy fast quality gate. Commit nguyên tử theo Conventional Commits; không tự ý push remote.

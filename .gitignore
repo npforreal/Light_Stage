@@ -25,3 +25,9 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+
+# Agentic Engineering Workflow
+scratch/
+.env
+.env.*
+!.env.example

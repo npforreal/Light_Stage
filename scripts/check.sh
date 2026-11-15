@@ -44,4 +44,8 @@ fi
 echo "--> Running workflow health audit..."
 python3 scripts/audit_workflow.py
 
+# 6. Architectural drift guard check
+echo "--> Running architectural drift guard check..."
+python3 scripts/guard_check.py
+
 echo "OK: All Light_Stage quality gate checks passed!"

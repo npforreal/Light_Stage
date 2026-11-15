@@ -1,0 +1,1 @@
+# format: 2 — legacy violations accepted on introduction. Counts may only shrink; never add lines.
