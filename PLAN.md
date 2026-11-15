@@ -10,8 +10,8 @@ Khởi tạo nền tảng desktop Tauri v2 (Rust + React/TS + TailwindCSS), xây
 ### Giai đoạn 1.1: Khởi tạo khung & Chuẩn hóa Workflow
 - [x] Thiết lập workflow chuẩn: AGENTS.md, PLAN.md, PROGRESS.md, scripts/ và git pre-commit hook.
 - [x] Thống nhất kiến trúc qua /grill-me: Tauri v2 + React/TS, Dual View, Sân khấu ảo 2D, File .lightstage.
-- [ ] Khởi tạo dự án Tauri v2 (Vite + React 19 + TypeScript + TailwindCSS), cấu hình linter, format và test runner.
-- [ ] Cấu hình script kiểm tra chất lượng code (`check.sh`) cho cả TypeScript và Rust.
+- [x] Khởi tạo dự án Tauri v2 (Vite + React 19 + TypeScript + TailwindCSS), cấu hình linter, format và test runner.
+- [x] Cấu hình script kiểm tra chất lượng code (`check.sh`) cho cả TypeScript và Rust.
 
 ### Giai đoạn 1.2: Thiết kế Core Domain Data Model & Persistence
 - [ ] Thiết kế schema chuẩn (`types/stage.ts`): Show, Act, Cue (Pending/Standby/Go/Hold/Skip), Department Cues (LX, VX, SQ, ST).

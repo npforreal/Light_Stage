@@ -3,6 +3,26 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-15 — Hoàn thành Khởi tạo khung dự án Tauri v2 + React 19 + TypeScript + Vite + TailwindCSS (Giai đoạn 1.1)
+
+### Thay đổi
+- Khởi tạo kiến trúc Tauri v2 với cấu hình chuẩn cho live stage application (`tauri.conf.json`).
+- Thiết lập React 19 + TypeScript 5.7 + Vite 6 + TailwindCSS v3 với dark theme tối ưu cho phòng điều khiển sân khấu.
+- Cài đặt thư viện cốt lõi tối giản: `zustand` (state management), `lucide-react` (iconography), `clsx`, `tailwind-merge`.
+- Cấu hình test runner `vitest` cùng `@testing-library/react` và `jsdom`. Viết test mẫu `src/App.test.tsx`.
+- Cập nhật `scripts/check.sh` hỗ trợ cả chế độ `--fast` (type-check, tests, audit) và chế độ đầy đủ (kèm build và cargo check).
+
+### Quyết định kỹ thuật
+- Tối ưu hóa cấu hình Vite và tsconfig bundler mode để tốc độ build/test siêu nhanh (< 1s).
+- Graceful degradation cho `cargo check` trong `scripts/check.sh` khi môi trường chưa cài đặt Rust native compiler.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: 0 errors.
+- `npm run test`: 1/1 tests passed trong 584ms.
+- `npm run build`: Production bundle hoàn tất trong 822ms (dist/assets sẵn sàng).
+- `bash scripts/check.sh --fast`: All quality gate checks passed.
+- `python3 scripts/audit_workflow.py`: Repository in prime workflow health.
+
 ## 2026-11-15 — Hoàn thiện Bản kế hoạch Sản xuất (Production Roadmap) & Áp dụng vào PLAN.md
 
 ### Thay đổi
