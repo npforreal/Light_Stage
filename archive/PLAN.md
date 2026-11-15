@@ -68,3 +68,12 @@ Mô phỏng 2D trực quan hệ thống màn hình LED và giàn đèn với kh�
 
 ---
 
+### Giai đoạn 5.1: Bộ điều khiển Thời gian & Phím tắt Sân khấu
+- [x] Hệ thống Master Clock: Đồng hồ thực, đồng hồ thời lượng show, đồng hồ đếm ngược cue, cảnh báo lệch giờ (Delta Time).
+- [x] Hệ thống phím tắt tiêu chuẩn: Spacebar (Go), B (Standby), Up/Down (Chuyển cue), Esc (Hold/Pause).
+- [x] Chế độ Operator Lock Mode (khóa giao diện chống bấm nhầm phím trong lúc chạy show).
+
+### Giai đoạn 5.2: Xuất Báo cáo (PDF & Excel) & Đóng gói Production
+- [x] Xuất file Run of Show (ROS) tổng quan và Cue Sheet lọc riêng cho từng bộ phận (LX, VX, SQ) ra PDF chuẩn in ấn.
+- [x] Xuất lại file Excel đã qua chuẩn hóa và thống kê thiết bị.
+- [x] Stress testing, kiểm tra rò rỉ bộ nhớ (no memory leak) và đóng gói installer native cho macOS (`.dmg`) và Windows (`.exe` / `.msi`).

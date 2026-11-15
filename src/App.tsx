@@ -5,7 +5,7 @@ import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
 import { VirtualStagePreview } from './components/stage/VirtualStagePreview';
 import { ImportModal } from './components/importer/ImportModal';
-import { exportToLightStageBlob } from './services/persistence';
+import { ExportModal } from './components/export/ExportModal';
 import {
   Lightbulb,
   Tv,
@@ -19,6 +19,8 @@ import {
   Upload,
   Download,
   Eye,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
@@ -30,6 +32,9 @@ export const App: React.FC = () => {
   const standbyCue = useShowStore((s) => s.getStandbyCue());
   const goCue = useShowStore((s) => s.goCue);
   const nextCue = useShowStore((s) => s.nextCue);
+  const prevCue = useShowStore((s) => s.prevCue);
+  const holdCue = useShowStore((s) => s.holdCue);
+  const getAllCues = useShowStore((s) => s.getAllCues);
 
   const isRunning = useClockStore((s) => s.isRunning);
   const masterElapsedMs = useClockStore((s) => s.masterElapsedMs);
@@ -42,10 +47,21 @@ export const App: React.FC = () => {
 
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isOperatorLocked, setIsOperatorLocked] = useState(false);
+  const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
 
   const stats = getDeviceStats();
 
-  // Clock ticker engine: ticks smoothly every 100ms
+  // Wall clock ticker: updates every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setWallClock(new Date().toLocaleTimeString());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Show clock ticker engine: ticks smoothly every 100ms
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(() => {
@@ -54,12 +70,29 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRunning, tick]);
 
-  // Keyboard Shortcuts: Space = GO, B = Standby / Next
+  // Delta Time calculation (Target cumulative duration vs actual elapsed)
+  const deltaTimeMs = React.useMemo(() => {
+    const allCues = getAllCues();
+    if (!activeCue || allCues.length === 0) return 0;
+    const activeIdx = allCues.findIndex((c) => c.id === activeCue.id);
+    if (activeIdx === -1) return 0;
+
+    let scheduledCumulativeMs = 0;
+    for (let i = 0; i <= activeIdx; i++) {
+      scheduledCumulativeMs += allCues[i].durationMs;
+    }
+
+    return scheduledCumulativeMs - masterElapsedMs;
+  }, [getAllCues, activeCue, masterElapsedMs]);
+
+  // Keyboard Shortcuts: Space = GO, B = Standby / Next, Arrows = Next/Prev, Esc = Hold/Pause
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isOperatorLocked) return; // Prevent triggering hotkeys when locked
+
       const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
-        return; // Don't intercept when user is typing in inputs
+        return; // Don't intercept when typing in inputs
       }
 
       if (e.code === 'Space') {
@@ -69,22 +102,22 @@ export const App: React.FC = () => {
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
         nextCue();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        nextCue();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        prevCue();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        holdCue();
+        pauseClock();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goCue, nextCue, startClock]);
-
-  const handleExportProject = () => {
-    const blob = exportToLightStageBlob(show);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${show.metadata.title.replace(/\s+/g, '_')}.lightstage`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  }, [goCue, nextCue, prevCue, holdCue, startClock, pauseClock, isOperatorLocked]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans">
@@ -135,6 +168,15 @@ export const App: React.FC = () => {
 
           {/* Master & Cue Clock Readout */}
           <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 font-mono">
+            {/* Wall Clock */}
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] uppercase tracking-wider text-slate-500">Wall Clock</span>
+              <span className="text-xs font-semibold text-slate-300">
+                {wallClock}
+              </span>
+            </div>
+            <div className="h-6 w-px bg-slate-800" />
+            {/* Show Elapsed */}
             <div className="flex flex-col items-center">
               <span className="text-[9px] uppercase tracking-wider text-slate-500">Show Time</span>
               <span className="text-sm font-bold text-cyan-300">
@@ -142,6 +184,7 @@ export const App: React.FC = () => {
               </span>
             </div>
             <div className="h-6 w-px bg-slate-800" />
+            {/* Cue Remainder */}
             <div className="flex flex-col items-center">
               <span className="text-[9px] uppercase tracking-wider text-slate-500">Cue Remainder</span>
               <span
@@ -150,6 +193,19 @@ export const App: React.FC = () => {
                 }`}
               >
                 {formatDuration(cueRemainingMs)}
+              </span>
+            </div>
+            <div className="h-6 w-px bg-slate-800" />
+            {/* Delta Schedule */}
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] uppercase tracking-wider text-slate-500">Delta</span>
+              <span
+                className={`text-xs font-bold ${
+                  deltaTimeMs < 0 ? 'text-rose-400' : deltaTimeMs > 0 ? 'text-cyan-400' : 'text-slate-400'
+                }`}
+                title={deltaTimeMs < 0 ? 'Behind schedule' : 'Ahead of schedule'}
+              >
+                {deltaTimeMs > 0 ? `+${formatDuration(deltaTimeMs)}` : formatDuration(deltaTimeMs)}
               </span>
             </div>
           </div>
@@ -256,8 +312,31 @@ export const App: React.FC = () => {
             </button>
           </div>
 
-          {/* Import / Export Buttons */}
+          {/* Operator Lock & Import / Export Buttons */}
           <div className="flex items-center gap-1.5">
+            {/* Operator Lock Toggle */}
+            <button
+              onClick={() => setIsOperatorLocked(!isOperatorLocked)}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                isOperatorLocked
+                  ? 'bg-amber-500 text-slate-950 font-bold ring-2 ring-amber-400'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+              }`}
+              title={isOperatorLocked ? 'Operator Locked: Hotkeys disabled' : 'Unlocked: Hotkeys active'}
+            >
+              {isOperatorLocked ? (
+                <>
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Locked</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Lock</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={() => setIsImportOpen(true)}
               className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
@@ -267,9 +346,9 @@ export const App: React.FC = () => {
               <span>Import</span>
             </button>
             <button
-              onClick={handleExportProject}
+              onClick={() => setIsExportOpen(true)}
               className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
-              title="Export .lightstage file"
+              title="Export Reports & Project"
             >
               <Download className="h-3.5 w-3.5 text-emerald-400" />
               <span>Export</span>
@@ -312,8 +391,9 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Import Modal */}
+      {/* Import & Export Modals */}
       <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
+      <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
     </div>
   );
 };

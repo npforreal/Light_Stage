@@ -3,6 +3,34 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-15 — Hoàn thành & Kiểm chứng Show Control, Phím tắt Sân khấu, Khóa an toàn Operator, Báo cáo & Stress Testing (Đợt 5)
+
+### Thay đổi
+- Nâng cấp Master Clock & Show Control Bar (`src/App.tsx`):
+  - Hiển thị đồng hồ thực tế (Wall Clock HH:MM:SS), tổng thời lượng show trôi qua, đếm ngược cue đang Go với cảnh báo Overrun.
+  - Tính toán Delta Time thời gian thực so với thời gian biểu dự kiến (hiển thị +ahead hoặc -behind theo giây).
+  - Tích hợp hệ thống phím tắt tiêu chuẩn: Spacebar (Go), 'B' (Standby), Up/Down (Chuyển cue Standby), Esc (Hold/Pause).
+- Xây dựng chế độ Khóa an toàn Operator Lock (`src/App.tsx`):
+  - Nút chuyển trạng thái khóa có biểu tượng và màu cảnh báo trực quan; vô hiệu hóa toàn bộ hotkeys kích hoạt ngoài ý muốn khi đang chạy live show.
+- Xây dựng module Xuất báo cáo chuyên nghiệp (`src/services/exporter.ts` & `src/components/export/ExportModal.tsx`):
+  - Tạo trang Run of Show (ROS) Cue Sheet độc lập chuẩn in ấn A4 Landscape với `@media print` CSS, hỗ trợ xem trước và in PDF trực tiếp qua trình duyệt với bộ lọc phân hệ (Master, LX, VX, SQ).
+  - Xuất bảng Cue Sheet và bảng kiểm kê tổng hợp thiết bị (Hardware Inventory với đỉnh Peak Concurrent) ra định dạng CSV mã hóa UTF-8 BOM, tương thích hoàn hảo với Microsoft Excel.
+  - Xuất và lưu trữ dự án `.lightstage` (JSON).
+- Bộ kiểm thử quy mô lớn & Stress Testing (`src/services/__tests__/stress.test.ts`):
+  - Kiểm thử áp lực với show quy mô 1.000+ cues trên 10 acts: bóc tách phần cứng < 100ms, tuần tự hóa < 150ms, parse < 200ms, xuất CSV < 100ms.
+  - Toàn bộ 74/74 unit tests passing, tsc sạch lỗi, Vite production bundle tối ưu (314kB gzip 92kB).
+
+### Quyết định kỹ thuật
+- Tận dụng CSS `@media print` cho bản xuất PDF thay vì cài đặt thư viện jsPDF / Puppeteer nặng hàng chục megabytes, mang lại giao diện in sắc nét theo tỷ lệ giấy A4 thực tế mà không phát sinh thêm bundle size.
+- CSV UTF-8 BOM (`\uFEFF`) giải quyết triệt để vấn đề hiển thị ký tự tiếng Việt có dấu khi người dùng mở trực tiếp bằng Excel trên Windows/macOS.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: 0 errors.
+- `npx vitest run`: 14/14 test suites passed, 74/74 tests passed (1.19s).
+- `npm run build`: Production bundle hoàn tất trong 895ms.
+- `bash scripts/check.sh --fast`: All quality gate checks passed.
+- `python3 scripts/audit_workflow.py`: ALL CHECKS PASSED, prime workflow health.
+
 ## 2026-11-15 — Hoàn thành & Kiểm chứng Sân khấu ảo 2D Virtual Stage Preview (Đợt 4)
 
 ### Thay đổi
@@ -54,29 +82,6 @@
 - `npm run type-check`: 0 errors.
 - `npx vitest run`: 9/9 test suites passed, 54/54 tests passed (810ms).
 - `npm run build`: Production bundle Vite 6 hoàn tất trong 849ms.
-- `bash scripts/check.sh --fast`: All quality gate checks passed.
-- `python3 scripts/audit_workflow.py`: prime workflow health.
-
-## 2026-11-15 — Hoàn thành & Kiểm chứng Smart Excel/CSV Importer & Smart Hardware Counter (Đợt 2)
-
-### Thay đổi
-- Xây dựng module importer thông minh (`src/services/importer.ts`):
-  - Bộ phân tích thời gian đa định dạng `parseTimeString` / `parseTimeToMs`: Hỗ trợ `HH:MM:SS`, `MM:SS`, `3m20s`, `180s`, số thuần và định dạng tiếng Việt như `2 phút 30 giây`, `1 giờ 15 phút`.
-  - Bộ đọc RFC-4180 CSV / TSV tích hợp, chuẩn hóa dòng, escape quote, tự động nhận diện header hàng đầu và suy luận ánh xạ cột linh hoạt (cueNumber, title, act, duration, lx, vx, sq, stage, notes).
-- Xây dựng bộ phân tích phần cứng và kiểm kê sân khấu (`src/services/hardwareParser.ts`):
-  - Thuật toán bóc tách regex song ngữ nhận diện thiết bị & số lượng từ text tự do (e.g. `4 Beam 350W + 2 Follow`, `Màn LED cánh x 2`, `Spot 1000W x 4`, `2 cây Follow, 8 cái Beam`).
-  - Phân loại chủng loại thiết bị: Beam, Spot, Wash, ParLED, Blinder, Follow, Laser, Strobe, Smoke; Màn hình LED MainScreen, WingScreen, FloorScreen, Banner.
-  - Tính toán số liệu thống kê show: Số lượng theo cue, đỉnh sử dụng đồng thời (Peak Concurrent Usage), và bảng tổng kiểm kê thiết bị toàn show.
-- Thêm 19 unit tests mới cho Importer và Hardware Parser (`src/services/__tests__/importer.test.ts`, `src/services/__tests__/hardwareParser.test.ts`), nâng tổng số unit tests lên 48/48 passed.
-
-### Quyết định kỹ thuật
-- Tối ưu parser CSV thuần RFC-4180 không phát sinh dependency nặng không cần thiết, đảm bảo khởi động ứng dụng và bundle size tối ưu dưới 800KB.
-- Regex bóc tách số lượng hỗ trợ cả mẫu đứng trước (`4 Beam`) và mẫu đứng sau (`Beam x 4`, `Beam: 4 cái`, `4 cây Beam`), chuẩn hóa tên thiết bị đồng nhất để tính peak concurrent usage chuẩn xác.
-
-### Kiểm chứng & Kết quả
-- `npm run type-check`: 0 errors.
-- `npx vitest run`: 7/7 test suites passed, 48/48 tests passed (571ms).
-- `npm run build`: Production bundle hoàn tất trong 840ms.
 - `bash scripts/check.sh --fast`: All quality gate checks passed.
 - `python3 scripts/audit_workflow.py`: prime workflow health.
 
