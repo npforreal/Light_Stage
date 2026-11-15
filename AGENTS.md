@@ -1,28 +1,32 @@
-# Quy chuẩn & Hướng dẫn Kỹ thuật — Light Stage
+# Quy chuẩn Kỹ thuật & Bối cảnh Dự án — Light Stage
 
-## 1. Ngữ cảnh Dự án (Project Context)
-- **Tên dự án**: Light Stage (Desktop App cho macOS & Windows).
-- **Mục tiêu**: Ứng dụng điều phối & hiển thị timeline/cue rundown sân khấu thời gian thực cho Stage Manager, Show Caller và kỹ thuật viên AV (Âm thanh, Ánh sáng, Visual LED).
-- **Phân hệ chính**:
-  - `Lighting (LX)`: Tác vụ đánh đèn, cảnh sáng, cường độ/preset, số lượng fixture.
-  - `Visual LED (VX)`: Màn hình LED, video intro, visuals loop, số lượng màn hình/output.
+## 1. Bối cảnh & Yêu cầu Kỹ thuật (Project Context)
+- **Tên ứng dụng**: Light Stage (Desktop App cho macOS & Windows).
+- **Công nghệ nền tảng (Tech Stack)**:
+  - Framework: **Tauri v2 (Rust backend + React / TypeScript frontend)** — siêu nhẹ, tối ưu RAM/CPU khi vận hành live show.
+  - UI & Styling: TailwindCSS + Lucide Icons (Dark theme tối ưu phòng điều khiển âm thanh/ánh sáng).
+- **Phân hệ điều phối sân khấu**:
+  - `Lighting (LX)`: Cảnh sáng, chùm đèn, preset, số lượng fixture.
+  - `Visual LED (VX)`: Màn hình LED (Main, Cánh), video loop, visuals, số lượng màn hình.
   - `Sound (SQ)`: Micro, nhạc nền, stingers, hiệu ứng âm thanh.
-  - `Stage / Action`: Chỉ dẫn nhân sự, MC, nghệ sĩ vào/ra sân khấu.
+  - `Stage / Action`: Di chuyển diễn viên/MC, đạo cụ, chỉ dẫn sân khấu.
 - **Tính năng cốt lõi**:
-  - Nhập timeline thủ công (manual entry) hoặc import file Excel/CSV rundown chuẩn.
-  - Tự động bóc tách và kiểm đếm số lượng đèn (fixtures) & màn hình LED theo từng tiết mục/cue và tổng hợp toàn show.
-  - Trực quan hóa timeline chạy theo thời gian thực (clock time, duration, countdown, status Standby / Go).
-- **Giai đoạn hiện tại**: Dựng khung kiến trúc (Scaffold), chuẩn hóa workflow, chưa triển khai code nghiệp vụ.
+  - **Nhập liệu & Đếm tự động**: Nhập tay hoặc import Excel/CSV. Tự động nhận diện cột chuyên dụng và bóc tách chuỗi mô tả (regex/parser) để đếm số lượng đèn và màn hình LED theo từng cue và tổng show.
+  - **Giao diện hiển thị chế độ kép (Dual View)**:
+    - *Bảng Rundown / Cue List*: Hiển thị chi tiết từng cue, hỗ trợ gọi cue (Standby / Go), countdown timer, điều khiển phím tắt (Space = Go, B = Standby).
+    - *Timeline Tracks*: Thanh ngang tuyến tính theo thời gian trực quan cho từng kênh LX, VX, SQ.
+  - **Sân khấu ảo 2D (Virtual Stage Preview)**: Hiển thị sơ đồ 2D (mặt trước & top-down) mô phỏng vị trí màn hình LED và giàn đèn, tự động highlight sáng/đổi màu theo cue active.
+  - **Lưu trữ & Xuất file**: File dự án độc lập `.lightstage` (JSON format) + Xuất báo cáo Cue Sheet ra Excel & PDF.
 
 ## 2. Kỷ luật Ngữ cảnh & Token (Token Discipline)
 - **Đọc có chọn lọc (Selective Reading)**:
   - `PLAN.md`: Chỉ đọc đợt hiện tại (phần `## ` cuối cùng). Không nạp cả file.
   - `PROGRESS.md`: Chỉ đọc ~60 dòng đầu tiên (chứa 2-3 tác vụ gần nhất).
-  - `archive/`: Tra cứu lịch sử cũ bằng `grep`, không đọc trọn file.
+  - `archive/`: Tra cứu lịch sử cũ bằng `grep`, tuyệt đối không đọc trọn file.
 - **Sửa file chuẩn xác**: Luôn dùng `edit_file` thay vì ghi đè (`write_file`) cho file hiện có.
 - **Cắt tỉa output**: Command output dài phải lọc qua `tail -n 30` hoặc `grep`; không in log thô quá dài vào context.
 
-## 3. Quy trình Thực thi (Agentic Engineering Loop)
+## 3. Chu trình Thực thi Chuẩn (The Agentic Loop)
 1. **Lập kế hoạch hẹp**: Bám sát checklist `[ ]` trong active round của `PLAN.md`.
 2. **Kỷ luật kiểm chứng (Verify-Before-Check)**:
    - Tuyệt đối KHÔNG đánh dấu `[x]` nếu chưa chạy kiểm thử thực tế có kết quả đạt.
