@@ -2,23 +2,6 @@
 
 > Lịch sử cũ nằm trong `archive/PLAN.md` (chỉ đọc khi cần tra cứu).
 
-## Đợt 2: Smart Excel Parser & Bộ đếm Thiết bị Tự động (Lighting & LED Counter)
-
-### Mục tiêu đợt
-Xây dựng engine đọc/ghi Excel/CSV, thuật toán Regex/NLP tự động bóc tách số lượng đèn và màn hình LED từ dữ liệu cue, và bảng tổng hợp trang thiết bị show.
-
-### Giai đoạn 2.1: Excel/CSV Import & Column Mapping Wizard
-- [ ] Xây dựng module đọc file Excel (.xlsx, .xls) và CSV với tính năng Header auto-detection.
-- [ ] Xây dựng hộp thoại Column Mapping cho phép người dùng ánh xạ cột linh hoạt khi file không theo chuẩn.
-- [ ] Xử lý các định dạng thời gian biểu diễn đa dạng (`00:03:00`, `3m20s`, `180s`).
-
-### Giai đoạn 2.2: Smart Hardware Counter & Inventory Aggregation
-- [ ] Xây dựng bộ phân tích cú pháp (Regex/NLP parser) nhận diện tự động số lượng + phân loại thiết bị từ text tự do (Beam, Spot, Wash, Par LED, Blinder, Follow, Màn LED Main/Cánh/Sàn).
-- [ ] Tính toán số liệu thống kê: Số lượng thiết bị theo từng Cue, Đỉnh sử dụng đồng thời (Peak Concurrent Usage), và Danh mục tổng thiết bị toàn show.
-- [ ] Viết bộ unit tests toàn diện cho parser và counter (kiểm thử chuỗi tiếng Việt/tiếng Anh, edge cases).
-
----
-
 ## Đợt 3: Giao diện Chế độ Kép (Dual View: Rundown Table & Timeline Tracks)
 
 ### Mục tiêu đợt
