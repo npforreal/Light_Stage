@@ -23,6 +23,7 @@ export const StageClockWindow: React.FC<StageClockWindowProps> = ({
 
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [wallClock, setWallClock] = useState<string>('');
+  const [layoutMode, setLayoutMode] = useState<'standard' | 'mc'>('standard');
 
   // Update wall clock every second
   useEffect(() => {
@@ -151,6 +152,29 @@ export const StageClockWindow: React.FC<StageClockWindowProps> = ({
             </span>
           </div>
 
+          <div className="flex items-center rounded-lg bg-zinc-900 border border-zinc-800 p-0.5 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setLayoutMode('standard')}
+              className={`px-2.5 py-1 rounded transition-colors ${
+                layoutMode === 'standard' ? 'bg-zinc-700 text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+              title="Chế độ đồng hồ đếm ngược tiêu chuẩn"
+            >
+              Standard
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayoutMode('mc')}
+              className={`px-2.5 py-1 rounded transition-colors ${
+                layoutMode === 'mc' ? 'bg-cyan-600 text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+              title="Chế độ MC / Sân khấu: hiện cue hiện tại, kế tiếp, ghi chú và chỉ dẫn"
+            >
+              MC / Stage
+            </button>
+          </div>
+
           <button
             onClick={toggleFullscreen}
             aria-label={isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
@@ -174,62 +198,121 @@ export const StageClockWindow: React.FC<StageClockWindowProps> = ({
 
       {/* Main Focus Area: Giant Countdown & Active Cue */}
       <main className="flex-1 flex flex-col justify-center items-center px-4 py-2 relative">
-        {/* Active Cue Label */}
-        <div className="text-center mb-2 max-w-5xl">
-          <div className="text-sm sm:text-base md:text-lg font-bold tracking-wider uppercase text-zinc-400 mb-1">
-            {state.activeCueNumber ? `CUE ${state.activeCueNumber}` : 'TIẾT MỤC ĐANG DIỄN'}
-          </div>
-          <h1
-            data-testid="active-cue-title"
-            className="text-2xl sm:text-4xl md:text-6xl font-black text-white tracking-tight leading-tight line-clamp-2"
-          >
-            {state.activeCueTitle || 'Chưa bắt đầu'}
-          </h1>
-        </div>
+        {layoutMode === 'mc' ? (
+          <div className="w-full max-w-6xl h-full flex flex-col justify-between py-4 space-y-4">
+            {/* Top row: Current Cue + Next Cue side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-2xl border-2 border-emerald-500/60 bg-emerald-950/30 p-5 shadow-lg">
+                <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                  ĐANG DIỄN / NOW LIVE
+                </span>
+                <div className="text-xl sm:text-2xl font-mono text-emerald-300 font-bold mt-1">
+                  {state.activeCueNumber ? `CUE ${state.activeCueNumber}` : '—'}
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black text-white mt-1 leading-tight line-clamp-2">
+                  {state.activeCueTitle || 'Chưa bắt đầu'}
+                </h2>
+              </div>
 
-        {/* Giant Countdown Clock */}
-        <div className="my-auto py-2 flex flex-col items-center justify-center">
-          <div
-            data-testid="giant-countdown"
-            className={`font-mono font-black tabular-nums tracking-tighter text-[20vw] sm:text-[18vw] md:text-[15vw] leading-none transition-colors select-all ${timerColorClass}`}
-          >
-            {formattedCountdown}
-          </div>
-          {isOverrun && (
-            <div
-              data-testid="overrun-alert-label"
-              className="mt-2 text-rose-400 font-bold tracking-widest text-base sm:text-xl uppercase flex items-center gap-2"
-            >
-              <AlertTriangle className="w-6 h-6" /> VƯỢT QUÁ THỜI LƯỢNG QUY ĐỊNH
+              <div className="rounded-2xl border border-zinc-700 bg-zinc-900/60 p-5 shadow-lg">
+                <span className="text-xs font-black uppercase tracking-widest text-amber-400">
+                  TIẾP THEO / NEXT UP
+                </span>
+                <div className="text-xl sm:text-2xl font-mono text-amber-300 font-bold mt-1">
+                  {state.standbyCueNumber ? `CUE ${state.standbyCueNumber}` : '—'}
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black text-zinc-200 mt-1 leading-tight line-clamp-2">
+                  {state.standbyCueTitle || 'Hết kịch bản'}
+                </h3>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Auxiliary Show Clocks (Delta & Elapsed) */}
-        <div className="flex items-center gap-6 sm:gap-12 mt-2 px-6 py-2.5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80">
-          <div className="text-center">
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Show Time</div>
-            <div data-testid="master-elapsed-time" className="font-mono text-lg sm:text-2xl font-bold text-zinc-200">
-              {formatDuration(state.masterElapsedMs)}
+            {/* Giant Timer Center */}
+            <div className="flex flex-col items-center justify-center my-auto">
+              <div
+                data-testid="giant-countdown"
+                className={`font-mono font-black tabular-nums tracking-tighter text-[16vw] sm:text-[14vw] md:text-[12vw] leading-none transition-colors select-all ${timerColorClass}`}
+              >
+                {formattedCountdown}
+              </div>
+              {isOverrun && (
+                <div className="mt-2 rounded-xl bg-rose-600 text-white font-black tracking-widest text-base sm:text-2xl uppercase px-6 py-2 flex items-center gap-2 animate-bounce shadow-xl">
+                  <AlertTriangle className="w-8 h-8" /> ĐÃ VƯỢT QUÁ GIỜ (OVERRUN)
+                </div>
+              )}
+            </div>
+
+            {/* Stage / Action Direction Notes for MC */}
+            <div className="rounded-2xl border border-cyan-500/40 bg-cyan-950/30 p-4">
+              <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 flex items-center gap-1.5 mb-1">
+                <span>CHỈ DẪN DIỄN XUẤT / STAGE DIRECTION:</span>
+              </div>
+              <p className="text-base sm:text-xl font-medium text-cyan-100 leading-snug">
+                {state.activeCueDirectionNotes || 'Chưa có chỉ dẫn sân khấu cụ thể cho cue này.'}
+              </p>
             </div>
           </div>
-          <div className="h-8 w-px bg-zinc-800" />
-          <div className="text-center">
-            <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Show Delta</div>
-            <div
-              data-testid="show-delta-time"
-              className={`font-mono text-lg sm:text-2xl font-bold ${
-                state.deltaMs > 0
-                  ? 'text-rose-400'
-                  : state.deltaMs < 0
-                  ? 'text-emerald-400'
-                  : 'text-zinc-300'
-              }`}
-            >
-              {formattedDelta}
+        ) : (
+          <>
+            {/* Standard Layout */}
+            {/* Active Cue Label */}
+            <div className="text-center mb-2 max-w-5xl">
+              <div className="text-sm sm:text-base md:text-lg font-bold tracking-wider uppercase text-zinc-400 mb-1">
+                {state.activeCueNumber ? `CUE ${state.activeCueNumber}` : 'TIẾT MỤC ĐANG DIỄN'}
+              </div>
+              <h1
+                data-testid="active-cue-title"
+                className="text-2xl sm:text-4xl md:text-6xl font-black text-white tracking-tight leading-tight line-clamp-2"
+              >
+                {state.activeCueTitle || 'Chưa bắt đầu'}
+              </h1>
             </div>
-          </div>
-        </div>
+
+            {/* Giant Countdown Clock */}
+            <div className="my-auto py-2 flex flex-col items-center justify-center">
+              <div
+                data-testid="giant-countdown"
+                className={`font-mono font-black tabular-nums tracking-tighter text-[20vw] sm:text-[18vw] md:text-[15vw] leading-none transition-colors select-all ${timerColorClass}`}
+              >
+                {formattedCountdown}
+              </div>
+              {isOverrun && (
+                <div
+                  data-testid="overrun-alert-label"
+                  className="mt-2 text-rose-400 font-bold tracking-widest text-base sm:text-xl uppercase flex items-center gap-2"
+                >
+                  <AlertTriangle className="w-6 h-6" /> VƯỢT QUÁ THỜI LƯỢNG QUY ĐỊNH
+                </div>
+              )}
+            </div>
+
+            {/* Auxiliary Show Clocks (Delta & Elapsed) */}
+            <div className="flex items-center gap-6 sm:gap-12 mt-2 px-6 py-2.5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80">
+              <div className="text-center">
+                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Show Time</div>
+                <div data-testid="master-elapsed-time" className="font-mono text-lg sm:text-2xl font-bold text-zinc-200">
+                  {formatDuration(state.masterElapsedMs)}
+                </div>
+              </div>
+              <div className="h-8 w-px bg-zinc-800" />
+              <div className="text-center">
+                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Show Delta</div>
+                <div
+                  data-testid="show-delta-time"
+                  className={`font-mono text-lg sm:text-2xl font-bold ${
+                    state.deltaMs > 0
+                      ? 'text-rose-400'
+                      : state.deltaMs < 0
+                      ? 'text-emerald-400'
+                      : 'text-zinc-300'
+                  }`}
+                >
+                  {formattedDelta}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       {/* Footer Banner: Standby / Next Upcoming Cue */}

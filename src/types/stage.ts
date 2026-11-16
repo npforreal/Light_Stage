@@ -3,6 +3,8 @@
  * Professional Stage Cue, Act, Show, Department Models (.lightstage)
  */
 
+import type { StageConfig } from './virtualStage';
+
 export type CueStatus = 'Pending' | 'Standby' | 'Go' | 'Hold' | 'Skip' | 'Completed';
 
 export type DepartmentType = 'LX' | 'VX' | 'SQ' | 'ST';
@@ -146,6 +148,8 @@ export interface LightStageFile {
   schemaVersion: number;
   exportedAt: string;
   show: Show;
+  /** Optional 2D stage rig configuration (screens, trusses, fixtures, dimensions). */
+  stage?: StageConfig;
 }
 
 /**

@@ -103,6 +103,64 @@ export const StageRigEditor: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Grouped Quick-Add Menu (FreeShow Feature) */}
+      <section className="rounded-lg border border-border-default bg-surface-2/80 p-2 text-xs space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="font-bold text-[11px] uppercase tracking-wider text-accent flex items-center gap-1">
+            <Plus className="h-3.5 w-3.5" /> Thêm nhanh vào Rig (Grouped Add)
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1">
+          {/* Group 1: Fixtures */}
+          <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
+            <span className="text-[9px] font-bold text-dept-lx uppercase">Đèn (Fixtures)</span>
+            <div className="flex flex-wrap gap-1">
+              {(['Beam', 'Spot', 'Wash'] as FixtureType[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => addFixture({ type: t, beamAngle: DEFAULT_BEAM_ANGLES[t], loadWatts: DEFAULT_FIXTURE_WATTS[t] })}
+                  className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-dept-lx/20 hover:text-dept-lx"
+                  title={`Thêm 1 đèn ${t} vào rig`}
+                >
+                  +{t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Group 2: Screens */}
+          <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
+            <span className="text-[9px] font-bold text-dept-vx uppercase">Màn LED</span>
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => addScreen()}
+                className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-dept-vx/20 hover:text-dept-vx"
+                title="Thêm màn hình LED vào rig"
+              >
+                +Screen
+              </button>
+            </div>
+          </div>
+
+          {/* Group 3: Truss */}
+          <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
+            <span className="text-[9px] font-bold text-content-3 uppercase">Truss</span>
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => addTruss()}
+                className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-surface-3"
+                title="Thêm giàn truss vào rig"
+              >
+                +Truss
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Stage dimensions & preset */}
       <section className="space-y-1.5 rounded-lg bg-surface-2 p-2.5">
         <div className="flex items-center justify-between">

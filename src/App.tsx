@@ -3,13 +3,15 @@ import { useShowStore } from './store/useShowStore';
 import { useClockStore } from './store/useClockStore';
 import {
   saveAutoSave,
-  loadAutoSave,
+  loadAutoSaveProject,
   hasAutoSave,
   getAutoSaveMeta,
   clearAutoSave,
   parseLightStageFile,
   AutoSaveMeta,
 } from './services/persistence';
+import { useStageStore } from './store/useStageStore';
+import { useVisualStore } from './store/useVisualStore';
 import { broadcastStageClock } from './services/stageClockSync';
 import { Header, ViewMode } from './components/Header';
 import { RundownTable } from './components/rundown/RundownTable';
@@ -20,6 +22,7 @@ import { ExportModal } from './components/export/ExportModal';
 import { HelpModal } from './components/HelpModal';
 import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
 import { StageClockWindow } from './components/StageClockWindow';
+import { VxControlBar } from './components/stage/VxControlBar';
 import { Lock } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -42,6 +45,7 @@ export const App: React.FC = () => {
   const prevCue = useShowStore((s) => s.prevCue);
   const holdCue = useShowStore((s) => s.holdCue);
   const getAllCues = useShowStore((s) => s.getAllCues);
+  const stageConfig = useStageStore((s) => s.config);
 
   const isRunning = useClockStore((s) => s.isRunning);
   const masterElapsedMs = useClockStore((s) => s.masterElapsedMs);
@@ -85,15 +89,15 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Debounced Autosave: saves after 1 second of inactivity whenever show changes
+  // Debounced Autosave: saves after 1 second of inactivity whenever show or rig changes
   useEffect(() => {
     if (!isDirty) return;
     const timer = setTimeout(() => {
-      saveAutoSave(show);
+      saveAutoSave(show, stageConfig);
       markSaved();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [show, isDirty, markSaved]);
+  }, [show, isDirty, markSaved, stageConfig]);
 
   // Window exit protection: warn if there are unsaved changes
   useEffect(() => {
@@ -150,6 +154,10 @@ export const App: React.FC = () => {
       showTitle: show.metadata.title,
       activeCueNumber: activeCue?.cueNumber,
       activeCueTitle: activeCue?.title,
+      activeCueDirectionNotes:
+        activeCue?.departments?.st?.actionDescription ||
+        activeCue?.departments?.st?.notes ||
+        activeCue?.notes,
       standbyCueNumber: standbyCue?.cueNumber,
       standbyCueTitle: standbyCue?.title,
       cueStatus: activeCue?.status || (standbyCue ? 'Standby' : 'Pending'),
@@ -210,6 +218,21 @@ export const App: React.FC = () => {
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setIsHelpOpen(true);
+      } else if (e.key === 'F1') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('background');
+      } else if (e.key === 'F2') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('slide');
+      } else if (e.key === 'F3') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('overlay');
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        useVisualStore.getState().clearAllVx();
+      } else if (e.altKey && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        useVisualStore.getState().toggleFreezeVx();
       }
     };
 
@@ -238,6 +261,9 @@ export const App: React.FC = () => {
       const result = parseLightStageFile(content);
       if (result.success && result.data) {
         loadShow(result.data);
+        if (result.stage) {
+          useStageStore.getState().setConfig(result.stage);
+        }
       } else {
         alert(`Lỗi mở file .lightstage:\n${result.error || 'Dữ liệu file không hợp lệ'}`);
       }
@@ -282,9 +308,12 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                const recovered = loadAutoSave();
+                const recovered = loadAutoSaveProject();
                 if (recovered) {
-                  loadShow(recovered);
+                  loadShow(recovered.show);
+                  if (recovered.stage) {
+                    useStageStore.getState().setConfig(recovered.stage);
+                  }
                 }
                 setRecoveryMeta(null);
               }}
@@ -320,6 +349,9 @@ export const App: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Visual LED (VX) Live Panic & Output Control Bar */}
+      <VxControlBar />
 
       {/* Main Workspace Area */}
       <main className="flex flex-1 flex-col overflow-hidden">

@@ -77,6 +77,24 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
     URL.revokeObjectURL(url);
   };
 
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim().length > 0) {
+          setRawText(text);
+          handleProcessCsv(text);
+          return;
+        }
+      }
+    } catch {
+      // Fallback if clipboard permission denied
+    }
+    // If clipboard read failed or empty, focus textarea
+    const textarea = document.querySelector('textarea');
+    if (textarea) textarea.focus();
+  };
+
   const handleLoadDemoShow = () => {
     setRawText(SAMPLE_CSV_CONTENT);
     handleProcessCsv(SAMPLE_CSV_CONTENT);
@@ -146,14 +164,68 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {step === 'input' && (
             <div className="space-y-4">
+              {/* Grouped Grid (FreeShow Inspiration) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Card 1: Files */}
+                <div className="border border-border-default hover:border-accent rounded-xl p-4 bg-surface-0 relative flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-content-3">
+                        Tệp Dữ Liệu (File)
+                      </span>
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-mono text-accent">
+                        .CSV / .TSV / .TXT
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 my-2">
+                      <Upload className="h-6 w-6 text-accent flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold text-content-1">Kéo thả tệp hoặc bấm chọn</p>
+                        <p className="text-[10px] text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab</p>
+                      </div>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".csv,.tsv,.txt"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+
+                {/* Card 2: Clipboard (FreeShow Feature) */}
+                <div className="border border-border-default hover:border-accent rounded-xl p-4 bg-surface-0 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-content-3">
+                      Bảng Tạm (Clipboard)
+                    </span>
+                    <span className="rounded bg-status-go/20 text-status-go px-1.5 py-0.5 text-[9px] font-mono">
+                      Excel / Google Sheets
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-content-3 mb-2">
+                    Copy các cột bảng từ Excel hoặc Sheets rồi bấm nút bên dưới để nạp tức thì:
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboard}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent font-bold text-xs border border-accent/40 transition-colors"
+                    title="Đọc dữ liệu bảng từ clipboard (Dán từ clipboard)"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span>Dán từ clipboard (Paste from Clipboard)</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Sample Actions Bar */}
               <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-surface-0 border border-border-default text-xs">
-                <span className="text-content-3 font-medium">Bạn chưa có sẵn file kịch bản?</span>
+                <span className="text-content-3 font-medium text-[11px]">Bạn chưa có sẵn file kịch bản?</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleDownloadSampleCsv}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-default transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-default transition-colors text-xs"
                     title="Tải file mẫu CSV chuẩn UTF-8"
                   >
                     <Download className="h-3.5 w-3.5 text-accent" />
@@ -162,7 +234,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                   <button
                     type="button"
                     onClick={handleLoadDemoShow}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent font-semibold border border-accent/40 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent font-semibold border border-accent/40 transition-colors text-xs"
                     title="Nạp ngay show mẫu hoàn chỉnh"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
@@ -171,29 +243,16 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
               </div>
 
-              <div className="border-2 border-dashed border-border-default hover:border-accent rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-0 relative">
-                <input
-                  type="file"
-                  accept=".csv,.tsv,.txt"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <Upload className="h-8 w-8 text-accent mx-auto mb-2" />
-                <p className="text-sm font-semibold text-content-1">
-                  Drop CSV file here or click to browse
-                </p>
-                <p className="text-xs text-content-3 mt-1">UTF-8 encoded CSV / TSV formats</p>
-              </div>
-
+              {/* Text Area Manual Paste */}
               <div className="relative">
-                <div className="text-xs text-content-3 font-semibold mb-1">
-                  Or paste CSV / TSV text directly:
+                <div className="text-[11px] text-content-3 font-semibold mb-1">
+                  Hoặc dán trực tiếp chuỗi CSV / TSV vào đây:
                 </div>
                 <textarea
                   value={rawText}
                   onChange={(e) => setRawText(e.target.value)}
                   placeholder={`STT,Tiết mục,Thời lượng,Ánh sáng,Màn LED,Âm thanh\n1.0,Opening,00:03:00,4 Beam 350W + 2 Follow,Màn LED cánh x 2,BGM Intro\n1.1,Speech,05:00,Follow,Logo Loop,Mic 1`}
-                  rows={6}
+                  rows={4}
                   className="w-full rounded-lg border border-border-default bg-surface-0 p-3 font-mono text-xs text-content-1 focus:border-accent focus:outline-none"
                 />
               </div>
@@ -204,7 +263,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 onClick={() => handleProcessCsv(rawText)}
                 className="w-full rounded-lg bg-surface-3 hover:bg-surface-2 disabled:opacity-50 text-content-1 font-semibold py-2.5 text-xs transition-colors shadow border border-border-default"
               >
-                Analyze Columns & Preview
+                Phân tích Cột & Xem trước (Analyze Columns)
               </button>
             </div>
           )}

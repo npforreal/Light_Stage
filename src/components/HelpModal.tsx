@@ -129,6 +129,20 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                     <td className="py-2 px-3 font-semibold text-content-1">Lưu dự án (Save Show)</td>
                     <td className="py-2 px-3 text-content-3">Lưu trạng thái show hiện tại.</td>
                   </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-mono font-bold text-dept-vx">
+                      <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border-default text-content-1">F1</kbd> .. <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border-default text-content-1">F4</kbd>
+                    </td>
+                    <td className="py-2 px-3 font-semibold text-dept-vx">Panic Xoá Lớp VX (Clear Layers)</td>
+                    <td className="py-2 px-3 text-content-3">F1: Xoá Nền | F2: Xoá Slide | F3: Xoá Overlay | F4: Xoá Tất cả VX.</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3 font-mono font-bold text-dept-vx">
+                      <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border-default text-content-1">Alt</kbd> + <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border-default text-content-1">F</kbd>
+                    </td>
+                    <td className="py-2 px-3 font-semibold text-dept-vx">Freeze VX (Đóng băng Output)</td>
+                    <td className="py-2 px-3 text-content-3">Khóa cố định hình ảnh màn hình LED khi chuyển đổi cue.</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

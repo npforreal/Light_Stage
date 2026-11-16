@@ -298,6 +298,7 @@ export const VirtualStagePreview: React.FC = () => {
 
           <button
             onClick={() => setIsConfigOpen(!isConfigOpen)}
+            title="Mở bảng cấu hình Rig sân khấu (Stage Rig Config)"
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors border border-border-default ${
               isConfigOpen
                 ? 'bg-accent text-surface-0'

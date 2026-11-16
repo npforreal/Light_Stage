@@ -16,6 +16,8 @@ export interface StageClockState {
   showTitle: string;
   activeCueNumber?: string;
   activeCueTitle?: string;
+  activeCueDirectionNotes?: string;
+  targetTime?: string;
   standbyCueNumber?: string;
   standbyCueTitle?: string;
   cueStatus: string; // 'Pending' | 'Standby' | 'Go' | 'Hold' | 'Skip' | 'Completed'

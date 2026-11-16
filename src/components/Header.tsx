@@ -152,7 +152,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, [getAllCues, activeCue, masterElapsedMs]);
 
   return (
-    <header className="flex flex-col border-b border-border-default bg-surface-1 backdrop-blur z-30 flex-shrink-0">
+    <header className="flex flex-col border-b border-border-default bg-surface-1 backdrop-blur z-50 flex-shrink-0">
       {/* ======================================================== */}
       {/* TIER 1: LIVE OPERATION & MASTER CLOCKS                  */}
       {/* ======================================================== */}
@@ -303,9 +303,17 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div className="h-6 w-px bg-border-subtle" />
           <div className="flex flex-col">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 font-bold">
-              Active Go
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-content-3 font-bold">
+                Active Go
+              </span>
+              {(isRunning || activeCue?.status === 'Go') && (
+                <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-wider animate-pulse border border-rose-500/40">
+                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                  LIVE
+                </span>
+              )}
+            </div>
             <span className="font-semibold text-status-go truncate max-w-[100px] xl:max-w-[130px]">
               {activeCue ? `${activeCue.cueNumber} ${activeCue.title}` : 'None'}
             </span>
