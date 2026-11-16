@@ -84,7 +84,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleDownloadProjectFile = () => {
-    const blob = exportToLightStageBlob(show);
+    const blob = exportToLightStageBlob(show, stageConfig);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

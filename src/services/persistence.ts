@@ -1,6 +1,8 @@
 import { Show, LightStageFile } from '../types/stage';
+import { StageConfig, migrateLegacyStageConfig } from '../types/virtualStage';
 import { normalizeShow } from './fixtureModel';
 import { useShowStore } from '../store/useShowStore';
+import { useStageStore } from '../store/useStageStore';
 
 export const LIGHTSTAGE_FILE_TYPE = 'lightstage_project';
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -10,7 +12,14 @@ export const AUTOSAVE_META_KEY = 'lightstage_autosave_meta_v1';
 export interface ParseResult {
   success: boolean;
   data?: Show;
+  /** Stage rig config bundled with the file, when present. */
+  stage?: StageConfig;
   error?: string;
+}
+
+export interface AutoSaveProject {
+  show: Show;
+  stage?: StageConfig;
 }
 
 export interface AutoSaveMeta {
@@ -22,12 +31,13 @@ export interface AutoSaveMeta {
 /**
  * Serializes a Show domain object into a formatted .lightstage JSON string
  */
-export function serializeShow(show: Show, pretty = true): string {
+export function serializeShow(show: Show, pretty = true, stage?: StageConfig): string {
   const file: LightStageFile = {
     fileType: LIGHTSTAGE_FILE_TYPE,
     schemaVersion: show.schemaVersion || CURRENT_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     show,
+    ...(stage ? { stage } : {}),
   };
 
   return pretty ? JSON.stringify(file, null, 2) : JSON.stringify(file);
@@ -56,6 +66,7 @@ export function parseLightStageFile(jsonString: string): ParseResult {
 
   // Check if wrapped in LightStageFile or raw Show
   let showData: unknown;
+  let rawStage: unknown;
   if (obj.fileType === LIGHTSTAGE_FILE_TYPE && obj.show) {
     if (typeof obj.schemaVersion === 'number' && obj.schemaVersion > CURRENT_SCHEMA_VERSION) {
       return {
@@ -64,6 +75,7 @@ export function parseLightStageFile(jsonString: string): ParseResult {
       };
     }
     showData = obj.show;
+    rawStage = obj.stage;
   } else if (obj.id && Array.isArray(obj.acts)) {
     // Direct Show object fallback
     showData = obj;
@@ -147,14 +159,24 @@ export function parseLightStageFile(jsonString: string): ParseResult {
     })),
   };
 
-  return { success: true, data: normalizeShow(normalizedShow) };
+  return { success: true, data: normalizeShow(normalizedShow), stage: parseStageConfig(rawStage) };
+}
+
+/**
+ * Sanitizes a persisted stage rig config. Returns undefined when absent/invalid.
+ */
+function parseStageConfig(raw: unknown): StageConfig | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const candidate = raw as Partial<StageConfig>;
+  if (!Array.isArray(candidate.screens) && !Array.isArray(candidate.trusses)) return undefined;
+  return migrateLegacyStageConfig(candidate);
 }
 
 /**
  * Creates a downloadable Blob for the .lightstage project file
  */
-export function exportToLightStageBlob(show: Show): Blob {
-  const json = serializeShow(show);
+export function exportToLightStageBlob(show: Show, stage?: StageConfig): Blob {
+  const json = serializeShow(show, true, stage);
   return new Blob([json], { type: 'application/json' });
 }
 
@@ -173,14 +195,14 @@ function getStorage(): Storage | null {
 }
 
 /**
- * Saves current show to auto-save local storage
+ * Saves current show (and optional stage rig) to auto-save local storage
  */
-export function saveAutoSave(show: Show): boolean {
+export function saveAutoSave(show: Show, stage?: StageConfig): boolean {
   const storage = getStorage();
   if (!storage) return false;
 
   try {
-    const serialized = serializeShow(show, false);
+    const serialized = serializeShow(show, false, stage);
     const totalCues = show.acts.reduce((acc, act) => acc + act.cues.length, 0);
     const meta: AutoSaveMeta = {
       savedAt: new Date().toISOString(),
@@ -197,9 +219,9 @@ export function saveAutoSave(show: Show): boolean {
 }
 
 /**
- * Loads the auto-saved show from local storage
+ * Loads the auto-saved show + stage rig from local storage.
  */
-export function loadAutoSave(): Show | null {
+export function loadAutoSaveProject(): AutoSaveProject | null {
   const storage = getStorage();
   if (!storage) return null;
 
@@ -207,10 +229,18 @@ export function loadAutoSave(): Show | null {
     const raw = storage.getItem(AUTOSAVE_STORAGE_KEY);
     if (!raw) return null;
     const result = parseLightStageFile(raw);
-    return result.success && result.data ? result.data : null;
+    if (!result.success || !result.data) return null;
+    return { show: result.data, stage: result.stage };
   } catch {
     return null;
   }
+}
+
+/**
+ * Loads the auto-saved show from local storage
+ */
+export function loadAutoSave(): Show | null {
+  return loadAutoSaveProject()?.show ?? null;
 }
 
 /**
@@ -254,10 +284,12 @@ export function clearAutoSave(): void {
 }
 
 let autoSaveUnsubscribe: (() => void) | null = null;
+let stageAutoSaveUnsubscribe: (() => void) | null = null;
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Subscribes to useShowStore mutations and automatically saves whenever show data changes.
+ * Subscribes to useShowStore / useStageStore mutations and automatically saves
+ * whenever show or stage rig data changes.
  * Debounced to optimize disk/storage writes during rapid edits.
  */
 export function setupAutoSaveSubscription(debounceMs = 200): () => void {
@@ -265,13 +297,28 @@ export function setupAutoSaveSubscription(debounceMs = 200): () => void {
     autoSaveUnsubscribe();
     autoSaveUnsubscribe = null;
   }
+  if (stageAutoSaveUnsubscribe) {
+    stageAutoSaveUnsubscribe();
+    stageAutoSaveUnsubscribe = null;
+  }
+
+  const schedule = (show: Show) => {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      saveAutoSave(show, useStageStore.getState().config);
+    }, debounceMs);
+  };
 
   autoSaveUnsubscribe = useShowStore.subscribe((state, prevState) => {
     if (state.show !== prevState?.show) {
-      if (autoSaveTimer) clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => {
-        saveAutoSave(state.show);
-      }, debounceMs);
+      schedule(state.show);
+    }
+  });
+
+  // Stage rig edits (presets, screens, trusses, fixtures) must survive reloads too.
+  stageAutoSaveUnsubscribe = useStageStore.subscribe((state, prevState) => {
+    if (state.config !== prevState?.config) {
+      schedule(useShowStore.getState().show);
     }
   });
 
@@ -279,6 +326,10 @@ export function setupAutoSaveSubscription(debounceMs = 200): () => void {
     if (autoSaveUnsubscribe) {
       autoSaveUnsubscribe();
       autoSaveUnsubscribe = null;
+    }
+    if (stageAutoSaveUnsubscribe) {
+      stageAutoSaveUnsubscribe();
+      stageAutoSaveUnsubscribe = null;
     }
     if (autoSaveTimer) {
       clearTimeout(autoSaveTimer);
@@ -291,6 +342,10 @@ export function stopAutoSaveSubscription(): void {
   if (autoSaveUnsubscribe) {
     autoSaveUnsubscribe();
     autoSaveUnsubscribe = null;
+  }
+  if (stageAutoSaveUnsubscribe) {
+    stageAutoSaveUnsubscribe();
+    stageAutoSaveUnsubscribe = null;
   }
   if (autoSaveTimer) {
     clearTimeout(autoSaveTimer);
