@@ -26,13 +26,29 @@ describe('ExportModal Component', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('switches role filter button', () => {
+  it('switches role filter button including Stage (ST)', () => {
     render(<ExportModal isOpen={true} onClose={vi.fn()} />);
 
     const lxButton = screen.getByRole('button', { name: 'LX' });
     fireEvent.click(lxButton);
-
     expect(lxButton).toHaveClass('bg-accent');
+
+    const stButton = screen.getByRole('button', { name: 'Stage (ST)' });
+    expect(stButton).toBeInTheDocument();
+    fireEvent.click(stButton);
+    expect(stButton).toHaveClass('bg-accent');
+  });
+
+  it('uses accessible button elements for export cards', () => {
+    render(<ExportModal isOpen={true} onClose={vi.fn()} />);
+
+    const pdfButton = screen.getByRole('button', { name: /Print \/ Save PDF Cue Sheet/i });
+    expect(pdfButton).toBeInTheDocument();
+    expect(pdfButton.tagName.toLowerCase()).toBe('button');
+
+    const csvButton = screen.getByRole('button', { name: /Download Cue Sheet \(Excel \/ CSV\)/i });
+    expect(csvButton).toBeInTheDocument();
+    expect(csvButton.tagName.toLowerCase()).toBe('button');
   });
 
   it('calls onClose when close button clicked', () => {

@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useShowStore } from '../../store/useShowStore';
 import { useClockStore, formatDuration } from '../../store/useClockStore';
 import { Cue, CueStatus, LightingColor } from '../../types/stage';
 import { parseTimeString } from '../../services/importer';
-import { resolveLightingColorToHex, getLightingColorLabel } from '../../data/colors';
+import {
+  resolveLightingColorToHex,
+  getLightingColorLabel,
+} from '../../data/colors';
+import {
+  kelvinToRgb,
+  rgbToHex,
+  hexToOklch,
+  gamutMap,
+} from '../../services/color';
 import {
   Play,
   Clock,
@@ -12,12 +21,25 @@ import {
   Volume2,
   Users,
   Plus,
+  Copy,
+  Trash2,
   Pause,
   RotateCcw,
   FastForward,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Check,
+  X,
+  Palette,
 } from 'lucide-react';
 
 export type RoleFilter = 'ALL' | 'LX' | 'VX' | 'SQ' | 'ST';
+
+export interface EditingCellState {
+  cueId: string;
+  field: 'title' | 'duration' | 'lx' | 'vx' | 'sq' | 'st';
+}
 
 export const RundownTable: React.FC = () => {
   const show = useShowStore((s) => s.show);
@@ -30,30 +52,182 @@ export const RundownTable: React.FC = () => {
   const resetCue = useShowStore((s) => s.resetCue);
   const updateCue = useShowStore((s) => s.updateCue);
   const addCue = useShowStore((s) => s.addCue);
+  const deleteCue = useShowStore((s) => s.deleteCue);
 
   const syncCueDuration = useClockStore((s) => s.syncCueDuration);
   const startClock = useClockStore((s) => s.startClock);
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
-  const [editingCueId, setEditingCueId] = useState<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState('');
-  const [editingDuration, setEditingDuration] = useState('');
+  const [editingCell, setEditingCell] = useState<EditingCellState | null>(null);
 
-  const handleStartEdit = (cue: Cue) => {
-    setEditingCueId(cue.id);
-    setEditingTitle(cue.title);
-    setEditingDuration(formatDuration(cue.durationMs));
+  // Edit draft states
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftDuration, setDraftDuration] = useState('');
+  const [draftLx, setDraftLx] = useState<{
+    sceneName: string;
+    fixtureSummary: string;
+    fixtureCount: number;
+    intensity: number;
+    color: LightingColor;
+    hex: string;
+  }>({
+    sceneName: '',
+    fixtureSummary: '',
+    fixtureCount: 0,
+    intensity: 100,
+    color: { mode: 'kelvin', kelvin: 3200 },
+    hex: '#ffd199',
+  });
+  const [draftVx, setDraftVx] = useState<{
+    contentName: string;
+    screenCount: number;
+    screenTarget: string;
+  }>({ contentName: '', screenCount: 1, screenTarget: 'All' });
+  const [draftSq, setDraftSq] = useState<{
+    trackName: string;
+    volume: number;
+  }>({ trackName: '', volume: 80 });
+  const [draftSt, setDraftSt] = useState<{
+    actionDescription: string;
+  }>({ actionDescription: '' });
+
+  // Color picker popover state for LX editing
+  const [showColorPopover, setShowColorPopover] = useState(false);
+  const [kelvinSliderVal, setKelvinSliderVal] = useState(3200);
+
+  const editContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close editing on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (editContainerRef.current && !editContainerRef.current.contains(e.target as Node)) {
+        // Commit edit when clicking outside
+        if (editingCell) {
+          commitCurrentEdit();
+        }
+      }
+    };
+    if (editingCell) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [editingCell, draftTitle, draftDuration, draftLx, draftVx, draftSq, draftSt]);
+
+  const startEdit = (cue: Cue, field: EditingCellState['field']) => {
+    setEditingCell({ cueId: cue.id, field });
+    setShowColorPopover(false);
+
+    if (field === 'title') {
+      setDraftTitle(cue.title);
+    } else if (field === 'duration') {
+      setDraftDuration(formatDuration(cue.durationMs));
+    } else if (field === 'lx') {
+      const lx = cue.departments.lx;
+      const initialColor: LightingColor = lx?.color || (lx?.colorPreset ? { mode: 'rgb', hex: lx.colorPreset } : { mode: 'kelvin', kelvin: 3200 });
+      const currentHex = resolveLightingColorToHex(initialColor);
+      const initialKelvin = initialColor.mode === 'kelvin' ? initialColor.kelvin : 3200;
+
+      setDraftLx({
+        sceneName: lx?.sceneName || cue.title,
+        fixtureSummary: lx?.fixtureSummary || (lx?.fixtureCount ? `${lx.fixtureCount} fixtures` : 'All fixtures'),
+        fixtureCount: lx?.fixtureCount ?? cue.totalLightingFixtures ?? 0,
+        intensity: lx?.intensity ?? 100,
+        color: initialColor,
+        hex: currentHex,
+      });
+      setKelvinSliderVal(initialKelvin);
+    } else if (field === 'vx') {
+      const vx = cue.departments.vx;
+      setDraftVx({
+        contentName: vx?.contentName || 'Visual loop',
+        screenCount: vx?.screenCount ?? cue.totalScreens ?? 1,
+        screenTarget: vx?.screenTarget || 'All',
+      });
+    } else if (field === 'sq') {
+      const sq = cue.departments.sq;
+      setDraftSq({
+        trackName: sq?.trackName || 'Audio active',
+        volume: sq?.volume ?? 80,
+      });
+    } else if (field === 'st') {
+      const st = cue.departments.st;
+      setDraftSt({
+        actionDescription: st?.actionDescription || '',
+      });
+    }
   };
 
-  const handleSaveEdit = (cueId: string) => {
-    if (editingCueId === cueId) {
-      const parsedSec = parseTimeString(editingDuration);
-      updateCue(cueId, {
-        title: editingTitle.trim() || 'Untitled Cue',
-        durationMs: parsedSec > 0 ? parsedSec * 1000 : 60000,
-      });
-      setEditingCueId(null);
+  const commitCurrentEdit = () => {
+    if (!editingCell) return;
+    const { cueId, field } = editingCell;
+    const cue = useShowStore.getState().getCueById(cueId);
+    if (!cue) {
+      setEditingCell(null);
+      return;
     }
+
+    if (field === 'title') {
+      updateCue(cueId, { title: draftTitle.trim() || 'Untitled Cue' });
+    } else if (field === 'duration') {
+      const parsedSec = parseTimeString(draftDuration);
+      updateCue(cueId, { durationMs: parsedSec > 0 ? parsedSec * 1000 : 60000 });
+    } else if (field === 'lx') {
+      updateCue(cueId, {
+        departments: {
+          ...cue.departments,
+          lx: {
+            ...cue.departments.lx,
+            sceneName: draftLx.sceneName.trim(),
+            fixtureSummary: draftLx.fixtureSummary.trim(),
+            fixtureCount: Number(draftLx.fixtureCount) || 0,
+            intensity: Math.max(0, Math.min(100, Number(draftLx.intensity))),
+            color: draftLx.color,
+            colorPreset: draftLx.hex,
+          },
+        },
+      });
+    } else if (field === 'vx') {
+      updateCue(cueId, {
+        departments: {
+          ...cue.departments,
+          vx: {
+            ...cue.departments.vx,
+            contentName: draftVx.contentName.trim(),
+            screenCount: Math.max(0, Number(draftVx.screenCount) || 0),
+            screenTarget: draftVx.screenTarget.trim() || 'All',
+          },
+        },
+      });
+    } else if (field === 'sq') {
+      updateCue(cueId, {
+        departments: {
+          ...cue.departments,
+          sq: {
+            ...cue.departments.sq,
+            trackName: draftSq.trackName.trim(),
+            volume: Math.max(0, Math.min(100, Number(draftSq.volume))),
+          },
+        },
+      });
+    } else if (field === 'st') {
+      updateCue(cueId, {
+        departments: {
+          ...cue.departments,
+          st: {
+            ...cue.departments.st,
+            actionDescription: draftSt.actionDescription.trim(),
+          },
+        },
+      });
+    }
+
+    setEditingCell(null);
+    setShowColorPopover(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingCell(null);
+    setShowColorPopover(false);
   };
 
   const handleFireGo = (cueId: string, durationMs: number) => {
@@ -62,66 +236,134 @@ export const RundownTable: React.FC = () => {
     startClock();
   };
 
-  const handleCycleColor = (cue: Cue) => {
-    if (!cue.departments.lx) return;
-    const presets: LightingColor[] = [
-      { mode: 'kelvin', kelvin: 3200 },
-      { mode: 'kelvin', kelvin: 5600 },
-      { mode: 'kelvin', kelvin: 2700 },
-      { mode: 'name', name: 'Amber' },
-      { mode: 'gel', code: 'L201' },
-      { mode: 'gel', code: 'L204' },
-      { mode: 'name', name: 'Đỏ Sân Khấu' },
-      { mode: 'name', name: 'Xanh Lá' },
-      { mode: 'name', name: 'Xanh Dương' },
-      { mode: 'name', name: 'Cyan' },
-    ];
-
-    const currentLabel = getLightingColorLabel(cue.departments.lx.color || cue.departments.lx.colorPreset);
-    const currentIndex = presets.findIndex((p) => getLightingColorLabel(p) === currentLabel);
-    const nextColor = presets[(currentIndex + 1) % presets.length];
-
-    updateCue(cue.id, {
-      departments: {
-        ...cue.departments,
-        lx: {
-          ...cue.departments.lx,
-          color: nextColor,
-          colorPreset: resolveLightingColorToHex(nextColor),
-        },
+  const handleDuplicateCue = (cue: Cue) => {
+    addCue(
+      cue.actId,
+      {
+        title: `${cue.title} (Copy)`,
+        durationMs: cue.durationMs,
+        notes: cue.notes,
+        departments: JSON.parse(JSON.stringify(cue.departments)),
       },
-    });
+      cue.id
+    );
   };
 
-  const getStatusBadgeStyle = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
+  const handleDeleteCue = (cueId: string) => {
+    deleteCue(cueId);
+  };
+
+  const handleAddCueBelow = (cue: Cue) => {
+    addCue(cue.actId, { title: 'New Cue', durationMs: 60000 }, cue.id);
+  };
+
+  // Keyboard navigation for inline inputs
+  const handleInputKeyDown = (
+    e: React.KeyboardEvent,
+    nextField?: EditingCellState['field']
+  ) => {
+    // Crucial: Stop space key from triggering GO when inside an input or textarea
+    if (e.code === 'Space') {
+      e.stopPropagation();
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      commitCurrentEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelEdit();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      commitCurrentEdit();
+      if (editingCell && nextField) {
+        const cue = useShowStore.getState().getCueById(editingCell.cueId);
+        if (cue) {
+          startEdit(cue, nextField);
+        }
+      }
+    }
+  };
+
+  // Gamut check helper
+  const isOutOfGamut = (hex: string): boolean => {
+    try {
+      const lch = hexToOklch(hex);
+      return gamutMap(lch).outOfGamut;
+    } catch {
+      return false;
+    }
+  };
+
+  // Unified cue status badges with 1 consistent icon + color
+  const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
     if (isActive || status === 'Go') {
-      return 'bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/30';
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 shadow-sm animate-pulse">
+          <Play className="h-3 w-3 fill-current" />
+          <span>GO</span>
+        </span>
+      );
     }
     if (isStandby || status === 'Standby') {
-      return 'bg-status-standby/20 text-status-standby border border-status-standby/60 ring-2 ring-status-standby/30';
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
+          <AlertCircle className="h-3 w-3" />
+          <span>STANDBY</span>
+        </span>
+      );
     }
     if (status === 'Hold') {
-      return 'bg-status-hold/20 text-status-hold border border-status-hold/50';
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
+          <Pause className="h-3 w-3" />
+          <span>HOLD</span>
+        </span>
+      );
     }
     if (status === 'Skip') {
-      return 'bg-surface-2 text-content-3 line-through border border-border-default';
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
+          <FastForward className="h-3 w-3" />
+          <span>SKIP</span>
+        </span>
+      );
     }
     if (status === 'Completed') {
-      return 'bg-surface-2/80 text-content-3 border border-border-default/60';
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
+          <CheckCircle2 className="h-3 w-3 text-status-go/70" />
+          <span>DONE</span>
+        </span>
+      );
     }
-    return 'bg-surface-2/50 text-content-2 border border-border-default/40';
+    // Pending
+    return (
+      <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
+        <Clock className="h-3 w-3 text-content-3" />
+        <span>PENDING</span>
+      </span>
+    );
   };
 
+  // Distinct highlight for the active GO row, calm neutral style for other rows
   const getRowHighlight = (isActive: boolean, isStandby: boolean) => {
-    if (isActive) return 'bg-status-go/10 border-l-4 border-l-status-go';
-    if (isStandby) return 'bg-status-standby/10 border-l-4 border-l-status-standby';
-    return 'border-l-4 border-l-transparent hover:bg-surface-1/60';
+    if (isActive) {
+      return 'bg-status-go/10 border-l-4 border-l-status-go ring-1 ring-status-go/20 shadow-sm';
+    }
+    if (isStandby) {
+      return 'bg-status-standby/10 border-l-4 border-l-status-standby';
+    }
+    return 'border-l-4 border-l-transparent hover:bg-surface-1/50 transition-colors';
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-surface-0 text-content-1">
+    <div className="flex h-full w-full flex-col bg-surface-0 text-content-1 select-none">
       {/* Table Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1/90 px-4 py-2.5 backdrop-blur">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1/90 px-4 py-2.5 backdrop-blur flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-content-3">
             View Role:
@@ -130,6 +372,7 @@ export const RundownTable: React.FC = () => {
             {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as RoleFilter[]).map((role) => (
               <button
                 key={role}
+                type="button"
                 onClick={() => setRoleFilter(role)}
                 className={`rounded-md px-3 py-1 font-medium transition-colors ${
                   roleFilter === role
@@ -145,6 +388,7 @@ export const RundownTable: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => {
               if (show.acts.length > 0) {
                 const actId = show.acts[0].id;
@@ -164,13 +408,13 @@ export const RundownTable: React.FC = () => {
         <table className="w-full border-collapse text-left text-xs">
           <thead className="sticky top-0 z-10 border-b border-border-default bg-surface-1 text-content-3 uppercase font-mono tracking-wider">
             <tr>
-              <th className="py-2.5 px-3 w-20">Status</th>
+              <th className="py-2.5 px-3 w-24">Status</th>
               <th className="py-2.5 px-3 w-16">Cue #</th>
               <th className="py-2.5 px-4 min-w-[200px]">Title & Description</th>
               <th className="py-2.5 px-3 w-24">Duration</th>
 
               {(roleFilter === 'ALL' || roleFilter === 'LX') && (
-                <th className="py-2.5 px-3 min-w-[140px] text-dept-lx">
+                <th className="py-2.5 px-3 min-w-[170px] text-dept-lx">
                   <div className="flex items-center gap-1">
                     <Lightbulb className="h-3.5 w-3.5" />
                     <span>Lighting (LX)</span>
@@ -179,7 +423,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'VX') && (
-                <th className="py-2.5 px-3 min-w-[140px] text-dept-vx">
+                <th className="py-2.5 px-3 min-w-[150px] text-dept-vx">
                   <div className="flex items-center gap-1">
                     <Tv className="h-3.5 w-3.5" />
                     <span>Visual LED (VX)</span>
@@ -188,7 +432,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'SQ') && (
-                <th className="py-2.5 px-3 min-w-[130px] text-dept-sq">
+                <th className="py-2.5 px-3 min-w-[140px] text-dept-sq">
                   <div className="flex items-center gap-1">
                     <Volume2 className="h-3.5 w-3.5" />
                     <span>Sound (SQ)</span>
@@ -197,7 +441,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'ST') && (
-                <th className="py-2.5 px-3 min-w-[130px] text-dept-st">
+                <th className="py-2.5 px-3 min-w-[140px] text-dept-st">
                   <div className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
                     <span>Stage Action</span>
@@ -205,7 +449,7 @@ export const RundownTable: React.FC = () => {
                 </th>
               )}
 
-              <th className="py-2.5 px-3 text-right w-44">Calling Actions</th>
+              <th className="py-2.5 px-3 text-right w-56">Calling Actions</th>
             </tr>
           </thead>
 
@@ -226,24 +470,16 @@ export const RundownTable: React.FC = () => {
                 {act.cues.map((cue) => {
                   const isActive = activeCueId === cue.id;
                   const isStandby = standbyCueId === cue.id;
-                  const isEditing = editingCueId === cue.id;
+                  const isEditingThisCue = editingCell?.cueId === cue.id;
 
                   return (
                     <tr
                       key={cue.id}
-                      className={`transition-colors ${getRowHighlight(isActive, isStandby)}`}
+                      className={`transition-colors group/row ${getRowHighlight(isActive, isStandby)}`}
                     >
                       {/* Status Badge */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-[11px] font-bold ${getStatusBadgeStyle(
-                            cue.status,
-                            isActive,
-                            isStandby
-                          )}`}
-                        >
-                          {isActive ? 'GO' : isStandby ? 'STANDBY' : cue.status.toUpperCase()}
-                        </span>
+                        {renderStatusBadge(cue.status, isActive, isStandby)}
                       </td>
 
                       {/* Cue Number */}
@@ -251,33 +487,34 @@ export const RundownTable: React.FC = () => {
                         {cue.cueNumber}
                       </td>
 
-                      {/* Title / Inline Edit */}
-                      <td className="py-2.5 px-4">
-                        {isEditing ? (
-                          <div className="flex items-center gap-2">
+                      {/* Title & Description Cell */}
+                      <td
+                        className="py-2.5 px-4 cursor-pointer"
+                        onDoubleClick={() => startEdit(cue, 'title')}
+                      >
+                        {isEditingThisCue && editingCell.field === 'title' ? (
+                          <div ref={editContainerRef} className="flex items-center gap-2">
                             <input
                               type="text"
-                              value={editingTitle}
-                              onChange={(e) => setEditingTitle(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveEdit(cue.id);
-                                if (e.key === 'Escape') setEditingCueId(null);
-                              }}
-                              className="rounded border border-accent bg-surface-2 px-2 py-1 text-xs text-content-1 focus:outline-none"
+                              value={draftTitle}
+                              onChange={(e) => setDraftTitle(e.target.value)}
+                              onKeyDown={(e) => handleInputKeyDown(e, 'duration')}
+                              className="rounded border border-accent bg-surface-2 px-2 py-1 text-xs text-content-1 focus:outline-none w-full"
                               autoFocus
                             />
                             <button
-                              onClick={() => handleSaveEdit(cue.id)}
-                              className="rounded bg-accent/20 px-2 py-0.5 text-[11px] font-medium text-accent hover:bg-accent/30"
+                              type="button"
+                              onClick={commitCurrentEdit}
+                              className="rounded bg-accent/20 px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/30"
                             >
-                              Save
+                              <Check className="h-3 w-3" />
                             </button>
                           </div>
                         ) : (
                           <div
-                            onClick={() => handleStartEdit(cue)}
-                            className="cursor-pointer group flex flex-col"
-                            title="Click to edit title"
+                            onClick={() => startEdit(cue, 'title')}
+                            className="group flex flex-col"
+                            title="Nhấp đúp hoặc bấm để sửa Tiêu đề (Enter để lưu)"
                           >
                             <span className="font-medium text-content-1 group-hover:text-accent">
                               {cue.title}
@@ -291,23 +528,35 @@ export const RundownTable: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Duration */}
-                      <td className="py-2.5 px-3 font-mono whitespace-nowrap">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editingDuration}
-                            onChange={(e) => setEditingDuration(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveEdit(cue.id);
-                            }}
-                            className="w-16 rounded border border-accent bg-surface-2 px-1.5 py-1 text-xs text-content-1 focus:outline-none"
-                            placeholder="01:00"
-                          />
+                      {/* Duration Cell */}
+                      <td
+                        className="py-2.5 px-3 font-mono whitespace-nowrap cursor-pointer"
+                        onDoubleClick={() => startEdit(cue, 'duration')}
+                      >
+                        {isEditingThisCue && editingCell.field === 'duration' ? (
+                          <div ref={editContainerRef} className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={draftDuration}
+                              onChange={(e) => setDraftDuration(e.target.value)}
+                              onKeyDown={(e) => handleInputKeyDown(e, 'lx')}
+                              className="w-16 rounded border border-accent bg-surface-2 px-1.5 py-1 text-xs text-content-1 focus:outline-none"
+                              placeholder="01:00"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={commitCurrentEdit}
+                              className="rounded bg-accent/20 p-1 text-accent"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                          </div>
                         ) : (
                           <div
-                            onClick={() => handleStartEdit(cue)}
-                            className="flex items-center gap-1.5 cursor-pointer text-content-2 hover:text-accent"
+                            onClick={() => startEdit(cue, 'duration')}
+                            className="flex items-center gap-1.5 text-content-2 hover:text-accent"
+                            title="Bấm để chỉnh sửa Thời lượng"
                           >
                             <Clock className="h-3 w-3 text-content-3" />
                             <span>{formatDuration(cue.durationMs)}</span>
@@ -315,98 +564,509 @@ export const RundownTable: React.FC = () => {
                         )}
                       </td>
 
-                      {/* Lighting (LX) */}
+                      {/* Lighting (LX) Cell & Popover Editor */}
                       {(roleFilter === 'ALL' || roleFilter === 'LX') && (
-                        <td className="py-2.5 px-3">
-                          {cue.departments.lx ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="text-content-1">
-                                {cue.departments.lx.sceneName || 'Preset'}
+                        <td
+                          className="py-2.5 px-3 relative"
+                          onDoubleClick={() => startEdit(cue, 'lx')}
+                        >
+                          {isEditingThisCue && editingCell.field === 'lx' ? (
+                            <div
+                              ref={editContainerRef}
+                              className="absolute left-2 top-2 z-30 w-72 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2.5 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            >
+                              <div className="flex items-center justify-between border-b border-border-default pb-1.5">
+                                <span className="font-bold text-dept-lx flex items-center gap-1.5">
+                                  <Lightbulb className="h-3.5 w-3.5" />
+                                  <span>Chỉnh sửa Ánh sáng (LX)</span>
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={commitCurrentEdit}
+                                    className="rounded p-1 text-status-go hover:bg-surface-2"
+                                    title="Lưu (Enter)"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEdit}
+                                    className="rounded p-1 text-content-3 hover:bg-surface-2"
+                                    title="Hủy (Esc)"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Title / Scene Name */}
+                              <div>
+                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  Tên Cảnh Sáng (Scene Name)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={draftLx.sceneName}
+                                  onChange={(e) => setDraftLx({ ...draftLx, sceneName: e.target.value })}
+                                  onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
+                                  className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
+                                  placeholder="Spot 4 @FOH / Wash 12 3200K"
+                                  autoFocus
+                                />
+                              </div>
+
+                              {/* Fixtures summary & count */}
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                    Mô tả Fixture
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={draftLx.fixtureSummary}
+                                    onChange={(e) => setDraftLx({ ...draftLx, fixtureSummary: e.target.value })}
+                                    onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
+                                    className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
+                                    placeholder="12 Wash 3200K"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                    Số lượng Đèn
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={draftLx.fixtureCount}
+                                    onChange={(e) => setDraftLx({ ...draftLx, fixtureCount: Number(e.target.value) })}
+                                    onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
+                                    className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Intensity Slider */}
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <label className="text-[10px] font-semibold text-content-3">
+                                    Cường độ Sáng (Intensity)
+                                  </label>
+                                  <span className="font-mono text-[11px] text-dept-lx font-bold">
+                                    {draftLx.intensity}%
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={draftLx.intensity}
+                                  onChange={(e) => setDraftLx({ ...draftLx, intensity: Number(e.target.value) })}
+                                  className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
+                                />
+                              </div>
+
+                              {/* Color Picker & Gamut */}
+                              <div className="border-t border-border-subtle pt-2">
+                                <div className="flex justify-between items-center mb-1.5">
+                                  <label className="text-[10px] font-semibold text-content-3 flex items-center gap-1">
+                                    <Palette className="h-3 w-3" />
+                                    <span>Màu Đèn / Kelvin / Gel</span>
+                                  </label>
+                                  <div
+                                    className="flex items-center gap-1.5 rounded px-1.5 py-0.5 bg-surface-0 border border-border-default cursor-pointer"
+                                    onClick={() => setShowColorPopover(!showColorPopover)}
+                                  >
+                                    <span
+                                      className="h-3 w-3 rounded-full border border-black/50"
+                                      style={{ backgroundColor: draftLx.hex }}
+                                    />
+                                    <span className="font-mono text-[10px] text-content-2">
+                                      {getLightingColorLabel(draftLx.color)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Preset Swatches */}
+                                <div className="grid grid-cols-5 gap-1 mb-2">
+                                  {[
+                                    { label: '2700K', color: { mode: 'kelvin', kelvin: 2700 } as LightingColor, hex: '#ffb366' },
+                                    { label: '3200K', color: { mode: 'kelvin', kelvin: 3200 } as LightingColor, hex: '#ffd199' },
+                                    { label: '5600K', color: { mode: 'kelvin', kelvin: 5600 } as LightingColor, hex: '#fffaed' },
+                                    { label: 'L201', color: { mode: 'gel', code: 'L201' } as LightingColor, hex: '#38bdf8' },
+                                    { label: 'L204', color: { mode: 'gel', code: 'L204' } as LightingColor, hex: '#fb923c' },
+                                    { label: 'Đỏ', color: { mode: 'name', name: 'Đỏ Sân Khấu' } as LightingColor, hex: '#ef4444' },
+                                    { label: 'Xanh Lá', color: { mode: 'name', name: 'Xanh Lá' } as LightingColor, hex: '#22c55e' },
+                                    { label: 'Xanh Dương', color: { mode: 'name', name: 'Xanh Dương' } as LightingColor, hex: '#3b82f6' },
+                                    { label: 'Amber', color: { mode: 'name', name: 'Amber' } as LightingColor, hex: '#f59e0b' },
+                                    { label: 'Cyan', color: { mode: 'name', name: 'Cyan' } as LightingColor, hex: '#06b6d4' },
+                                  ].map((p, idx) => (
+                                    <button
+                                      key={idx}
+                                      type="button"
+                                      onClick={() => {
+                                        setDraftLx({
+                                          ...draftLx,
+                                          color: p.color,
+                                          hex: p.hex,
+                                        });
+                                        if (p.color.mode === 'kelvin') {
+                                          setKelvinSliderVal(p.color.kelvin);
+                                        }
+                                      }}
+                                      className="flex flex-col items-center gap-0.5 rounded p-1 hover:bg-surface-2 transition-colors border border-border-subtle"
+                                      title={p.label}
+                                    >
+                                      <span
+                                        className="h-3 w-3 rounded-full border border-black/40"
+                                        style={{ backgroundColor: p.hex }}
+                                      />
+                                      <span className="text-[8px] font-mono truncate w-full text-center">
+                                        {p.label}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+
+                                {/* Kelvin Slider */}
+                                <div>
+                                  <div className="flex justify-between items-center text-[10px] text-content-3 mb-0.5">
+                                    <span>Kelvin Slider (1800K - 8000K):</span>
+                                    <span className="font-mono font-bold text-dept-lx">{kelvinSliderVal}K</span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min="1800"
+                                    max="8000"
+                                    step="100"
+                                    value={kelvinSliderVal}
+                                    onChange={(e) => {
+                                      const k = Number(e.target.value);
+                                      setKelvinSliderVal(k);
+                                      const rgb = kelvinToRgb(k);
+                                      const hex = rgbToHex(rgb);
+                                      setDraftLx({
+                                        ...draftLx,
+                                        color: { mode: 'kelvin', kelvin: k },
+                                        hex,
+                                      });
+                                    }}
+                                    className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
+                                  />
+                                </div>
+
+                                {/* Hex Input & Gamut Warning */}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div className="flex items-center gap-1 w-full">
+                                    <span className="text-[10px] text-content-3">Hex:</span>
+                                    <input
+                                      type="text"
+                                      value={draftLx.hex}
+                                      onChange={(e) => {
+                                        const h = e.target.value;
+                                        setDraftLx({
+                                          ...draftLx,
+                                          hex: h,
+                                          color: { mode: 'rgb', hex: h },
+                                        });
+                                      }}
+                                      className="w-24 rounded border border-border-default bg-surface-0 px-1.5 py-0.5 font-mono text-xs text-content-1 focus:border-dept-lx focus:outline-none"
+                                    />
+                                  </div>
+                                  {isOutOfGamut(draftLx.hex) && (
+                                    <div
+                                      className="flex items-center gap-1 text-[9px] text-amber-400 bg-amber-950/40 border border-amber-800/60 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                      title="Màu này nằm ngoài không gian màu tiêu chuẩn sRGB"
+                                    >
+                                      <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0" />
+                                      <span>Gamut warning</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => startEdit(cue, 'lx')}
+                              className="flex flex-col gap-1 cursor-pointer group"
+                              title="Bấm hoặc nhấp đúp để chỉnh sửa Ánh sáng (LX)"
+                            >
+                              <span className="text-content-1 group-hover:text-dept-lx">
+                                {cue.departments.lx?.sceneName || 'Preset'}
                               </span>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="inline-flex items-center rounded bg-dept-lx/10 px-1.5 py-0.2 text-[10px] font-mono text-dept-lx border border-dept-lx/30">
                                   {cue.totalLightingFixtures} fix
                                 </span>
-                                {/* LX Color Swatch Badge */}
-                                <div
-                                  className="inline-flex items-center gap-1 rounded bg-surface-2 border border-border-default px-1.5 py-0.5 text-[10px] font-mono cursor-pointer hover:border-accent transition-colors"
-                                  title="Màu đèn LX (Bấm để chuyển đổi preset)"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCycleColor(cue);
-                                  }}
-                                >
-                                  <span
-                                    className="h-2 w-2 rounded-full border border-black/40 flex-shrink-0"
-                                    style={{
-                                      backgroundColor: resolveLightingColorToHex(
+                                {cue.departments.lx && (
+                                  <div className="inline-flex items-center gap-1 rounded bg-surface-2 border border-border-default px-1.5 py-0.5 text-[10px] font-mono group-hover:border-dept-lx transition-colors">
+                                    <span
+                                      className="h-2 w-2 rounded-full border border-black/40 flex-shrink-0"
+                                      style={{
+                                        backgroundColor: resolveLightingColorToHex(
+                                          cue.departments.lx.color || cue.departments.lx.colorPreset
+                                        ),
+                                      }}
+                                    />
+                                    <span className="text-content-2">
+                                      {getLightingColorLabel(
                                         cue.departments.lx.color || cue.departments.lx.colorPreset
-                                      ),
-                                    }}
-                                  />
-                                  <span className="text-content-2">
-                                    {getLightingColorLabel(
-                                      cue.departments.lx.color || cue.departments.lx.colorPreset
-                                    )}
-                                  </span>
-                                </div>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            <span className="text-content-3">—</span>
                           )}
                         </td>
                       )}
 
-                      {/* Visual (VX) */}
+                      {/* Visual (VX) Cell & Inline Editor */}
                       {(roleFilter === 'ALL' || roleFilter === 'VX') && (
-                        <td className="py-2.5 px-3">
-                          {cue.departments.vx ? (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-content-1">
-                                {cue.departments.vx.contentName || 'Visual loop'}
+                        <td
+                          className="py-2.5 px-3 relative"
+                          onDoubleClick={() => startEdit(cue, 'vx')}
+                        >
+                          {isEditingThisCue && editingCell.field === 'vx' ? (
+                            <div
+                              ref={editContainerRef}
+                              className="absolute left-2 top-2 z-30 w-64 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            >
+                              <div className="flex items-center justify-between border-b border-border-default pb-1">
+                                <span className="font-bold text-dept-vx flex items-center gap-1">
+                                  <Tv className="h-3.5 w-3.5" />
+                                  <span>Visual LED (VX)</span>
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={commitCurrentEdit}
+                                    className="rounded p-1 text-status-go hover:bg-surface-2"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEdit}
+                                    className="rounded p-1 text-content-3 hover:bg-surface-2"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  Nội dung Visual (Content)
+                                </label>
+                                <input
+                                  type="text"
+                                  value={draftVx.contentName}
+                                  onChange={(e) => setDraftVx({ ...draftVx, contentName: e.target.value })}
+                                  onKeyDown={(e) => handleInputKeyDown(e, 'sq')}
+                                  className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-vx focus:outline-none"
+                                  placeholder="Logo Loop / Opening Video"
+                                  autoFocus
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                    Số màn hình
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={draftVx.screenCount}
+                                    onChange={(e) => setDraftVx({ ...draftVx, screenCount: Number(e.target.value) })}
+                                    onKeyDown={(e) => handleInputKeyDown(e, 'sq')}
+                                    className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-vx focus:outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                    Mục tiêu màn hình
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={draftVx.screenTarget}
+                                    onChange={(e) => setDraftVx({ ...draftVx, screenTarget: e.target.value })}
+                                    onKeyDown={(e) => handleInputKeyDown(e, 'sq')}
+                                    className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-vx focus:outline-none"
+                                    placeholder="Main LED / All"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => startEdit(cue, 'vx')}
+                              className="flex flex-col gap-0.5 cursor-pointer group"
+                              title="Bấm hoặc nhấp đúp để chỉnh sửa Visual LED (VX)"
+                            >
+                              <span className="text-content-1 group-hover:text-dept-vx">
+                                {cue.departments.vx?.contentName || 'Visual loop'}
                               </span>
                               <span className="inline-flex w-fit items-center rounded bg-dept-vx/10 px-1.5 py-0.2 text-[10px] font-mono text-dept-vx border border-dept-vx/30">
                                 {cue.totalScreens} screens
                               </span>
                             </div>
-                          ) : (
-                            <span className="text-slate-600">—</span>
                           )}
                         </td>
                       )}
 
-                      {/* Sound (SQ) */}
+                      {/* Sound (SQ) Cell & Inline Editor */}
                       {(roleFilter === 'ALL' || roleFilter === 'SQ') && (
-                        <td className="py-2.5 px-3">
-                          {cue.departments.sq ? (
-                            <span className="text-content-1">
-                              {cue.departments.sq.trackName || 'Audio active'}
-                            </span>
+                        <td
+                          className="py-2.5 px-3 relative"
+                          onDoubleClick={() => startEdit(cue, 'sq')}
+                        >
+                          {isEditingThisCue && editingCell.field === 'sq' ? (
+                            <div
+                              ref={editContainerRef}
+                              className="absolute left-2 top-2 z-30 w-64 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            >
+                              <div className="flex items-center justify-between border-b border-border-default pb-1">
+                                <span className="font-bold text-dept-sq flex items-center gap-1">
+                                  <Volume2 className="h-3.5 w-3.5" />
+                                  <span>Âm thanh (SQ)</span>
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={commitCurrentEdit}
+                                    className="rounded p-1 text-status-go hover:bg-surface-2"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEdit}
+                                    className="rounded p-1 text-content-3 hover:bg-surface-2"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  Tên bài nhạc / Track Name
+                                </label>
+                                <input
+                                  type="text"
+                                  value={draftSq.trackName}
+                                  onChange={(e) => setDraftSq({ ...draftSq, trackName: e.target.value })}
+                                  onKeyDown={(e) => handleInputKeyDown(e, 'st')}
+                                  className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-sq focus:outline-none"
+                                  placeholder="BGM Intro / Mic 1"
+                                  autoFocus
+                                />
+                              </div>
+
+                              <div>
+                                <div className="flex justify-between items-center mb-0.5">
+                                  <label className="text-[10px] font-semibold text-content-3">
+                                    Âm lượng (Volume)
+                                  </label>
+                                  <span className="font-mono text-[10px] text-dept-sq font-bold">
+                                    {draftSq.volume}%
+                                  </span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  value={draftSq.volume}
+                                  onChange={(e) => setDraftSq({ ...draftSq, volume: Number(e.target.value) })}
+                                  className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-sq cursor-pointer"
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            <span className="text-content-3">—</span>
+                            <div
+                              onClick={() => startEdit(cue, 'sq')}
+                              className="cursor-pointer group"
+                              title="Bấm hoặc nhấp đúp để chỉnh sửa Âm thanh (SQ)"
+                            >
+                              <span className="text-content-1 group-hover:text-dept-sq">
+                                {cue.departments.sq?.trackName || 'Audio active'}
+                              </span>
+                            </div>
                           )}
                         </td>
                       )}
 
-                      {/* Stage Action */}
+                      {/* Stage Action (ST) Cell & Inline Editor */}
                       {(roleFilter === 'ALL' || roleFilter === 'ST') && (
-                        <td className="py-2.5 px-3">
-                          {cue.departments.st ? (
-                            <span className="text-content-2">
-                              {cue.departments.st.actionDescription}
-                            </span>
+                        <td
+                          className="py-2.5 px-3 relative"
+                          onDoubleClick={() => startEdit(cue, 'st')}
+                        >
+                          {isEditingThisCue && editingCell.field === 'st' ? (
+                            <div
+                              ref={editContainerRef}
+                              className="absolute left-2 top-2 z-30 w-72 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            >
+                              <div className="flex items-center justify-between border-b border-border-default pb-1">
+                                <span className="font-bold text-dept-st flex items-center gap-1">
+                                  <Users className="h-3.5 w-3.5" />
+                                  <span>Hoạt cảnh Sân khấu (ST)</span>
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={commitCurrentEdit}
+                                    className="rounded p-1 text-status-go hover:bg-surface-2"
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEdit}
+                                    className="rounded p-1 text-content-3 hover:bg-surface-2"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  Chỉ dẫn Diễn viên / Đạo cụ
+                                </label>
+                                <textarea
+                                  rows={2}
+                                  value={draftSt.actionDescription}
+                                  onChange={(e) => setDraftSt({ ...draftSt, actionDescription: e.target.value })}
+                                  onKeyDown={(e) => handleInputKeyDown(e)}
+                                  className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-st focus:outline-none"
+                                  placeholder="MC bước ra Center, vũ đoàn vào vị trí"
+                                  autoFocus
+                                />
+                              </div>
+                            </div>
                           ) : (
-                            <span className="text-content-3">—</span>
+                            <div
+                              onClick={() => startEdit(cue, 'st')}
+                              className="cursor-pointer group"
+                              title="Bấm hoặc nhấp đúp để chỉnh sửa Hoạt cảnh (ST)"
+                            >
+                              <span className="text-content-2 group-hover:text-dept-st">
+                                {cue.departments.st?.actionDescription || '—'}
+                              </span>
+                            </div>
                           )}
                         </td>
                       )}
 
-                      {/* Calling Action Buttons */}
+                      {/* Calling Actions & Row Actions */}
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1">
                           {/* Standby Button */}
                           <button
+                            type="button"
                             onClick={() => standbyCue(cue.id)}
                             className={`rounded px-2 py-1 text-[11px] font-bold tracking-wide transition-colors ${
                               isStandby
@@ -419,6 +1079,7 @@ export const RundownTable: React.FC = () => {
 
                           {/* Go Button */}
                           <button
+                            type="button"
                             onClick={() => handleFireGo(cue.id, cue.durationMs)}
                             className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors ${
                               isActive
@@ -432,6 +1093,7 @@ export const RundownTable: React.FC = () => {
 
                           {/* Hold */}
                           <button
+                            type="button"
                             onClick={() => holdCue(cue.id)}
                             title="Hold Cue"
                             className="rounded p-1 text-content-3 hover:bg-status-hold/20 hover:text-status-hold transition-colors"
@@ -441,6 +1103,7 @@ export const RundownTable: React.FC = () => {
 
                           {/* Skip */}
                           <button
+                            type="button"
                             onClick={() => skipCue(cue.id)}
                             title="Skip Cue"
                             className="rounded p-1 text-content-3 hover:bg-surface-2 hover:text-content-1 transition-colors"
@@ -450,11 +1113,44 @@ export const RundownTable: React.FC = () => {
 
                           {/* Reset */}
                           <button
+                            type="button"
                             onClick={() => resetCue(cue.id)}
                             title="Reset Cue"
                             className="rounded p-1 text-content-3 hover:bg-surface-2 hover:text-content-1 transition-colors"
                           >
                             <RotateCcw className="h-3.5 w-3.5" />
+                          </button>
+
+                          <div className="h-4 w-px bg-border-subtle mx-0.5" />
+
+                          {/* Add Below (+) */}
+                          <button
+                            type="button"
+                            onClick={() => handleAddCueBelow(cue)}
+                            title="Thêm Cue bên dưới"
+                            className="rounded p-1 text-content-3 hover:text-accent hover:bg-surface-2 transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+
+                          {/* Duplicate */}
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateCue(cue)}
+                            title="Nhân đôi Cue"
+                            className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCue(cue.id)}
+                            title="Xóa Cue"
+                            className="rounded p-1 text-content-3 hover:text-status-danger hover:bg-status-danger/10 transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>

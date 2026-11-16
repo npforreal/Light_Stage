@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useShowStore } from './store/useShowStore';
-import { useClockStore, formatDuration } from './store/useClockStore';
+import { useClockStore } from './store/useClockStore';
 import {
   saveAutoSave,
   loadAutoSave,
@@ -10,34 +10,28 @@ import {
   parseLightStageFile,
   AutoSaveMeta,
 } from './services/persistence';
+import { broadcastStageClock } from './services/stageClockSync';
+import { Header, ViewMode } from './components/Header';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
 import { VirtualStagePreview } from './components/stage/VirtualStagePreview';
 import { ImportModal } from './components/importer/ImportModal';
 import { ExportModal } from './components/export/ExportModal';
-import {
-  Lightbulb,
-  Tv,
-  Play,
-  Pause,
-  Square,
-  RotateCcw,
-  LayoutList,
-  Columns,
-  SplitSquareVertical,
-  Upload,
-  Download,
-  FolderOpen,
-  Eye,
-  Lock,
-  Unlock,
-} from 'lucide-react';
-
-export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
+import { HelpModal } from './components/HelpModal';
+import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
+import { StageClockWindow } from './components/StageClockWindow';
+import { Lock } from 'lucide-react';
 
 export const App: React.FC = () => {
+  // Check if this window was opened as a dedicated Stage Confidence Clock
+  const isStageClockStandalone =
+    typeof window !== 'undefined' && window.location.search.includes('view=stage-clock');
+
+  if (isStageClockStandalone) {
+    return <StageClockWindow />;
+  }
+
   const show = useShowStore((s) => s.show);
-  const getDeviceStats = useShowStore((s) => s.getDeviceStats);
   const isDirty = useShowStore((s) => s.isDirty);
   const markSaved = useShowStore((s) => s.markSaved);
   const loadShow = useShowStore((s) => s.loadShow);
@@ -52,21 +46,34 @@ export const App: React.FC = () => {
   const isRunning = useClockStore((s) => s.isRunning);
   const masterElapsedMs = useClockStore((s) => s.masterElapsedMs);
   const cueRemainingMs = useClockStore((s) => s.cueRemainingMs);
+  const cueElapsedMs = useClockStore((s) => s.cueElapsedMs);
   const isOverrun = useClockStore((s) => s.isOverrun);
-  const startClock = useClockStore((s) => s.startClock);
-  const pauseClock = useClockStore((s) => s.pauseClock);
-  const resetClock = useClockStore((s) => s.resetClock);
   const tick = useClockStore((s) => s.tick);
 
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const [isOperatorLocked, setIsOperatorLocked] = useState(false);
   const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
   const [recoveryMeta, setRecoveryMeta] = useState<AutoSaveMeta | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const stats = getDeviceStats();
+
+  // First-run welcome guide discovery
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const seen = localStorage.getItem(WELCOME_STORAGE_KEY);
+        if (!seen) {
+          setIsWelcomeOpen(true);
+        }
+      } catch {
+        // Ignore localStorage error
+      }
+    }
+  }, []);
 
   // Startup check: discover existing autosave and prompt user to recover
   useEffect(() => {
@@ -122,22 +129,50 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRunning, tick]);
 
-  // Delta Time calculation (Target cumulative duration vs actual elapsed)
-  const deltaTimeMs = React.useMemo(() => {
+  // Broadcast state to Stage Confidence Monitors whenever clock or cue changes
+  useEffect(() => {
     const allCues = getAllCues();
-    if (!activeCue || allCues.length === 0) return 0;
-    const activeIdx = allCues.findIndex((c) => c.id === activeCue.id);
-    if (activeIdx === -1) return 0;
-
-    // Delta relative to planned start time of the active cue plus any overrun
-    let plannedStartMs = 0;
-    for (let i = 0; i < activeIdx; i++) {
-      plannedStartMs += allCues[i].durationMs;
+    let deltaMs = 0;
+    if (activeCue && allCues.length > 0) {
+      const activeIdx = allCues.findIndex((c) => c.id === activeCue.id);
+      if (activeIdx !== -1) {
+        let plannedStartMs = 0;
+        for (let i = 0; i < activeIdx; i++) {
+          plannedStartMs += allCues[i].durationMs;
+        }
+        const actualStartMs = masterElapsedMs - cueElapsedMs;
+        const cueOverrunMs = Math.max(0, cueElapsedMs - activeCue.durationMs);
+        deltaMs = plannedStartMs - actualStartMs - cueOverrunMs;
+      }
     }
-    const actualStartMs = masterElapsedMs - useClockStore.getState().cueElapsedMs;
-    const cueOverrunMs = Math.max(0, useClockStore.getState().cueElapsedMs - activeCue.durationMs);
-    return plannedStartMs - actualStartMs - cueOverrunMs;
-  }, [getAllCues, activeCue, masterElapsedMs]);
+
+    broadcastStageClock({
+      showTitle: show.metadata.title,
+      activeCueNumber: activeCue?.cueNumber,
+      activeCueTitle: activeCue?.title,
+      standbyCueNumber: standbyCue?.cueNumber,
+      standbyCueTitle: standbyCue?.title,
+      cueStatus: activeCue?.status || (standbyCue ? 'Standby' : 'Pending'),
+      cueRemainingMs,
+      cueElapsedMs,
+      cueDurationMs: activeCue?.durationMs ?? 60000,
+      masterElapsedMs,
+      deltaMs,
+      isOverrun,
+      isRunning,
+      isPaused: !isRunning && masterElapsedMs > 0,
+    });
+  }, [
+    show.metadata.title,
+    activeCue,
+    standbyCue,
+    cueRemainingMs,
+    cueElapsedMs,
+    masterElapsedMs,
+    isOverrun,
+    isRunning,
+    getAllCues,
+  ]);
 
   // Keyboard Shortcuts: Space/Enter = GO, B = Standby / Next, Arrows = Next/Prev, Esc = Hold/Pause
   useEffect(() => {
@@ -172,6 +207,9 @@ export const App: React.FC = () => {
       } else if (e.key === 'Escape') {
         e.preventDefault();
         holdCue();
+      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsHelpOpen(true);
       }
     };
 
@@ -210,274 +248,30 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-surface-0 text-content-1 overflow-hidden font-sans">
-      {/* Top Header Bar */}
-      <header className="flex h-14 items-center justify-between border-b border-border-default bg-surface-1 px-4 backdrop-blur z-30 flex-shrink-0">
-        {/* Brand & Show Title */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-2 border border-border-strong text-accent font-bold text-sm shadow">
-            LS
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="font-bold tracking-wide text-sm text-content-1">
-                Light Stage
-              </span>
-              <span className="rounded bg-surface-2 px-1.5 py-0.2 text-[10px] text-content-3 font-mono">
-                v0.1.0
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-content-2 truncate max-w-[140px] sm:max-w-[200px]" title={show.metadata.title}>
-                {show.metadata.title}
-              </span>
-              <span className="text-border-strong">•</span>
-              {isDirty ? (
-                <span className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium" title="Có thay đổi chưa lưu">
-                  <span className="h-1.5 w-1.5 rounded-full bg-status-standby animate-pulse" />
-                  Chưa lưu
-                </span>
-              ) : (
-                <span className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium" title="Đã lưu">
-                  <span className="h-1.5 w-1.5 rounded-full bg-status-go" />
-                  Đã lưu
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* 2-Tier Redesigned Header */}
+      <Header
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        isOperatorLocked={isOperatorLocked}
+        setIsOperatorLocked={setIsOperatorLocked}
+        onOpenProject={handleOpenProjectClick}
+        onImportClick={() => setIsImportOpen(true)}
+        onExportClick={() => setIsExportOpen(true)}
+        onHelpClick={() => setIsHelpOpen(true)}
+        wallClock={wallClock}
+      />
 
-        {/* Master Clock & Calling Readout */}
-        <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 min-w-0">
-          {/* Active Cue Quick Card */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-3 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 text-xs flex-shrink-0">
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-content-3 font-bold">
-                Standby
-              </span>
-              <span className="font-semibold text-status-standby truncate max-w-[90px] lg:max-w-[120px]">
-                {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
-              </span>
-            </div>
-            <div className="h-6 w-px bg-border-subtle" />
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-content-3 font-bold">
-                Active Go
-              </span>
-              <span className="font-semibold text-status-go truncate max-w-[90px] lg:max-w-[120px]">
-                {activeCue ? `${activeCue.cueNumber} ${activeCue.title}` : 'None'}
-              </span>
-            </div>
-          </div>
-
-          {/* Master & Cue Clock Readout (Neutral Monospace) */}
-          <div className="flex items-center gap-2 lg:gap-3 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 font-mono flex-shrink-0">
-            {/* Wall Clock (hidden below xl) */}
-            <div className="hidden xl:flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-content-3">Wall Clock</span>
-              <span className="text-xs font-semibold text-content-2">
-                {wallClock}
-              </span>
-            </div>
-            <div className="hidden xl:block h-6 w-px bg-border-subtle" />
-            {/* Show Elapsed (Neutral white/cyan) */}
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-content-3">Show Time</span>
-              <span className="text-sm font-bold text-content-1">
-                {formatDuration(masterElapsedMs, { includeHours: true })}
-              </span>
-            </div>
-            <div className="h-6 w-px bg-border-subtle" />
-            {/* Cue Remainder */}
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-content-3">Cue Remainder</span>
-              <span
-                className={`text-sm font-bold ${
-                  isOverrun ? 'text-status-danger animate-pulse' : 'text-status-go'
-                }`}
-              >
-                {formatDuration(cueRemainingMs)}
-              </span>
-            </div>
-            <div className="h-6 w-px bg-border-subtle" />
-            {/* Delta Schedule */}
-            <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-content-3">Delta</span>
-              <span
-                className={`text-xs font-bold ${
-                  deltaTimeMs < 0 ? 'text-status-danger' : deltaTimeMs > 0 ? 'text-content-1' : 'text-content-3'
-                }`}
-                title={deltaTimeMs < 0 ? 'Behind schedule' : 'Ahead of schedule'}
-              >
-                {deltaTimeMs > 0 ? `+${formatDuration(deltaTimeMs)}` : formatDuration(deltaTimeMs)}
-              </span>
-            </div>
-          </div>
-
-          {/* Clock Transport Controls */}
-          <div className="flex items-center gap-1 bg-surface-2 border border-border-subtle rounded-lg p-0.5 flex-shrink-0">
-            {isRunning ? (
-              <button
-                onClick={pauseClock}
-                className="rounded p-1.5 text-status-standby hover:bg-surface-3 transition-colors"
-                title="Pause Clock"
-              >
-                <Pause className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button
-                onClick={startClock}
-                className="rounded p-1.5 text-status-go hover:bg-surface-3 transition-colors"
-                title="Start Clock"
-              >
-                <Play className="h-3.5 w-3.5 fill-current" />
-              </button>
-            )}
-            <button
-              onClick={pauseClock}
-              className="rounded p-1.5 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
-              title="Stop Clock"
-            >
-              <Square className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={resetClock}
-              className="rounded p-1.5 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
-              title="Reset Clock"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* View Mode Switcher & Stats */}
-        <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-          {/* Hardware Stats Badges (visible on xl screens) */}
-          <div className="hidden xl:flex items-center gap-3 text-xs font-mono">
-            <div className="flex items-center gap-1.5 text-dept-lx" title="Total Lighting Fixtures">
-              <Lightbulb className="h-3.5 w-3.5" />
-              <span>LX: {stats.totalLightingFixtures}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-dept-vx" title="Total Screens">
-              <Tv className="h-3.5 w-3.5" />
-              <span>VX: {stats.totalScreens}</span>
-            </div>
-          </div>
-
-          {/* Dual View Modes */}
-          <div className="inline-flex rounded-lg bg-surface-2 border border-border-subtle p-0.5 text-xs">
-            <button
-              onClick={() => setViewMode('rundown')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'rundown'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Cue Rundown List"
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-              <span>Rundown</span>
-            </button>
-            <button
-              onClick={() => setViewMode('split')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'split'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Split Dual View"
-            >
-              <SplitSquareVertical className="h-3.5 w-3.5" />
-              <span>Dual</span>
-            </button>
-            <button
-              onClick={() => setViewMode('timeline')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'timeline'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Timeline Tracks"
-            >
-              <Columns className="h-3.5 w-3.5 rotate-90" />
-              <span>Timeline</span>
-            </button>
-            <button
-              onClick={() => setViewMode('stage')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'stage'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Stage 2D Preview"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              <span>Stage 2D</span>
-            </button>
-          </div>
-
-          {/* Operator Lock & Import / Export Buttons */}
-          <div className="flex items-center gap-1.5">
-            {/* Operator Lock Toggle */}
-            <button
-              onClick={() => setIsOperatorLocked(!isOperatorLocked)}
-              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                isOperatorLocked
-                  ? 'bg-status-standby text-surface-0 font-bold ring-2 ring-status-standby/50'
-                  : 'bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle'
-              }`}
-              title={isOperatorLocked ? 'Operator Locked: Hotkeys disabled' : 'Unlocked: Hotkeys active'}
-            >
-              {isOperatorLocked ? (
-                <>
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>Locked</span>
-                </>
-              ) : (
-                <>
-                  <Unlock className="h-3.5 w-3.5 text-content-3" />
-                  <span>Lock</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={handleOpenProjectClick}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
-              title="Open .lightstage Project"
-            >
-              <FolderOpen className="h-3.5 w-3.5 text-status-standby" />
-              <span>Open</span>
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelected}
-              accept=".lightstage,.json"
-              className="hidden"
-            />
-            <button
-              onClick={() => setIsImportOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
-              title="Import CSV/Excel"
-            >
-              <Upload className="h-3.5 w-3.5 text-accent" />
-              <span>Import</span>
-            </button>
-            <button
-              onClick={() => setIsExportOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
-              title="Export Reports & Project"
-            >
-              <Download className="h-3.5 w-3.5 text-status-go" />
-              <span>Export</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelected}
+        accept=".lightstage,.json"
+        className="hidden"
+      />
 
       {/* Startup Recovery Notice Banner */}
       {recoveryMeta && (
-        <div className="bg-cyan-950/95 border-b border-cyan-700 px-4 py-2 flex items-center justify-between text-xs text-cyan-100 z-40">
+        <div className="bg-cyan-950/95 border-b border-cyan-700 px-4 py-2 flex items-center justify-between text-xs text-cyan-100 z-40 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-bold text-cyan-300">Phát hiện bản tự động lưu:</span>
             <span>
@@ -513,7 +307,7 @@ export const App: React.FC = () => {
 
       {/* Operator Lock Safety Banner */}
       {isOperatorLocked && (
-        <div className="bg-amber-500/20 border-b border-amber-500/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-amber-300 z-30">
+        <div className="bg-amber-500/20 border-b border-amber-500/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-amber-300 z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
             <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Toàn bộ phím tắt điều khiển đã được vô hiệu hóa để bảo đảm an toàn live show.</span>
@@ -550,10 +344,10 @@ export const App: React.FC = () => {
         {viewMode === 'split' && (
           <div className="flex flex-1 flex-col overflow-hidden">
             {/* Top: Rundown Table */}
-            <div className="flex-[3] border-b border-slate-800 overflow-hidden">
+            <div className="flex-[3] border-b border-border-default overflow-hidden">
               <RundownTable />
             </div>
-            {/* Bottom: Timeline Tracks or Stage */}
+            {/* Bottom: Timeline Tracks */}
             <div className="flex-[2] overflow-hidden">
               <TimelineTracks />
             </div>
@@ -561,9 +355,15 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Import & Export Modals */}
+      {/* Modals */}
       <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
       <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} />
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <WelcomeModal
+        isOpen={isWelcomeOpen}
+        onClose={() => setIsWelcomeOpen(false)}
+        onLoadSample={() => setIsImportOpen(true)}
+      />
     </div>
   );
 };
