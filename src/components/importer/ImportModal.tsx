@@ -154,7 +154,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                     type="button"
                     onClick={handleDownloadSampleCsv}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-default transition-colors"
-                    title="Tải file mẫu định dạng chuẩn UTF-8 Excel"
+                    title="Tải file mẫu CSV chuẩn UTF-8"
                   >
                     <Download className="h-3.5 w-3.5 text-accent" />
                     <span>Tải file CSV mẫu (Download Sample)</span>

@@ -3,6 +3,7 @@ import { useShowStore } from '../../store/useShowStore';
 import { useClockStore, formatDuration } from '../../store/useClockStore';
 import { Cue, CueStatus, DeviceSpecification, LightingColor, sumDeviceCounts } from '../../types/stage';
 import { parseTimeString } from '../../services/importer';
+import { ClampedPopover } from '../common/ClampedPopover';
 import {
   LIGHTING_FIXTURE_TYPES,
   UNCLASSIFIED_LABEL,
@@ -106,6 +107,7 @@ export const RundownTable: React.FC = () => {
   const [kelvinSliderVal, setKelvinSliderVal] = useState(3200);
 
   const editContainerRef = useRef<HTMLDivElement>(null);
+  const [editAnchor, setEditAnchor] = useState<HTMLElement | null>(null);
 
   // Close editing on outside click
   useEffect(() => {
@@ -123,7 +125,12 @@ export const RundownTable: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [editingCell, draftTitle, draftDuration, draftLx, draftVx, draftSq, draftSt]);
 
-  const startEdit = (cue: Cue, field: EditingCellState['field']) => {
+  const startEdit = (
+    cue: Cue,
+    field: EditingCellState['field'],
+    anchor?: HTMLElement | null
+  ) => {
+    if (anchor) setEditAnchor(anchor);
     setEditingCell({ cueId: cue.id, field });
     setShowColorPopover(false);
 
@@ -505,7 +512,7 @@ export const RundownTable: React.FC = () => {
                       {/* Title & Description Cell */}
                       <td
                         className="py-2.5 px-4 cursor-pointer"
-                        onDoubleClick={() => startEdit(cue, 'title')}
+                        onDoubleClick={(e) => startEdit(cue, 'title', e.currentTarget)}
                       >
                         {isEditingThisCue && editingCell.field === 'title' ? (
                           <div ref={editContainerRef} className="flex items-center gap-2">
@@ -527,7 +534,7 @@ export const RundownTable: React.FC = () => {
                           </div>
                         ) : (
                           <div
-                            onClick={() => startEdit(cue, 'title')}
+                            onClick={(e) => startEdit(cue, 'title', e.currentTarget)}
                             className="group flex flex-col"
                             title="Nhấp đúp hoặc bấm để sửa Tiêu đề (Enter để lưu)"
                           >
@@ -546,7 +553,7 @@ export const RundownTable: React.FC = () => {
                       {/* Duration Cell */}
                       <td
                         className="py-2.5 px-3 font-mono whitespace-nowrap cursor-pointer"
-                        onDoubleClick={() => startEdit(cue, 'duration')}
+                        onDoubleClick={(e) => startEdit(cue, 'duration', e.currentTarget)}
                       >
                         {isEditingThisCue && editingCell.field === 'duration' ? (
                           <div ref={editContainerRef} className="flex items-center gap-1">
@@ -569,7 +576,7 @@ export const RundownTable: React.FC = () => {
                           </div>
                         ) : (
                           <div
-                            onClick={() => startEdit(cue, 'duration')}
+                            onClick={(e) => startEdit(cue, 'duration', e.currentTarget)}
                             className="flex items-center gap-1.5 text-content-2 hover:text-accent"
                             title="Bấm để chỉnh sửa Thời lượng"
                           >
@@ -583,12 +590,14 @@ export const RundownTable: React.FC = () => {
                       {(roleFilter === 'ALL' || roleFilter === 'LX') && (
                         <td
                           className="py-2.5 px-3 relative"
-                          onDoubleClick={() => startEdit(cue, 'lx')}
+                          onDoubleClick={(e) => startEdit(cue, 'lx', e.currentTarget)}
                         >
                           {isEditingThisCue && editingCell.field === 'lx' ? (
-                            <div
-                              ref={editContainerRef}
-                              className="absolute left-2 top-2 z-30 w-72 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2.5 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            <ClampedPopover
+                              anchor={editAnchor}
+                              width={288}
+                              popoverRef={editContainerRef}
+                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2.5 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1.5">
                                 <span className="font-bold text-dept-lx flex items-center gap-1.5">
@@ -980,10 +989,10 @@ export const RundownTable: React.FC = () => {
                                   )}
                                 </div>
                               </div>
-                            </div>
+                            </ClampedPopover>
                           ) : (
                             <div
-                              onClick={() => startEdit(cue, 'lx')}
+                              onClick={(e) => startEdit(cue, 'lx', e.currentTarget)}
                               className="flex flex-col gap-1 cursor-pointer group"
                               title="Bấm hoặc nhấp đúp để chỉnh sửa Ánh sáng (LX)"
                             >
@@ -1021,12 +1030,14 @@ export const RundownTable: React.FC = () => {
                       {(roleFilter === 'ALL' || roleFilter === 'VX') && (
                         <td
                           className="py-2.5 px-3 relative"
-                          onDoubleClick={() => startEdit(cue, 'vx')}
+                          onDoubleClick={(e) => startEdit(cue, 'vx', e.currentTarget)}
                         >
                           {isEditingThisCue && editingCell.field === 'vx' ? (
-                            <div
-                              ref={editContainerRef}
-                              className="absolute left-2 top-2 z-30 w-64 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            <ClampedPopover
+                              anchor={editAnchor}
+                              width={256}
+                              popoverRef={editContainerRef}
+                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-vx flex items-center gap-1">
@@ -1094,10 +1105,10 @@ export const RundownTable: React.FC = () => {
                                   />
                                 </div>
                               </div>
-                            </div>
+                            </ClampedPopover>
                           ) : (
                             <div
-                              onClick={() => startEdit(cue, 'vx')}
+                              onClick={(e) => startEdit(cue, 'vx', e.currentTarget)}
                               className="flex flex-col gap-0.5 cursor-pointer group"
                               title="Bấm hoặc nhấp đúp để chỉnh sửa Visual LED (VX)"
                             >
@@ -1116,12 +1127,14 @@ export const RundownTable: React.FC = () => {
                       {(roleFilter === 'ALL' || roleFilter === 'SQ') && (
                         <td
                           className="py-2.5 px-3 relative"
-                          onDoubleClick={() => startEdit(cue, 'sq')}
+                          onDoubleClick={(e) => startEdit(cue, 'sq', e.currentTarget)}
                         >
                           {isEditingThisCue && editingCell.field === 'sq' ? (
-                            <div
-                              ref={editContainerRef}
-                              className="absolute left-2 top-2 z-30 w-64 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            <ClampedPopover
+                              anchor={editAnchor}
+                              width={256}
+                              popoverRef={editContainerRef}
+                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-sq flex items-center gap-1">
@@ -1179,10 +1192,10 @@ export const RundownTable: React.FC = () => {
                                   className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-sq cursor-pointer"
                                 />
                               </div>
-                            </div>
+                            </ClampedPopover>
                           ) : (
                             <div
-                              onClick={() => startEdit(cue, 'sq')}
+                              onClick={(e) => startEdit(cue, 'sq', e.currentTarget)}
                               className="cursor-pointer group"
                               title="Bấm hoặc nhấp đúp để chỉnh sửa Âm thanh (SQ)"
                             >
@@ -1198,12 +1211,14 @@ export const RundownTable: React.FC = () => {
                       {(roleFilter === 'ALL' || roleFilter === 'ST') && (
                         <td
                           className="py-2.5 px-3 relative"
-                          onDoubleClick={() => startEdit(cue, 'st')}
+                          onDoubleClick={(e) => startEdit(cue, 'st', e.currentTarget)}
                         >
                           {isEditingThisCue && editingCell.field === 'st' ? (
-                            <div
-                              ref={editContainerRef}
-                              className="absolute left-2 top-2 z-30 w-72 rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                            <ClampedPopover
+                              anchor={editAnchor}
+                              width={288}
+                              popoverRef={editContainerRef}
+                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-st flex items-center gap-1">
@@ -1242,10 +1257,10 @@ export const RundownTable: React.FC = () => {
                                   autoFocus
                                 />
                               </div>
-                            </div>
+                            </ClampedPopover>
                           ) : (
                             <div
-                              onClick={() => startEdit(cue, 'st')}
+                              onClick={(e) => startEdit(cue, 'st', e.currentTarget)}
                               className="cursor-pointer group"
                               title="Bấm hoặc nhấp đúp để chỉnh sửa Hoạt cảnh (ST)"
                             >

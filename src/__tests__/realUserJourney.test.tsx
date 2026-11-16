@@ -259,8 +259,8 @@ describe("Real-World User Journey & Usability Simulation", () => {
 
     // Người dùng thấy gì: Dialog xuất báo cáo chuyên nghiệp
     expect(screen.getByText("Export & Print Reports")).toBeInTheDocument();
-    expect(screen.getByText(/Download Cue Sheet \(Excel \/ CSV\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Download Hardware Inventory \(Excel \/ CSV\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Download Cue Sheet \(CSV\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Download Hardware Inventory \(CSV\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Save Project \(\.lightstage\)/i)).toBeInTheDocument();
 
     // Người dùng thấy các bộ phận có thể lọc để in riêng cho từng tổ kỹ thuật

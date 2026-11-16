@@ -16,8 +16,9 @@ describe('ExportModal Component', () => {
 
     expect(screen.getByText('Export & Print Reports')).toBeInTheDocument();
     expect(screen.getByText('Print / Save PDF Cue Sheet')).toBeInTheDocument();
-    expect(screen.getByText('Download Cue Sheet (Excel / CSV)')).toBeInTheDocument();
-    expect(screen.getByText('Download Hardware Inventory (Excel / CSV)')).toBeInTheDocument();
+    expect(screen.getByText('Download Cue Sheet (CSV)')).toBeInTheDocument();
+    expect(screen.getByText('Download Hardware Inventory (CSV)')).toBeInTheDocument();
+    expect(screen.getByText('Print / Save PDF Light Plot')).toBeInTheDocument();
     expect(screen.getByText('Save Project (.lightstage)')).toBeInTheDocument();
   });
 
@@ -46,7 +47,7 @@ describe('ExportModal Component', () => {
     expect(pdfButton).toBeInTheDocument();
     expect(pdfButton.tagName.toLowerCase()).toBe('button');
 
-    const csvButton = screen.getByRole('button', { name: /Download Cue Sheet \(Excel \/ CSV\)/i });
+    const csvButton = screen.getByRole('button', { name: /Download Cue Sheet \(CSV\)/i });
     expect(csvButton).toBeInTheDocument();
     expect(csvButton.tagName.toLowerCase()).toBe('button');
   });

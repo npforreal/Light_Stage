@@ -19,7 +19,7 @@ import {
   calculateCueDeviceCounts,
   sumDeviceCounts,
 } from '../types/stage';
-import { parseHardwareFromText } from './hardwareParser';
+import { parseHardwareFromText, splitHardwareClauses, isNonHardwareNoise, extractPosition } from './hardwareParser';
 
 export const UNCLASSIFIED_LABEL = 'Chưa phân loại';
 
@@ -71,12 +71,60 @@ function isValidSpec(spec: DeviceSpecification | undefined | null): spec is Devi
   return Boolean(spec) && Number.isFinite(Number(spec!.count)) && Number(spec!.count) > 0;
 }
 
-/** Parses a freeform fixture description into structured rows (positions included). */
+/**
+ * Extracts an explicit quantity from an unknown clause: "Foo x4", "4 Foo",
+ * "Bar 2 cây", "Baz: 6". Returns null when no usable quantity is present.
+ */
+function extractExplicitCount(text: string): { count: number; name: string } | null {
+  const suffix = text.match(/^(.+?)\s*(?:[xX*]|:)\s*(\d{1,4})\b/);
+  if (suffix) return { count: Number(suffix[2]), name: suffix[1].trim() };
+
+  const prefix = text.match(/^\s*(\d{1,4})\s*(?:x|X|\*|cây|cái|chiếc|bộ|màn|tấm)?\s+(.+)$/);
+  if (prefix) return { count: Number(prefix[1]), name: prefix[2].trim() };
+
+  const unitSuffix = text.match(/^(.+?)\s+(\d{1,4})\s+(?:cây|cái|chiếc|bộ|màn|tấm)$/);
+  if (unitSuffix) return { count: Number(unitSuffix[2]), name: unitSuffix[1].trim() };
+
+  return null;
+}
+
+/**
+ * Parses a freeform fixture description into structured rows (positions included).
+ * Recognized equipment is classified by type; a clause with an explicit quantity
+ * but an unknown type ("Foo x4") becomes an `Other` row so the operator sees it
+ * with a "Chưa phân loại" chip instead of silently losing fixtures.
+ */
 export function parseFixtureText(text: string): DeviceSpecification[] {
   if (!text || typeof text !== 'string') return [];
-  return parseHardwareFromText(text, 'Lighting')
-    .filter((spec) => spec.category === 'Lighting')
-    .map((spec) => ({ ...spec, count: Math.max(1, Math.floor(spec.count)) }));
+
+  const results: DeviceSpecification[] = [];
+
+  for (const rawClause of splitHardwareClauses(text)) {
+    const parsed = parseHardwareFromText(rawClause, 'Lighting').filter(
+      (spec) => spec.category === 'Lighting'
+    );
+    if (parsed.length > 0) {
+      results.push(...parsed.map((spec) => ({ ...spec, count: Math.max(1, Math.floor(spec.count)) })));
+      continue;
+    }
+
+    if (isNonHardwareNoise(rawClause)) continue;
+
+    const { text: withoutPosition, position } = extractPosition(rawClause);
+    const explicit = extractExplicitCount(withoutPosition);
+    if (!explicit || explicit.count <= 0 || explicit.count > 9999) continue;
+
+    results.push(
+      createDeviceSpec({
+        name: explicit.name || UNCLASSIFIED_LABEL,
+        subType: 'Other',
+        count: explicit.count,
+        position,
+      })
+    );
+  }
+
+  return results;
 }
 
 /** Renders structured rows back into the quick-entry syntax, e.g. `Beam x8 @FOH`. */

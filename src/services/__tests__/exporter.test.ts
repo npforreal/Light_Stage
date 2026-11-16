@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import {
   generateCueSheetCsv,
   generateHardwareInventoryCsv,
+  generateLightPlotHtml,
   generatePrintableCueSheetHtml,
   escapeHtml,
   escapeCsvCell,
 } from '../exporter';
 import { createDefaultShow } from '../../types/stage';
+import { STAGE_PRESETS } from '../../types/virtualStage';
 
 describe('Exporter Service', () => {
   const show = createDefaultShow('Summer Gala 2026');
@@ -81,6 +83,51 @@ describe('Exporter Service', () => {
       expect(escapeHtml(undefined)).toBe('');
       expect(escapeHtml('Normal')).toBe('Normal');
       expect(escapeHtml('A & B < C > D "E" \'F\'')).toBe('A &amp; B &lt; C &gt; D &quot;E&quot; &#39;F&#39;');
+    });
+  });
+
+  describe('generateLightPlotHtml', () => {
+    const config = JSON.parse(JSON.stringify(STAGE_PRESETS.EndStage));
+
+    it('renders a printable top-down plot with a numbered fixture schedule', () => {
+      const html = generateLightPlotHtml(show, config);
+
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('Light Plot');
+      expect(html).toContain('@media print');
+      expect(html).toContain('window.print()');
+      expect(html).toContain('<svg');
+      expect(html).toContain('PLASTER LINE / DOWNSTAGE');
+      expect(html).toContain('AUDIENCE / FOH');
+      expect(html).toContain('<th>Type</th>');
+      expect(html).toContain('W');
+      expect(html).toContain('Sơ đồ tham khảo');
+    });
+
+    it('lists every enabled fixture and hides disabled ones', () => {
+      const rig = JSON.parse(JSON.stringify(STAGE_PRESETS.EndStage));
+      rig.fixtures = [
+        { id: 'a', type: 'Beam', position: 'Truss', slot: 1, x: -2, y: 3, z: 7, beamAngle: 20, loadWatts: 350, role: 'back', aim: {}, enabled: true },
+        { id: 'b', type: 'Wash', position: 'FOH', slot: 2, x: 0, y: -2, z: 6, beamAngle: 30, loadWatts: 500, role: 'front', aim: {}, enabled: false },
+      ];
+
+      const html = generateLightPlotHtml(show, rig);
+      expect(html).toContain('Rig: 1 fixtures');
+      expect(html).toContain('350 W');
+      expect(html).not.toContain('500 W');
+    });
+
+    it('handles an empty rig without throwing', () => {
+      const html = generateLightPlotHtml(show, { ...config, fixtures: [] });
+      expect(html).toContain('Rig chưa khai báo đèn.');
+      expect(html).toContain('Rig: 0 fixtures');
+    });
+
+    it('escapes show metadata to prevent HTML injection', () => {
+      const xssShow = createDefaultShow('<script>alert("PLOT")</script>');
+      const html = generateLightPlotHtml(xssShow, config);
+      expect(html).not.toContain('<script>alert("PLOT")</script>');
+      expect(html).toContain('&lt;script&gt;alert(&quot;PLOT&quot;)&lt;/script&gt;');
     });
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useStageStore } from '../../store/useStageStore';
 import { useShowStore } from '../../store/useShowStore';
 import { StagePreset } from '../../types/virtualStage';
@@ -6,12 +6,19 @@ import { resolveLightingColorToLinear, getLightingColorLabel } from '../../data/
 import { applyDimmer, linearToOklab, oklabToOklch, gamutMap, rgbToHex } from '../../services/color';
 import { placeFixtures } from '../../services/stageAutoPatch';
 import {
+  FIXTURE_SYMBOLS,
+  STAGE_WARNING_LABELS,
+  analyzeStageWarnings,
+  assignFixtureNumbers,
+  computeRulerTicks,
+  formatMeters,
+  getLegendTypes,
+} from '../../services/stageSymbols';
+import { FixtureSymbol } from './FixtureSymbol';
+import { StageRigEditor } from './StageRigEditor';
+import {
   Eye,
   Sliders,
-  Tv,
-  Lightbulb,
-  CheckSquare,
-  Square as SquareIcon,
   AlertTriangle,
   Info,
   Wind,
@@ -23,8 +30,6 @@ export const VirtualStagePreview: React.FC = () => {
   const config = useStageStore((s) => s.config);
   const setCameraView = useStageStore((s) => s.setCameraView);
   const applyPreset = useStageStore((s) => s.applyPreset);
-  const toggleScreen = useStageStore((s) => s.toggleScreen);
-  const toggleTruss = useStageStore((s) => s.toggleTruss);
 
   const activeCue = useShowStore((s) => s.getActiveCue());
   const standbyCue = useShowStore((s) => s.getStandbyCue());
@@ -32,6 +37,8 @@ export const VirtualStagePreview: React.FC = () => {
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [haze, setHaze] = useState<boolean>(true);
   const [dimmerCurve, setDimmerCurve] = useState<'square' | 'linear' | 's-curve'>('square');
+  const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   // Lighting & Visual state from active cue
   const lxCue = activeCue?.departments?.lx;
@@ -63,6 +70,43 @@ export const VirtualStagePreview: React.FC = () => {
 
   const totalLoadWatts = hasLx ? placementResult.totalLoadWatts : 0;
   const powerKw = (totalLoadWatts / 1000).toFixed(1);
+
+  // USITT-lite numbering, warnings, legend and ruler (Đợt 10.2)
+  const fixtureNumbers = useMemo(
+    () => assignFixtureNumbers(placementResult.placements),
+    [placementResult.placements]
+  );
+  const stageWarnings = useMemo(
+    () =>
+      analyzeStageWarnings({
+        config,
+        placements: placementResult.placements,
+        requestedCount,
+      }),
+    [config, placementResult.placements, requestedCount]
+  );
+  const legendTypes = useMemo(
+    () => getLegendTypes(placementResult.placements, Object.keys(placementResult.byType)),
+    [placementResult.placements, placementResult.byType]
+  );
+  const rulerTicks = useMemo(() => computeRulerTicks(config.widthMeters), [config.widthMeters]);
+
+  const handleSvgMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    const svg = svgRef.current;
+    if (!svg || typeof svg.createSVGPoint !== 'function') return;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return;
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const local = point.matrixTransform(matrix.inverse());
+    const scaleX = 660 / Math.max(5, config.widthMeters);
+    const scaleY = 330 / Math.max(5, config.depthMeters);
+    setHoverPoint({
+      x: Math.round(((local.x - 500) / scaleX) * 10) / 10,
+      y: Math.round(((430 - local.y) / scaleY) * 10) / 10,
+    });
+  };
 
   // Optical color pipeline: target color -> linear -> dimmer curve -> gamut map -> sRGB
   const { fixtureColor, isOutOfGamut, colorLabel, beamIntensity } = useMemo(() => {
@@ -267,14 +311,18 @@ export const VirtualStagePreview: React.FC = () => {
       </div>
 
       {/* Main 2D Stage SVG Canvas */}
-      <div className="relative flex-1 bg-gradient-to-b from-surface-0 via-surface-1 to-black overflow-hidden flex items-center justify-center p-4">
+      <div className="relative flex-1 bg-gradient-to-b from-surface-0 via-surface-1 to-black overflow-hidden flex flex-col gap-2 p-4">
         {/* Grid pattern background */}
         <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
 
+        <div className="relative flex min-h-0 w-full flex-1 items-center justify-center">
         <svg
+          ref={svgRef}
           viewBox="0 0 1000 600"
           className="w-full h-full max-h-[750px] object-contain drop-shadow-2xl"
           preserveAspectRatio="xMidYMid meet"
+          onMouseMove={handleSvgMouseMove}
+          onMouseLeave={() => setHoverPoint(null)}
         >
           <defs>
             {/* Beam Cone Gradients */}
@@ -460,22 +508,29 @@ export const VirtualStagePreview: React.FC = () => {
 
                 return (
                   <g key={`fix-front-${fixture.id}-${fIdx}`}>
-                    <rect
-                      x={fixX - 5}
-                      y={fixY}
-                      width="10"
-                      height="9"
-                      rx="2"
-                      fill={isLit ? fixtureColor : '#334155'}
-                      stroke="#070b12"
-                      strokeWidth="1"
+                    <title>{`${FIXTURE_SYMBOLS[fixture.type]?.label ?? fixture.type} #${
+                      fixtureNumbers[fixture.id] ?? '-'
+                    } · ${fixture.position} · ${formatMeters(trimZ)} trim`}</title>
+                    <FixtureSymbol
+                      type={fixture.type}
+                      x={fixX}
+                      y={fixY + 4}
+                      size={5}
+                      isLit={isLit}
+                      color={fixtureColor}
                     />
-                    <circle
-                      cx={fixX}
-                      cy={fixY + 6}
-                      r="3"
-                      fill={isLit ? '#ffffff' : '#1e293b'}
-                    />
+                    {isLit && fixtureNumbers[fixture.id] && (
+                      <text
+                        x={fixX}
+                        y={fixY - 7}
+                        textAnchor="middle"
+                        fill="#e2e8f0"
+                        fontSize="8"
+                        fontFamily="monospace"
+                      >
+                        {fixtureNumbers[fixture.id]}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -609,6 +664,58 @@ export const VirtualStagePreview: React.FC = () => {
                 [ FOH CONTROL & AUDIENCE ZONE ]
               </text>
 
+              {/* Meter Rulers (width along the bottom, depth on the left) */}
+              <g id="meterRuler">
+                <line x1="170" y1="572" x2="830" y2="572" stroke="#334155" strokeWidth="1" />
+                {rulerTicks.map((tick) => {
+                  const x = mapTopDownX(tick.meters);
+                  return (
+                    <g key={`ruler-${tick.meters}`}>
+                      <line
+                        x1={x}
+                        y1="572"
+                        x2={x}
+                        y2={tick.major ? 584 : 578}
+                        stroke="#475569"
+                        strokeWidth="1"
+                      />
+                      {tick.label && (
+                        <text
+                          x={x}
+                          y={596}
+                          textAnchor="middle"
+                          fill="#64748b"
+                          fontSize="9"
+                          fontFamily="monospace"
+                        >
+                          {tick.label}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
+                {Array.from({ length: Math.floor(config.depthMeters / 2) + 1 }, (_, index) => index * 2).map(
+                  (meters) => {
+                    const y = mapTopDownY(meters);
+                    return (
+                      <g key={`depth-ruler-${meters}`}>
+                        <line x1="158" y1={y} x2="170" y2={y} stroke="#475569" strokeWidth="1" />
+                        <text
+                          x="156"
+                          y={y + 3}
+                          textAnchor="end"
+                          fill="#64748b"
+                          fontSize="9"
+                          fontFamily="monospace"
+                        >
+                          {meters}m
+                        </text>
+                      </g>
+                    );
+                  }
+                )}
+              </g>
+
               {/* Screens Top-down Layout */}
               {config.screens
                 .filter((s) => s.enabled)
@@ -724,18 +831,26 @@ export const VirtualStagePreview: React.FC = () => {
                       />
                     )}
 
-                    {/* Fixture Symbol by Type */}
-                    <circle
-                      cx={fixX}
-                      cy={fixY}
-                      r="4.5"
-                      fill={isLit ? fixtureColor : '#1e293b'}
-                      stroke={isLit ? '#ffffff' : '#475569'}
-                      strokeWidth="1.5"
+                    {/* Fixture Symbol by Type + USITT-lite number */}
+                    <FixtureSymbol
+                      type={fixture.type}
+                      x={fixX}
+                      y={fixY}
+                      size={5}
+                      isLit={isLit}
+                      color={fixtureColor}
                     />
-
-                    {fixture.type === 'Follow' && (
-                      <circle cx={fixX} cy={fixY} r="7" fill="none" stroke={fixtureColor} strokeWidth="1" strokeDasharray="2 2" />
+                    {fixtureNumbers[fixture.id] && (
+                      <text
+                        x={fixX + 7}
+                        y={fixY - 5}
+                        fill={isLit ? '#e2e8f0' : '#64748b'}
+                        fontSize="8"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                      >
+                        {fixtureNumbers[fixture.id]}
+                      </text>
                     )}
                   </g>
                 );
@@ -743,33 +858,94 @@ export const VirtualStagePreview: React.FC = () => {
             </g>
           )}
         </svg>
+        </div>
 
-        {/* Optical Simulation & Stage Legend (Bottom Left, Non-overlapping) */}
-        <div className="absolute left-4 bottom-4 z-20 flex flex-col gap-1.5 rounded-lg border border-border-default bg-surface-1/90 px-3 py-2 backdrop-blur shadow-lg text-[11px] max-w-xs">
+        {/* Footer: colour, legend, warnings and cursor readout (never covers the stage) */}
+        <div
+          className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border-default bg-surface-1/90 px-3 py-1.5 text-[11px] backdrop-blur"
+          data-testid="stage-footer"
+        >
           <div className="flex items-center gap-2">
             <span className="font-semibold text-content-2">LX Color:</span>
             <span
-              className="h-3.5 w-3.5 rounded-full border border-black/50 shadow-sm flex-shrink-0"
+              className="h-3.5 w-3.5 flex-shrink-0 rounded-full border border-black/50 shadow-sm"
               style={{ backgroundColor: fixtureColor }}
             />
-            <span className="font-mono text-content-1 font-bold">{colorLabel}</span>
+            <span className="font-mono font-bold text-content-1">{colorLabel}</span>
             <span className="font-mono text-content-3">({fixtureColor})</span>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-content-3 font-mono border-t border-border-default/60 pt-1">
+          {legendTypes.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 border-l border-border-default/60 pl-4">
+              {legendTypes.map((type) => (
+                <span key={type} className="inline-flex items-center gap-1 text-content-3">
+                  <span className="text-[12px] leading-none text-content-2">
+                    {FIXTURE_SYMBOLS[type].glyph}
+                  </span>
+                  <span>{FIXTURE_SYMBOLS[type].label}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 border-l border-border-default/60 pl-4 font-mono text-[10px] text-content-3">
             <span>Dimmer: {dimmerCurve}</span>
             <span>Haze: {haze ? 'Enabled' : 'Off'}</span>
             <span>Power: {powerKw} kW</span>
           </div>
 
+          <div
+            className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-content-2"
+            data-testid="stage-cursor-readout"
+          >            {hoverPoint ? (
+              <>
+                <span>
+                  X {hoverPoint.x > 0 ? '+' : ''}
+                  {formatMeters(hoverPoint.x)}
+                </span>
+                <span className="text-content-3">·</span>
+                <span>
+                  Y {hoverPoint.y > 0 ? '+' : ''}
+                  {formatMeters(hoverPoint.y)}
+                </span>
+                <span className="text-content-3">·</span>
+                <span title="Khoảng cách tới tâm sân khấu (centerline)">
+                  Cách tâm {formatMeters(Math.abs(hoverPoint.x))}
+                </span>
+              </>
+            ) : (
+              <span className="italic text-content-3">Di chuột lên sân khấu để đo khoảng cách</span>
+            )}
+          </div>
+
+          {stageWarnings.length > 0 && (
+            <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-border-default/60 pt-1.5">
+              <Info className="h-3 w-3 flex-shrink-0 text-content-3" />
+              {stageWarnings.map((warning) => (
+                <span
+                  key={warning.code}
+                  title={warning.message}
+                  className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] ${
+                    warning.severity === 'warn'
+                      ? 'border-status-standby/50 bg-status-standby/10 text-status-standby'
+                      : 'border-border-default bg-surface-2 text-content-3'
+                  }`}
+                >
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {STAGE_WARNING_LABELS[warning.code]}
+                </span>
+              ))}
+            </div>
+          )}
+
           {isOutOfGamut && (
-            <div className="flex items-center gap-1.5 text-status-standby font-medium text-[10px]">
+            <div className="flex w-full items-center gap-1.5 border-t border-border-default/60 pt-1.5 text-[10px] font-medium text-status-standby">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               <span>Màu vượt gam sRGB (thực tế rực rỡ hơn trên sân khấu)</span>
             </div>
           )}
 
-          <div className="flex items-center gap-1 text-[9px] text-content-3 italic pt-0.5 border-t border-border-default/60">
+          <div className="flex w-full items-center gap-1 border-t border-border-default/60 pt-1 text-[9px] italic text-content-3">
             <Info className="h-2.5 w-2.5 flex-shrink-0" />
             <span>Mô phỏng xấp xỉ quang học, không thay thế đo đạc thực tế.</span>
           </div>
@@ -777,81 +953,21 @@ export const VirtualStagePreview: React.FC = () => {
 
         {/* Floating Configuration Sidebar / Drawer */}
         {isConfigOpen && (
-          <div className="absolute right-4 top-4 bottom-4 w-72 rounded-xl border border-border-default bg-surface-1/95 p-4 shadow-2xl backdrop-blur text-xs z-30 overflow-y-auto space-y-4">
+          <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded-xl border border-border-default bg-surface-1/95 p-4 text-xs shadow-2xl backdrop-blur">
             <div className="flex items-center justify-between border-b border-border-default pb-2">
-              <span className="font-bold text-content-1 uppercase tracking-wider text-[11px]">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-content-1">
                 Stage Rig Configuration
               </span>
               <button
                 onClick={() => setIsConfigOpen(false)}
                 className="text-content-3 hover:text-content-1"
+                title="Đóng bảng cấu hình"
               >
                 ✕
               </button>
             </div>
 
-            {/* Stage Dimension Info */}
-            <div className="rounded-lg bg-surface-2 p-2.5 space-y-1 text-content-2">
-              <div className="font-semibold text-content-1">Stage Dimensions</div>
-              <div className="flex justify-between text-[11px] font-mono">
-                <span>Rộng: {config.widthMeters}m</span>
-                <span>Sâu: {config.depthMeters}m</span>
-                <span>Preset: {config.preset}</span>
-              </div>
-            </div>
-
-            {/* LED Screens Toggle */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 font-semibold text-dept-vx">
-                <Tv className="h-3.5 w-3.5" />
-                <span>LED Screens</span>
-              </div>
-              <div className="space-y-1.5 pl-1">
-                {config.screens.map((scr) => (
-                  <div
-                    key={scr.id}
-                    onClick={() => toggleScreen(scr.id)}
-                    className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors"
-                  >
-                    <span className="text-content-2">{scr.name}</span>
-                    {scr.enabled ? (
-                      <CheckSquare className="h-4 w-4 text-accent" />
-                    ) : (
-                      <SquareIcon className="h-4 w-4 text-content-3" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Trusses Toggle */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 font-semibold text-dept-lx">
-                <Lightbulb className="h-3.5 w-3.5" />
-                <span>Lighting Trusses</span>
-              </div>
-              <div className="space-y-1.5 pl-1">
-                {config.trusses.map((truss) => (
-                  <div
-                    key={truss.id}
-                    onClick={() => toggleTruss(truss.id)}
-                    className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-content-2">{truss.name}</span>
-                      <span className="text-[10px] text-content-3">
-                        {truss.fixtureCount}x {truss.fixtureType}
-                      </span>
-                    </div>
-                    {truss.enabled ? (
-                      <CheckSquare className="h-4 w-4 text-accent" />
-                    ) : (
-                      <SquareIcon className="h-4 w-4 text-content-3" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <StageRigEditor />
           </div>
         )}
       </div>

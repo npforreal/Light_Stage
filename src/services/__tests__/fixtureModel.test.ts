@@ -51,6 +51,23 @@ describe('fixtureModel — single source of truth', () => {
     expect(hasUnclassifiedFixtures(lx?.fixtures ?? [])).toBe(true);
   });
 
+  it('keeps an unknown clause with an explicit quantity as an unclassified row', () => {
+    const fixtures = parseFixtureText('Beam x4, Foo x2 @FOH, Spare cable 3');
+    expect(fixtures).toHaveLength(2);
+    expect(fixtures[1].subType).toBe('Other');
+    expect(fixtures[1].name).toBe('Foo');
+    expect(fixtures[1].count).toBe(2);
+    expect(fixtures[1].position).toBe('FOH');
+    expect(hasUnclassifiedFixtures(fixtures)).toBe(true);
+  });
+
+  it('never turns pure stage prose or non-hardware noise into fixtures', () => {
+    expect(parseFixtureText('Diễn viên đứng giữa sân khấu')).toEqual([]);
+    expect(parseFixtureText('Spare cable 3')).toEqual([]);
+    expect(parseFixtureText('Party mode setup')).toEqual([]);
+    expect(parseFixtureText('Ghế MC + Bàn tròn')).toEqual([]);
+  });
+
   it('parses fixtureSummary before falling back to the legacy count', () => {
     const lx = normalizeLightingCue({
       fixtureCount: 99,

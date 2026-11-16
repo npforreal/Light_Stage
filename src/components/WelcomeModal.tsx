@@ -33,7 +33,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     {
       step: 1,
       title: '1. Nhập Kịch Bản (Import Rundown)',
-      subtitle: 'Nạp kịch bản show diễn từ Excel, CSV hoặc file .lightstage',
+      subtitle: 'Nạp kịch bản show diễn từ CSV/TSV hoặc file .lightstage',
       icon: <FileSpreadsheet className="h-6 w-6 text-accent" />,
       description:
         'Nhập kịch bản sẵn có từ ban tổ chức chỉ với 1 thao tác. Light Stage tự động nhận diện các cột Ánh sáng (LX), Màn LED (VX), Âm thanh (SQ), Diễn viên / Hoạt cảnh (ST) và đếm tức thì số lượng fixture / màn hình.',

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useShowStore } from '../../store/useShowStore';
+import { useStageStore } from '../../store/useStageStore';
 import {
   generateCueSheetCsv,
   generateHardwareInventoryCsv,
+  generateLightPlotHtml,
   generatePrintableCueSheetHtml,
 } from '../../services/exporter';
 import { exportToLightStageBlob } from '../../services/persistence';
@@ -13,6 +15,7 @@ import {
   PackageCheck,
   X,
   FileCode,
+  Map as MapIcon,
 } from 'lucide-react';
 
 export interface ExportModalProps {
@@ -22,6 +25,7 @@ export interface ExportModalProps {
 
 export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => {
   const show = useShowStore((s) => s.show);
+  const stageConfig = useStageStore((s) => s.config);
   const [selectedRole, setSelectedRole] = useState<'ALL' | 'LX' | 'VX' | 'SQ' | 'ST'>('ALL');
 
   if (!isOpen) return null;
@@ -36,8 +40,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     URL.revokeObjectURL(url);
   };
 
-  const handlePrintPdf = () => {
-    const html = generatePrintableCueSheetHtml(show, selectedRole);
+  const printHtml = (html: string) => {
     let iframe = document.getElementById('print-iframe') as HTMLIFrameElement;
     if (!iframe) {
       iframe = document.createElement('iframe');
@@ -58,6 +61,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     }
+  };
+
+  const handlePrintPdf = () => {
+    printHtml(generatePrintableCueSheetHtml(show, selectedRole));
+  };
+
+  const handlePrintLightPlot = () => {
+    printHtml(generateLightPlotHtml(show, stageConfig));
   };
 
   const handleDownloadCueSheetCsv = () => {
@@ -100,7 +111,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               <h3 id="export-modal-title" className="font-bold text-content-1 text-base">
                 Export & Print Reports
               </h3>
-              <p className="text-xs text-content-3">PDF Cue Sheets, Excel/CSV, .lightstage project</p>
+              <p className="text-xs text-content-3">PDF cue sheets & light plot, CSV, .lightstage project</p>
             </div>
           </div>
           <button
@@ -156,6 +167,27 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
             </div>
           </button>
 
+          {/* Light Plot */}
+          <button
+            type="button"
+            onClick={handlePrintLightPlot}
+            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <MapIcon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-content-1 group-hover:text-accent">
+                  Print / Save PDF Light Plot
+                </div>
+                <div className="text-[11px] text-content-3">
+                  Top-down rig plan, numbered symbols and fixture schedule
+                </div>
+              </div>
+            </div>
+          </button>
+
           {/* Cue Sheet CSV */}
           <button
             type="button"
@@ -168,10 +200,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Download Cue Sheet (Excel / CSV)
+                  Download Cue Sheet (CSV)
                 </div>
                 <div className="text-[11px] text-content-3">
-                  Full rundown columns encoded with UTF-8 BOM for Microsoft Excel
+                  Full rundown columns, UTF-8 BOM so Vietnamese text stays intact
                 </div>
               </div>
             </div>
@@ -189,7 +221,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Download Hardware Inventory (Excel / CSV)
+                  Download Hardware Inventory (CSV)
                 </div>
                 <div className="text-[11px] text-content-3">
                   Equipment peak concurrent usage & total show fixture breakdown

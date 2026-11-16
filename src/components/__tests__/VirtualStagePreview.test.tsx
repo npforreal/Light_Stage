@@ -50,7 +50,9 @@ describe('VirtualStagePreview Component', () => {
 
     expect(screen.getByText(/Stage Rig Configuration/i)).toBeInTheDocument();
     expect(screen.getByText(/LED Screens/i)).toBeInTheDocument();
-    expect(screen.getByText(/Lighting Trusses/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Trusses$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Đèn trong rig/i)).toBeInTheDocument();
+    expect(screen.getByTestId('rig-inventory').textContent).toMatch(/Rig \d+ đèn/);
   });
 
   it('reflects truth: does not emit beams when cue has no LX and does not claim LIVE FEED when cue has no VX', () => {
@@ -203,5 +205,88 @@ describe('VirtualStagePreview Component', () => {
     fireEvent.change(dimmerSelect, { target: { value: 'linear' } });
     expect(dimmerSelect.value).toBe('linear');
     expect(screen.getByText(/Dimmer: linear/i)).toBeInTheDocument();
+  });
+
+  it('keeps the legend, warnings and cursor readout in a footer outside the SVG (Đợt 10.2)', () => {
+    const actId = useShowStore.getState().show.acts[0].id;
+    const cueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '7.0',
+      title: 'Legend Cue',
+      departments: {
+        lx: {
+          sceneName: 'Full Rig',
+          fixtures: [
+            { id: 'a', name: 'Beam', category: 'Lighting', subType: 'Beam', count: 4 },
+            { id: 'b', name: 'Spot', category: 'Lighting', subType: 'Spot', count: 2 },
+          ],
+        },
+      },
+    });
+    useShowStore.getState().goCue(cueId);
+
+    render(<VirtualStagePreview />);
+
+    const footer = screen.getByTestId('stage-footer');
+    expect(footer.className).not.toContain('absolute');
+    expect(footer.textContent).toMatch(/LX Color/);
+    expect(footer.textContent).toMatch(/Beam/);
+    expect(footer.textContent).toMatch(/Spot/);
+    expect(screen.getByTestId('stage-cursor-readout')).toBeInTheDocument();
+    expect(footer.textContent).toMatch(/Mô phỏng xấp xỉ quang học/);
+  });
+
+  it('adds and removes fixtures through the rig editor drawer (Đợt 10.2.3)', () => {
+    render(<VirtualStagePreview />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Config/i }));
+    const before = useStageStore.getState().config.fixtures?.length ?? 0;
+
+    fireEvent.click(screen.getByTitle('Thêm đèn vào rig'));
+    expect(useStageStore.getState().config.fixtures?.length).toBe(before + 1);
+
+    const removeButtons = screen.getAllByTitle('Xoá đèn khỏi rig');
+    fireEvent.click(removeButtons[removeButtons.length - 1]);
+    expect(useStageStore.getState().config.fixtures?.length).toBe(before);
+  });
+
+  it('warns when the active cue needs more fixtures than the rig declares', () => {
+    const stage = useStageStore.getState();
+    stage.setConfig({
+      ...stage.config,
+      fixtures: [
+        {
+          id: 'only-fixture',
+          type: 'Wash',
+          position: 'FOH',
+          slot: 1,
+          x: 0,
+          y: 0,
+          z: 6,
+          beamAngle: 25,
+          loadWatts: 500,
+          role: 'front',
+          aim: {},
+          enabled: true,
+        },
+      ],
+    });
+
+    const actId = useShowStore.getState().show.acts[0].id;
+    const cueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '8.0',
+      title: 'Big Cue',
+      departments: {
+        lx: {
+          sceneName: 'Big',
+          fixtures: [
+            { id: 'a', name: 'Beam', category: 'Lighting', subType: 'Beam', count: 8 },
+          ],
+        },
+      },
+    });
+    useShowStore.getState().goCue(cueId);
+
+    render(<VirtualStagePreview />);
+    expect(screen.getByText(/Cue vượt rig/i)).toBeInTheDocument();
   });
 });

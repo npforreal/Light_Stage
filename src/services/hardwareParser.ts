@@ -83,17 +83,38 @@ export function classifyDevice(name: string, defaultCategory: 'Lighting' | 'Visu
 }
 
 /**
+ * Splits a freeform equipment description into individual clauses.
+ * Exported so fixture-model parsing can apply the same clause boundaries.
+ */
+export function splitHardwareClauses(text: string): string[] {
+  return text
+    .split(/[,+;\n\r&•|]|\band\b|\bvới\b|\bcùng\b/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * True for non-equipment phrases such as "Spare cable 3", "Party mode" or
+ * "Ghế MC + Bàn tròn" that must never become a fixture row.
+ */
+export function isNonHardwareNoise(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (!/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/i.test(lower)) {
+    return false;
+  }
+  const stripped = lower.replace(/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/gi, '');
+  return !/\b(?:beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|loop|video|visual|logo)\b/i.test(
+    stripped
+  );
+}
+
+/**
  * Checks whether text contains authentic lighting or visual hardware keywords with word boundary
  */
 function containsHardwareKeyword(text: string, defaultCategory: 'Lighting' | 'Visual' = 'Lighting'): boolean {
   const lower = text.toLowerCase();
   // Filter out non-fixtures
-  if (/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/i.test(lower)) {
-    const stripped = lower.replace(/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/gi, '');
-    if (!/\b(?:beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|loop|video|visual|logo)\b/i.test(stripped)) {
-      return false;
-    }
-  }
+  if (isNonHardwareNoise(text)) return false;
 
   if (defaultCategory === 'Visual' && lower.trim().length > 0) {
     return true;
@@ -170,10 +191,7 @@ export function parseHardwareFromText(
   if (!text || typeof text !== 'string') return [];
 
   // Split into clauses by comma, plus, semicolon, newline, ampersand, or bullet
-  const clauses = text
-    .split(/[,+;\n\r&•|]|\band\b|\bvới\b|\bcùng\b/i)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const clauses = splitHardwareClauses(text);
 
   const results: DeviceSpecification[] = [];
 

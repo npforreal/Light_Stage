@@ -538,7 +538,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onImportClick}
               className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="Import CSV/Excel"
+              title="Import CSV/TSV"
             >
               <Upload className="h-3.5 w-3.5 text-accent" />
               <span>Import</span>

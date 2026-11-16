@@ -223,18 +223,18 @@ Người lạ mở app lần đầu phải tự: tạo show, nhập nội dung c
 - [x] 10.1.5 Test: nhập mô tả 30 đèn → Rundown "30 fix", kiểm kê 30, Stage "Nhập 30 · Hiển thị 30"; sửa số trong danh sách → tất cả cập nhật; bộ đếm chỉ đỏ khi thực sự có lỗi hiển thị. Test thuộc tính N ngẫu nhiên (đã có cho `placeFixtures`) mở rộng tới tầng UI/store.
 
 ### Giai đoạn 10.2: Hoàn thành các mục 9.4 còn dở
-- [ ] 10.2.1 (9.4.20) Parser và ô nhập nhận **loại + số lượng + vị trí** (`@FOH`, `@Back-L`…); loại lạ → chip "Chưa phân loại" + cảnh báo, không bỏ im lặng. Sửa PROGRESS cho khớp.
-- [ ] 10.2.2 (9.4.5) Ký hiệu theo loại (Beam/Spot/Wash/Follow/Blinder/Strobe/Par khác hình/khác màu viền), đánh số downstage→upstage, SL trước; thước mét và khoảng cách khi rê chuột; chú giải (legend) rõ.
-- [ ] 10.2.3 (9.4.10) Config sửa được rig: thêm/xoá/di chuyển truss, đèn, màn LED (nhập mét/trim hoặc kéo thả), gán loại, góc chùm; liên kết với bảng kiểm kê và cảnh báo khi cue dùng nhiều hơn rig có.
-- [ ] 10.2.4 (9.4.11) Cảnh báo không chặn: lệch trái/phải, thiếu front/back light cho khu vực chính, vượt tải truss.
-- [ ] 10.2.5 (9.4.13) Chế độ xem/xuất "Light plot" + bảng đèn trong Export, in được.
-- [ ] 10.2.6 (9.4.14) Legend LX Color không đè sân khấu ở vùng nhỏ.
+- [x] 10.2.1 (9.4.20) Parser và ô nhập nhận **loại + số lượng + vị trí** (`@FOH`, `@Back-L`…); loại lạ → chip "Chưa phân loại" + cảnh báo, không bỏ im lặng. Sửa PROGRESS cho khớp.
+- [x] 10.2.2 (9.4.5) Ký hiệu theo loại (Beam/Spot/Wash/Follow/Blinder/Strobe/Par khác hình/khác màu viền), đánh số downstage→upstage, SL trước; thước mét và khoảng cách khi rê chuột; chú giải (legend) rõ.
+- [x] 10.2.3 (9.4.10) Config sửa được rig: thêm/xoá/di chuyển truss, đèn, màn LED (nhập mét/trim hoặc kéo thả), gán loại, góc chùm; liên kết với bảng kiểm kê và cảnh báo khi cue dùng nhiều hơn rig có.
+- [x] 10.2.4 (9.4.11) Cảnh báo không chặn: lệch trái/phải, thiếu front/back light cho khu vực chính, vượt tải truss.
+- [x] 10.2.5 (9.4.13) Chế độ xem/xuất "Light plot" + bảng đèn trong Export, in được.
+- [x] 10.2.6 (9.4.14) Legend LX Color không đè sân khấu ở vùng nhỏ.
 - [ ] 10.2.7 Kiểm chứng riêng vị trí: với mỗi loại, mọi đèn nằm ở vị trí thuộc danh sách cho phép; chụp front + top-down ở 3 preset.
 
 ### Giai đoạn 10.3: Sửa lỗi UI nhỏ
-- [ ] 10.3.1 Popover sửa ô (LX/VX/SQ/ST) không bị cắt ở 960×640: tự đảo hướng, cuộn trong popover hoặc dùng portal; nút Lưu/Huỷ luôn thấy được.
-- [ ] 10.3.2 Đổi chữ "Excel" thành đúng định dạng được hỗ trợ ở Welcome, nút Import, tooltip (hoặc hỗ trợ `.xlsx` thật nếu đã chốt ở Đợt 6.5.6).
-- [ ] 10.3.3 Dọn 4 file re-export `src/components/*.tsx` (sửa import về đúng thư mục con, xoá stub), cập nhật `ARCHITECTURE.md` nếu có nhắc.
+- [x] 10.3.1 Popover sửa ô (LX/VX/SQ/ST) không bị cắt ở 960×640: tự đảo hướng, cuộn trong popover hoặc dùng portal; nút Lưu/Huỷ luôn thấy được.
+- [x] 10.3.2 Đổi chữ "Excel" thành đúng định dạng được hỗ trợ ở Welcome, nút Import, tooltip (hoặc hỗ trợ `.xlsx` thật nếu đã chốt ở Đợt 6.5.6).
+- [x] 10.3.3 Dọn 4 file re-export `src/components/*.tsx` (sửa import về đúng thư mục con, xoá stub), cập nhật `ARCHITECTURE.md` nếu có nhắc.
 - [ ] 10.3.4 Kiểm tra `elementFromPoint` mọi nút header ở 960/1024/1280/1920, trong cả trạng thái có banner khôi phục.
 
 ### Giai đoạn 10.4: Test như người dùng thật bằng browser (thay thế 9.7 và 8.6 chưa chạy)
