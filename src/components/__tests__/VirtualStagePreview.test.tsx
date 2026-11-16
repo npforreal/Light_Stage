@@ -109,4 +109,75 @@ describe('VirtualStagePreview Component', () => {
       screen.getByText(/Mô phỏng xấp xỉ quang học, không thay thế đo đạc thực tế/i)
     ).toBeInTheDocument();
   });
+
+  it('renders centerline, plaster line, SL/SR/US/DS markers and 9 grid zones in top-down view', () => {
+    useStageStore.getState().setCameraView('topDown');
+    render(<VirtualStagePreview />);
+
+    expect(screen.getByText(/PL \(Plaster Line\)/i)).toBeInTheDocument();
+    expect(screen.getByText('CL')).toBeInTheDocument();
+    expect(screen.getByText(/US \(Upstage\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/DS \(Downstage\)/i)).toBeInTheDocument();
+    expect(screen.getByText('SL')).toBeInTheDocument();
+    expect(screen.getByText('SR')).toBeInTheDocument();
+
+    // 9 Acting areas
+    expect(screen.getByText('UR')).toBeInTheDocument();
+    expect(screen.getByText('UC')).toBeInTheDocument();
+    expect(screen.getByText('UL')).toBeInTheDocument();
+    expect(screen.getByText('R')).toBeInTheDocument();
+    expect(screen.getByText('C')).toBeInTheDocument();
+    expect(screen.getByText('L')).toBeInTheDocument();
+    expect(screen.getByText('DR')).toBeInTheDocument();
+    expect(screen.getByText('DC')).toBeInTheDocument();
+    expect(screen.getByText('DL')).toBeInTheDocument();
+
+    // Audience / FOH zone
+    expect(screen.getByText(/STAGE FRONT \/ AUDIENCE DIRECTION/i)).toBeInTheDocument();
+    expect(screen.getByText(/FOH CONTROL & AUDIENCE ZONE/i)).toBeInTheDocument();
+  });
+
+  it('displays fixture counter badge matching requested cue fixtures and power consumption', () => {
+    const actId = useShowStore.getState().show.acts[0].id;
+    const testCueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '5.0',
+      title: 'Counter Test Cue',
+      departments: {
+        lx: {
+          sceneName: 'Rock Show',
+          fixtureCount: 12,
+          fixtureSummary: '8 Spot + 4 Beam',
+        },
+      },
+    });
+    useShowStore.getState().goCue(testCueId);
+
+    render(<VirtualStagePreview />);
+    expect(screen.getByText(/Nhập 12 · Hiển thị 12/i)).toBeInTheDocument();
+    // Power consumption badge: 8*1000W + 4*350W = 9400W -> 9.4 kW
+    expect(screen.getAllByText(/9\.4 kW/i).length).toBeGreaterThan(0);
+  });
+
+  it('toggles haze on and off in toolbar', () => {
+    render(<VirtualStagePreview />);
+    const hazeBtn = screen.getByRole('button', { name: /Haze: ON/i });
+    expect(hazeBtn).toBeInTheDocument();
+
+    fireEvent.click(hazeBtn);
+    expect(screen.getByRole('button', { name: /Haze: OFF/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Haze: OFF/i }));
+    expect(screen.getByRole('button', { name: /Haze: ON/i })).toBeInTheDocument();
+  });
+
+  it('allows selecting optical dimmer curves', () => {
+    render(<VirtualStagePreview />);
+    const dimmerSelect = screen.getByTitle(/Đường cong dimmer quang học/i) as HTMLSelectElement;
+    expect(dimmerSelect).toBeInTheDocument();
+    expect(dimmerSelect.value).toBe('square');
+
+    fireEvent.change(dimmerSelect, { target: { value: 'linear' } });
+    expect(dimmerSelect.value).toBe('linear');
+    expect(screen.getByText(/Dimmer: linear/i)).toBeInTheDocument();
+  });
 });
