@@ -57,6 +57,7 @@ Mọi công cụ trong `scripts/` hoặc `tools/` bắt buộc phải có 1 dòn
 | `python3 scripts/handoff.py` | Tóm tắt bàn giao phiên làm việc hoặc trước khi chạy `/compact` |
 | `python3 scripts/routing_check.py` | Kiểm tra tính toàn vẹn bảng định tuyến skill và test cases |
 | `python3 scripts/skill_lint.py` | Kiểm tra ngân sách ký tự và token của các skill |
+| `python3 scripts/gen_tokens.py` | Sinh mã CSS color tokens từ dải đo lường OKLCH |
 
 ## 5. Quy tắc bất khả xâm phạm
 

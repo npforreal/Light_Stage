@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStageStore } from '../../store/useStageStore';
 import { useShowStore } from '../../store/useShowStore';
 import { StagePreset } from '../../types/virtualStage';
+import { resolveLightingColorToLinear, getLightingColorLabel } from '../../data/colors';
+import { applyDimmer, linearToOklab, oklabToOklch, gamutMap, rgbToHex } from '../../services/color';
 import {
   Eye,
   Sliders,
@@ -9,6 +11,8 @@ import {
   Lightbulb,
   CheckSquare,
   Square as SquareIcon,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 
 export const VirtualStagePreview: React.FC = () => {
@@ -43,26 +47,63 @@ export const VirtualStagePreview: React.FC = () => {
         (vxCue.screens && vxCue.screens.length > 0))
   );
 
-  const fixtureColor = lxCue?.colorPreset || '#38bdf8'; // Default cyan-sky
-  const beamIntensity = (lxCue?.intensity ?? 80) / 100;
+  // Optical color pipeline: target color -> linear -> dimmer curve -> gamut map -> sRGB
+  const { fixtureColor, isOutOfGamut, colorLabel, beamIntensity } = useMemo(() => {
+    if (!lxCue) {
+      return {
+        fixtureColor: '#38bdf8',
+        isOutOfGamut: false,
+        colorLabel: 'Default Sky',
+        beamIntensity: 0.8,
+      };
+    }
+
+    const lightingColor =
+      lxCue.color ||
+      (lxCue.colorPreset ? { mode: 'rgb' as const, hex: lxCue.colorPreset } : undefined);
+
+    const baseLinear = resolveLightingColorToLinear(lightingColor);
+    const rawIntensity = lxCue.intensity ?? 80;
+    const dimmer = applyDimmer(rawIntensity, 'square');
+
+    // Scale linear light with physical dimmer
+    const dimmedLinear = {
+      r: baseLinear.r * dimmer,
+      g: baseLinear.g * dimmer,
+      b: baseLinear.b * dimmer,
+    };
+
+    const lab = linearToOklab(dimmedLinear);
+    const lch = oklabToOklch(lab);
+    const mapped = gamutMap(lch);
+    const hex = rgbToHex(mapped.color);
+    const label = getLightingColorLabel(lightingColor);
+
+    return {
+      fixtureColor: hex,
+      isOutOfGamut: mapped.outOfGamut,
+      colorLabel: label,
+      beamIntensity: Math.min(1.0, Math.max(0.05, dimmer)),
+    };
+  }, [lxCue]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-slate-950 text-slate-100 select-none overflow-hidden">
+    <div className="flex h-full w-full flex-col bg-surface-0 text-content-1 select-none overflow-hidden">
       {/* Top Controls Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/80 px-4 py-2 backdrop-blur z-20">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1/90 px-4 py-2 backdrop-blur z-20">
         {/* Camera Views & Presets */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs">
-            <Eye className="h-3.5 w-3.5 text-cyan-400" />
-            <span className="font-semibold text-slate-300">Camera:</span>
+            <Eye className="h-3.5 w-3.5 text-accent" />
+            <span className="font-semibold text-content-2">Camera:</span>
           </div>
-          <div className="inline-flex rounded-lg bg-slate-800/80 p-0.5 text-xs">
+          <div className="inline-flex rounded-lg bg-surface-2 p-0.5 text-xs border border-border-default">
             <button
               onClick={() => setCameraView('front')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
                 cameraView === 'front'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-3 hover:text-content-1'
               }`}
             >
               Front View
@@ -71,27 +112,27 @@ export const VirtualStagePreview: React.FC = () => {
               onClick={() => setCameraView('topDown')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
                 cameraView === 'topDown'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-3 hover:text-content-1'
               }`}
             >
               Top-Down Plan
             </button>
           </div>
 
-          <div className="h-4 w-px bg-slate-800" />
+          <div className="h-4 w-px bg-border-default" />
 
           {/* Preset Buttons */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-400 font-semibold">Preset:</span>
+            <span className="text-content-3 font-semibold">Preset:</span>
             {(['EndStage', 'Festival', 'Thrust'] as StagePreset[]).map((preset) => (
               <button
                 key={preset}
                 onClick={() => applyPreset(preset)}
                 className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
                   config.preset === preset
-                    ? 'bg-slate-700 text-cyan-300 border border-cyan-500/50'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-slate-200'
+                    ? 'bg-surface-3 text-content-1 border border-border-default'
+                    : 'bg-surface-2 text-content-3 hover:text-content-1'
                 }`}
               >
                 {preset === 'EndStage' ? 'Standard' : preset}
@@ -103,32 +144,32 @@ export const VirtualStagePreview: React.FC = () => {
         {/* Active Cue Status & Config Toggle */}
         <div className="flex items-center gap-3">
           {activeCue ? (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-950/40 border border-emerald-500/40 px-2.5 py-1 text-xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="font-bold text-emerald-400 font-mono">
+            <div className="flex items-center gap-2 rounded-lg bg-status-go/20 border border-status-go/50 px-2.5 py-1 text-xs">
+              <span className="h-2 w-2 rounded-full bg-status-go animate-ping" />
+              <span className="font-bold text-status-go font-mono">
                 {activeCue.cueNumber}
               </span>
-              <span className="text-slate-200 truncate max-w-[140px]">
+              <span className="text-content-1 truncate max-w-[140px]">
                 {activeCue.title}
               </span>
             </div>
           ) : standbyCue ? (
-            <div className="flex items-center gap-2 rounded-lg bg-amber-950/40 border border-amber-500/40 px-2.5 py-1 text-xs">
-              <span className="h-2 w-2 rounded-full bg-amber-400" />
-              <span className="font-bold text-amber-400 font-mono">
+            <div className="flex items-center gap-2 rounded-lg bg-status-standby/20 border border-status-standby/50 px-2.5 py-1 text-xs">
+              <span className="h-2 w-2 rounded-full bg-status-standby" />
+              <span className="font-bold text-status-standby font-mono">
                 STBY {standbyCue.cueNumber}
               </span>
             </div>
           ) : (
-            <span className="text-xs text-slate-500 italic">No Cue Active</span>
+            <span className="text-xs text-content-3 italic">No Cue Active</span>
           )}
 
           <button
             onClick={() => setIsConfigOpen(!isConfigOpen)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors border border-border-default ${
               isConfigOpen
-                ? 'bg-cyan-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-accent text-surface-0'
+                : 'bg-surface-2 text-content-2 hover:bg-surface-3 hover:text-content-1'
             }`}
           >
             <Sliders className="h-3.5 w-3.5" />
@@ -138,9 +179,9 @@ export const VirtualStagePreview: React.FC = () => {
       </div>
 
       {/* Main 2D Stage SVG Canvas */}
-      <div className="relative flex-1 bg-gradient-to-b from-slate-950 via-slate-900 to-black overflow-hidden flex items-center justify-center p-4">
+      <div className="relative flex-1 bg-gradient-to-b from-surface-0 via-surface-1 to-black overflow-hidden flex items-center justify-center p-4">
         {/* Grid pattern background */}
-        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-30 pointer-events-none" />
 
         <svg
           viewBox="0 0 1000 600"
@@ -150,10 +191,19 @@ export const VirtualStagePreview: React.FC = () => {
           <defs>
             {/* Beam Cone Gradients */}
             <linearGradient id="beamGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={fixtureColor} stopOpacity={0.8 * beamIntensity} />
-              <stop offset="60%" stopColor={fixtureColor} stopOpacity={0.3 * beamIntensity} />
+              <stop offset="0%" stopColor={fixtureColor} stopOpacity={0.85 * beamIntensity} />
+              <stop offset="60%" stopColor={fixtureColor} stopOpacity={0.35 * beamIntensity} />
               <stop offset="100%" stopColor={fixtureColor} stopOpacity={0} />
             </linearGradient>
+
+            {/* Beam Soft Bloom Filter */}
+            <filter id="beamBloom" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
 
             {/* Screen Glow Filter */}
             <filter id="screenGlow" x="-20%" y="-20%" width="140%" height="140%">
@@ -171,14 +221,14 @@ export const VirtualStagePreview: React.FC = () => {
                 y1="480"
                 x2="920"
                 y2="480"
-                stroke="#475569"
+                stroke="#334155"
                 strokeWidth="4"
                 strokeLinecap="round"
               />
               <polygon
                 points="80,480 920,480 880,540 120,540"
-                fill="#0f172a"
-                stroke="#1e293b"
+                fill="#070b12"
+                stroke="#171d26"
                 strokeWidth="2"
                 opacity="0.8"
               />
@@ -193,7 +243,7 @@ export const VirtualStagePreview: React.FC = () => {
                   const svgH = (screen.height / 100) * 380;
 
                   const isMain = screen.type === 'Main';
-                  const activeScreenContent = hasVx ? (vxCue?.contentName || 'Visual Active') : `${screen.name} (Off)`;
+                  const activeScreenContent = hasVx ? (vxCue?.contentName || 'Visual Active') : `${screen.name} (Standby / Off)`;
 
                   return (
                     <g key={screen.id} filter={hasVx ? 'url(#screenGlow)' : undefined}>
@@ -204,8 +254,8 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW}
                         height={svgH}
                         rx="4"
-                        fill={hasVx ? '#1e1b4b' : '#090d16'}
-                        stroke={hasVx ? '#818cf8' : '#334155'}
+                        fill={hasVx ? '#1e1b4b' : '#070b12'}
+                        stroke={hasVx ? '#818cf8' : '#222d3d'}
                         strokeWidth="2.5"
                       />
 
@@ -216,7 +266,7 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW - 8}
                         height={svgH - 8}
                         rx="2"
-                        fill={hasVx ? '#312e81' : '#030712'}
+                        fill={hasVx ? '#312e81' : '#04070d'}
                         opacity={hasVx ? 0.9 : 0.4}
                       />
 
@@ -250,6 +300,32 @@ export const VirtualStagePreview: React.FC = () => {
                   );
                 })}
 
+              {/* Lighting Beams Layer (Screen / Additive Blend Mode) */}
+              {hasLx && (
+                <g id="lightingBeamsLayer" style={{ mixBlendMode: 'screen' }} filter="url(#beamBloom)">
+                  {config.trusses
+                    .filter((t) => t.enabled)
+                    .map((truss) => {
+                      const trussY = 60 + (truss.y / 100) * 400;
+                      const trussX = 80 + (truss.x / 100) * 840;
+                      const trussW = (truss.width / 100) * 840;
+                      const fixtureSpacing = trussW / (truss.fixtureCount + 1);
+
+                      return Array.from({ length: truss.fixtureCount }).map((_, fIdx) => {
+                        const fixX = trussX + (fIdx + 1) * fixtureSpacing;
+                        return (
+                          <polygon
+                            key={`beam-${truss.id}-${fIdx}`}
+                            points={`${fixX - 4},${trussY + 6} ${fixX + 4},${trussY + 6} ${fixX + 45},${trussY + 280} ${fixX - 45},${trussY + 280}`}
+                            fill="url(#beamGradient)"
+                            opacity={0.75 * beamIntensity}
+                          />
+                        );
+                      });
+                    })}
+                </g>
+              )}
+
               {/* Lighting Trusses & Fixtures Front View */}
               {config.trusses
                 .filter((t) => t.enabled)
@@ -257,8 +333,6 @@ export const VirtualStagePreview: React.FC = () => {
                   const trussY = 60 + (truss.y / 100) * 400;
                   const trussX = 80 + (truss.x / 100) * 840;
                   const trussW = (truss.width / 100) * 840;
-
-                  // Fixture spacing
                   const fixtureSpacing = trussW / (truss.fixtureCount + 1);
 
                   return (
@@ -288,15 +362,6 @@ export const VirtualStagePreview: React.FC = () => {
 
                         return (
                           <g key={fIdx}>
-                            {/* Beam Cone only when cue has active lighting */}
-                            {hasLx && (
-                              <polygon
-                                points={`${fixX - 4},${trussY + 6} ${fixX + 4},${trussY + 6} ${fixX + 45},${trussY + 280} ${fixX - 45},${trussY + 280}`}
-                                fill="url(#beamGradient)"
-                                opacity={0.7 * beamIntensity}
-                              />
-                            )}
-
                             {/* Fixture Body */}
                             <rect
                               x={fixX - 5}
@@ -305,7 +370,7 @@ export const VirtualStagePreview: React.FC = () => {
                               height="9"
                               rx="2"
                               fill={hasLx ? fixtureColor : '#334155'}
-                              stroke="#0f172a"
+                              stroke="#070b12"
                               strokeWidth="1"
                             />
                             {/* Fixture Lens */}
@@ -334,8 +399,8 @@ export const VirtualStagePreview: React.FC = () => {
                 width="700"
                 height="420"
                 rx="8"
-                fill="#0b0f19"
-                stroke="#334155"
+                fill="#070b12"
+                stroke="#222d3d"
                 strokeWidth="3"
               />
               <text
@@ -365,8 +430,8 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW}
                         height="14"
                         rx="2"
-                        fill={hasVx ? '#4338ca' : '#1e293b'}
-                        stroke={hasVx ? '#a5b4fc' : '#475569'}
+                        fill={hasVx ? '#4338ca' : '#171d26'}
+                        stroke={hasVx ? '#a5b4fc' : '#334155'}
                         strokeWidth="2"
                       />
                       <text
@@ -427,15 +492,15 @@ export const VirtualStagePreview: React.FC = () => {
                                 cy={trussY}
                                 r="12"
                                 fill={fixtureColor}
-                                opacity="0.25"
+                                opacity="0.3"
                               />
                             )}
                             <circle
                               cx={fixX}
                               cy={trussY}
                               r="4"
-                              fill={hasLx ? fixtureColor : '#475569'}
-                              stroke="#0f172a"
+                              fill={hasLx ? fixtureColor : '#334155'}
+                              stroke="#070b12"
                               strokeWidth="1"
                             />
                           </g>
@@ -448,16 +513,41 @@ export const VirtualStagePreview: React.FC = () => {
           )}
         </svg>
 
+        {/* Optical Simulation Legend (Bottom Left) */}
+        <div className="absolute left-4 bottom-4 z-20 flex flex-col gap-1 rounded-lg border border-border-default bg-surface-1/90 px-3 py-2 backdrop-blur shadow-lg text-[11px] max-w-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-content-2">LX Color:</span>
+            <span
+              className="h-3.5 w-3.5 rounded-full border border-black/50 shadow-sm flex-shrink-0"
+              style={{ backgroundColor: fixtureColor }}
+            />
+            <span className="font-mono text-content-1 font-bold">{colorLabel}</span>
+            <span className="font-mono text-content-3">({fixtureColor})</span>
+          </div>
+
+          {isOutOfGamut && (
+            <div className="flex items-center gap-1.5 text-status-standby font-medium text-[10px]">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              <span>Màu vượt gam sRGB (thực tế rực rỡ hơn trên sân khấu)</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 text-[9px] text-content-3 italic pt-0.5 border-t border-border-default/60">
+            <Info className="h-2.5 w-2.5 flex-shrink-0" />
+            <span>Mô phỏng xấp xỉ quang học, không thay thế đo đạc thực tế.</span>
+          </div>
+        </div>
+
         {/* Floating Configuration Sidebar / Drawer */}
         {isConfigOpen && (
-          <div className="absolute right-4 top-4 bottom-4 w-72 rounded-xl border border-slate-800 bg-slate-900/95 p-4 shadow-2xl backdrop-blur text-xs z-30 overflow-y-auto space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+          <div className="absolute right-4 top-4 bottom-4 w-72 rounded-xl border border-border-default bg-surface-1/95 p-4 shadow-2xl backdrop-blur text-xs z-30 overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between border-b border-border-default pb-2">
+              <span className="font-bold text-content-1 uppercase tracking-wider text-[11px]">
                 Stage Rig Configuration
               </span>
               <button
                 onClick={() => setIsConfigOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-content-3 hover:text-content-1"
               >
                 ✕
               </button>
@@ -465,7 +555,7 @@ export const VirtualStagePreview: React.FC = () => {
 
             {/* LED Screens Toggle */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 font-semibold text-purple-400">
+              <div className="flex items-center gap-1.5 font-semibold text-dept-vx">
                 <Tv className="h-3.5 w-3.5" />
                 <span>LED Screens</span>
               </div>
@@ -474,13 +564,13 @@ export const VirtualStagePreview: React.FC = () => {
                   <div
                     key={scr.id}
                     onClick={() => toggleScreen(scr.id)}
-                    className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800 cursor-pointer"
+                    className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors"
                   >
-                    <span className="text-slate-300">{scr.name}</span>
+                    <span className="text-content-2">{scr.name}</span>
                     {scr.enabled ? (
-                      <CheckSquare className="h-4 w-4 text-cyan-400" />
+                      <CheckSquare className="h-4 w-4 text-accent" />
                     ) : (
-                      <SquareIcon className="h-4 w-4 text-slate-600" />
+                      <SquareIcon className="h-4 w-4 text-content-3" />
                     )}
                   </div>
                 ))}
@@ -489,7 +579,7 @@ export const VirtualStagePreview: React.FC = () => {
 
             {/* Trusses Toggle */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5 font-semibold text-amber-400">
+              <div className="flex items-center gap-1.5 font-semibold text-dept-lx">
                 <Lightbulb className="h-3.5 w-3.5" />
                 <span>Lighting Trusses</span>
               </div>
@@ -498,18 +588,18 @@ export const VirtualStagePreview: React.FC = () => {
                   <div
                     key={truss.id}
                     onClick={() => toggleTruss(truss.id)}
-                    className="flex items-center justify-between p-1.5 rounded hover:bg-slate-800 cursor-pointer"
+                    className="flex items-center justify-between p-1.5 rounded hover:bg-surface-2 cursor-pointer transition-colors"
                   >
                     <div className="flex flex-col">
-                      <span className="text-slate-300">{truss.name}</span>
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-content-2">{truss.name}</span>
+                      <span className="text-[10px] text-content-3">
                         {truss.fixtureCount}x {truss.fixtureType}
                       </span>
                     </div>
                     {truss.enabled ? (
-                      <CheckSquare className="h-4 w-4 text-cyan-400" />
+                      <CheckSquare className="h-4 w-4 text-accent" />
                     ) : (
-                      <SquareIcon className="h-4 w-4 text-slate-600" />
+                      <SquareIcon className="h-4 w-4 text-content-3" />
                     )}
                   </div>
                 ))}

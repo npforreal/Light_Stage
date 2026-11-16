@@ -32,7 +32,7 @@ describe('ExportModal Component', () => {
     const lxButton = screen.getByRole('button', { name: 'LX' });
     fireEvent.click(lxButton);
 
-    expect(lxButton).toHaveClass('bg-cyan-500');
+    expect(lxButton).toHaveClass('bg-accent');
   });
 
   it('calls onClose when close button clicked', () => {

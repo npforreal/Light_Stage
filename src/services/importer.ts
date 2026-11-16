@@ -1,5 +1,6 @@
 import { Act, Cue, createCue } from '../types/stage';
-import { parseHardwareFromText } from './hardwareParser';
+import { parseHardwareFromText, parseLightingColorFromText } from './hardwareParser';
+import { resolveLightingColorToHex } from '../data/colors';
 
 export interface ColumnMapping {
   cueNumber?: string;
@@ -266,6 +267,7 @@ export function convertRowsToActs(
     const lxText = (mapping.lx && row[mapping.lx]?.trim()) || '';
     const lxDevices = lxText ? parseHardwareFromText(lxText, 'Lighting') : [];
     const lxCount = lxDevices.reduce((sum, d) => sum + d.count, 0);
+    const parsedColor = lxText ? parseLightingColorFromText(lxText) : undefined;
 
     // Extract VX hardware & notes
     const vxText = (mapping.vx && row[mapping.vx]?.trim()) || '';
@@ -285,6 +287,8 @@ export function convertRowsToActs(
               sceneName: lxText,
               fixtureCount: lxCount,
               fixtures: lxDevices,
+              color: parsedColor,
+              colorPreset: parsedColor ? resolveLightingColorToHex(parsedColor) : undefined,
             }
           : undefined,
         vx: vxText

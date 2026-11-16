@@ -8,16 +8,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        stage: {
-          dark: "#0f172a",
-          card: "#1e293b",
-          border: "#334155",
-          accent: "#38bdf8",
-          lx: "#eab308", // Amber/Yellow for Lighting
-          vx: "#a855f7", // Purple for Visual LED
-          sq: "#06b6d4", // Cyan for Sound
-          action: "#22c55e", // Green for Action/Go
-          standby: "#f97316", // Orange for Standby
+        surface: {
+          0: "var(--color-surface-0)",
+          1: "var(--color-surface-1)",
+          2: "var(--color-surface-2)",
+          3: "var(--color-surface-3)",
+        },
+        border: {
+          subtle: "var(--color-border-subtle)",
+          default: "var(--color-border-default)",
+          strong: "var(--color-border-strong)",
+        },
+        content: {
+          1: "var(--color-text-1)",
+          2: "var(--color-text-2)",
+          3: "var(--color-text-3)",
+        },
+        accent: "var(--color-accent)",
+        dept: {
+          lx: "var(--color-dept-lx)",
+          vx: "var(--color-dept-vx)",
+          sq: "var(--color-dept-sq)",
+          st: "var(--color-dept-st)",
+        },
+        status: {
+          go: "var(--color-status-go)",
+          standby: "var(--color-status-standby)",
+          hold: "var(--color-status-hold)",
+          danger: "var(--color-status-danger)",
         },
       },
     },

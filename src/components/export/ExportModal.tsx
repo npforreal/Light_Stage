@@ -84,35 +84,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-slate-100 flex flex-col">
+      <div className="w-full max-w-lg rounded-xl border border-border-default bg-surface-1 p-6 shadow-2xl text-content-1 flex flex-col">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div className="flex items-center justify-between border-b border-border-default pb-3 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
               <Download className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Export & Print Reports</h3>
-              <p className="text-xs text-slate-400">PDF Cue Sheets, Excel/CSV, .lightstage project</p>
+              <h3 className="font-bold text-content-1 text-base">Export & Print Reports</h3>
+              <p className="text-xs text-content-3">PDF Cue Sheets, Excel/CSV, .lightstage project</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:text-white">
+          <button onClick={onClose} className="rounded p-1 text-content-3 hover:text-content-1 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Role Selector for Cue Sheets */}
         <div className="mb-4 space-y-1.5">
-          <label className="text-xs font-semibold text-slate-400">Target Role / Department Filter:</label>
-          <div className="inline-flex w-full rounded-lg bg-slate-950 p-1 text-xs">
+          <label className="text-xs font-semibold text-content-3">Target Role / Department Filter:</label>
+          <div className="inline-flex w-full rounded-lg bg-surface-0 p-1 text-xs border border-border-default">
             {(['ALL', 'LX', 'VX', 'SQ'] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setSelectedRole(r)}
                 className={`flex-1 rounded py-1.5 font-medium transition-colors ${
                   selectedRole === r
-                    ? 'bg-cyan-500 text-slate-950 shadow'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-accent text-surface-0 font-bold shadow'
+                    : 'text-content-3 hover:text-content-1'
                 }`}
               >
                 {r === 'ALL' ? 'Master (All)' : r}
@@ -126,17 +126,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           {/* Printable PDF */}
           <div
             onClick={handlePrintPdf}
-            className="group flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 p-3 hover:border-cyan-500/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+            className="group flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-500/10 text-red-400 group-hover:scale-105 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
                 <Printer className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200 group-hover:text-cyan-300">
+                <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Print / Save PDF Cue Sheet
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-content-3">
                   A4 Landscape formatted for stage crew with department filters
                 </div>
               </div>
@@ -146,17 +146,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           {/* Cue Sheet CSV */}
           <div
             onClick={handleDownloadCueSheetCsv}
-            className="group flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 p-3 hover:border-emerald-500/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+            className="group flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
                 <FileSpreadsheet className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300">
+                <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Download Cue Sheet (Excel / CSV)
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-content-3">
                   Full rundown columns encoded with UTF-8 BOM for Microsoft Excel
                 </div>
               </div>
@@ -166,17 +166,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           {/* Hardware Inventory CSV */}
           <div
             onClick={handleDownloadHardwareCsv}
-            className="group flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 p-3 hover:border-amber-500/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+            className="group flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 group-hover:scale-105 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
                 <PackageCheck className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200 group-hover:text-amber-300">
+                <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Download Hardware Inventory (Excel / CSV)
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-content-3">
                   Equipment peak concurrent usage & total show fixture breakdown
                 </div>
               </div>
@@ -186,17 +186,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           {/* .lightstage Project File */}
           <div
             onClick={handleDownloadProjectFile}
-            className="group flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950/60 p-3 hover:border-cyan-500/50 hover:bg-slate-800/40 cursor-pointer transition-colors"
+            className="group flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 group-hover:scale-105 transition-transform">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
                 <FileCode className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200 group-hover:text-cyan-300">
+                <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Save Project (.lightstage)
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-content-3">
                   Native JSON schema backup with full show data & settings
                 </div>
               </div>
@@ -205,10 +205,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-800 pt-3 mt-4 flex justify-end">
+        <div className="border-t border-border-default pt-3 mt-4 flex justify-end">
           <button
             onClick={onClose}
-            className="rounded-lg bg-slate-800 px-4 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700 transition-colors"
+            className="rounded-lg bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
           >
             Close
           </button>

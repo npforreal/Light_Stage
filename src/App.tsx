@@ -209,36 +209,36 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-screen w-screen flex-col bg-surface-0 text-content-1 overflow-hidden font-sans">
       {/* Top Header Bar */}
-      <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur z-30 flex-shrink-0">
+      <header className="flex h-14 items-center justify-between border-b border-border-default bg-surface-1 px-4 backdrop-blur z-30 flex-shrink-0">
         {/* Brand & Show Title */}
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400 font-bold text-sm shadow">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-2 border border-border-strong text-accent font-bold text-sm shadow">
             LS
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="font-bold tracking-wide text-sm text-white">
+              <span className="font-bold tracking-wide text-sm text-content-1">
                 Light Stage
               </span>
-              <span className="rounded bg-slate-800 px-1.5 py-0.2 text-[10px] text-slate-400 font-mono">
+              <span className="rounded bg-surface-2 px-1.5 py-0.2 text-[10px] text-content-3 font-mono">
                 v0.1.0
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[200px]" title={show.metadata.title}>
+              <span className="text-[11px] text-content-2 truncate max-w-[140px] sm:max-w-[200px]" title={show.metadata.title}>
                 {show.metadata.title}
               </span>
-              <span className="text-slate-600">•</span>
+              <span className="text-border-strong">•</span>
               {isDirty ? (
-                <span className="flex items-center gap-1 text-[10px] text-amber-400 font-mono font-medium" title="Có thay đổi chưa lưu">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium" title="Có thay đổi chưa lưu">
+                  <span className="h-1.5 w-1.5 rounded-full bg-status-standby animate-pulse" />
                   Chưa lưu
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-medium" title="Đã lưu">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium" title="Đã lưu">
+                  <span className="h-1.5 w-1.5 rounded-full bg-status-go" />
                   Đã lưu
                 </span>
               )}
@@ -249,62 +249,62 @@ export const App: React.FC = () => {
         {/* Master Clock & Calling Readout */}
         <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 min-w-0">
           {/* Active Cue Quick Card */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-xs flex-shrink-0">
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 text-xs flex-shrink-0">
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+              <span className="text-[10px] uppercase tracking-wider text-content-3 font-bold">
                 Standby
               </span>
-              <span className="font-semibold text-amber-400 truncate max-w-[90px] lg:max-w-[120px]">
+              <span className="font-semibold text-status-standby truncate max-w-[90px] lg:max-w-[120px]">
                 {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-border-subtle" />
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+              <span className="text-[10px] uppercase tracking-wider text-content-3 font-bold">
                 Active Go
               </span>
-              <span className="font-semibold text-emerald-400 truncate max-w-[90px] lg:max-w-[120px]">
+              <span className="font-semibold text-status-go truncate max-w-[90px] lg:max-w-[120px]">
                 {activeCue ? `${activeCue.cueNumber} ${activeCue.title}` : 'None'}
               </span>
             </div>
           </div>
 
-          {/* Master & Cue Clock Readout */}
-          <div className="flex items-center gap-2 lg:gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 font-mono flex-shrink-0">
+          {/* Master & Cue Clock Readout (Neutral Monospace) */}
+          <div className="flex items-center gap-2 lg:gap-3 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 font-mono flex-shrink-0">
             {/* Wall Clock (hidden below xl) */}
             <div className="hidden xl:flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500">Wall Clock</span>
-              <span className="text-xs font-semibold text-slate-300">
+              <span className="text-[9px] uppercase tracking-wider text-content-3">Wall Clock</span>
+              <span className="text-xs font-semibold text-content-2">
                 {wallClock}
               </span>
             </div>
-            <div className="hidden xl:block h-6 w-px bg-slate-800" />
-            {/* Show Elapsed */}
+            <div className="hidden xl:block h-6 w-px bg-border-subtle" />
+            {/* Show Elapsed (Neutral white/cyan) */}
             <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500">Show Time</span>
-              <span className="text-sm font-bold text-cyan-300">
+              <span className="text-[9px] uppercase tracking-wider text-content-3">Show Time</span>
+              <span className="text-sm font-bold text-content-1">
                 {formatDuration(masterElapsedMs, { includeHours: true })}
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-border-subtle" />
             {/* Cue Remainder */}
             <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500">Cue Remainder</span>
+              <span className="text-[9px] uppercase tracking-wider text-content-3">Cue Remainder</span>
               <span
                 className={`text-sm font-bold ${
-                  isOverrun ? 'text-rose-400 animate-pulse' : 'text-emerald-400'
+                  isOverrun ? 'text-status-danger animate-pulse' : 'text-status-go'
                 }`}
               >
                 {formatDuration(cueRemainingMs)}
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-border-subtle" />
             {/* Delta Schedule */}
             <div className="flex flex-col items-center">
-              <span className="text-[9px] uppercase tracking-wider text-slate-500">Delta</span>
+              <span className="text-[9px] uppercase tracking-wider text-content-3">Delta</span>
               <span
                 className={`text-xs font-bold ${
-                  deltaTimeMs < 0 ? 'text-rose-400' : deltaTimeMs > 0 ? 'text-cyan-400' : 'text-slate-400'
+                  deltaTimeMs < 0 ? 'text-status-danger' : deltaTimeMs > 0 ? 'text-content-1' : 'text-content-3'
                 }`}
                 title={deltaTimeMs < 0 ? 'Behind schedule' : 'Ahead of schedule'}
               >
@@ -314,11 +314,11 @@ export const App: React.FC = () => {
           </div>
 
           {/* Clock Transport Controls */}
-          <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5 flex-shrink-0">
+          <div className="flex items-center gap-1 bg-surface-2 border border-border-subtle rounded-lg p-0.5 flex-shrink-0">
             {isRunning ? (
               <button
                 onClick={pauseClock}
-                className="rounded p-1.5 text-amber-400 hover:bg-slate-700 transition-colors"
+                className="rounded p-1.5 text-status-standby hover:bg-surface-3 transition-colors"
                 title="Pause Clock"
               >
                 <Pause className="h-3.5 w-3.5" />
@@ -326,7 +326,7 @@ export const App: React.FC = () => {
             ) : (
               <button
                 onClick={startClock}
-                className="rounded p-1.5 text-emerald-400 hover:bg-slate-700 transition-colors"
+                className="rounded p-1.5 text-status-go hover:bg-surface-3 transition-colors"
                 title="Start Clock"
               >
                 <Play className="h-3.5 w-3.5 fill-current" />
@@ -334,14 +334,14 @@ export const App: React.FC = () => {
             )}
             <button
               onClick={pauseClock}
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 transition-colors"
+              className="rounded p-1.5 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
               title="Stop Clock"
             >
               <Square className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={resetClock}
-              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 transition-colors"
+              className="rounded p-1.5 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
               title="Reset Clock"
             >
               <RotateCcw className="h-3.5 w-3.5" />
@@ -353,24 +353,24 @@ export const App: React.FC = () => {
         <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
           {/* Hardware Stats Badges (visible on xl screens) */}
           <div className="hidden xl:flex items-center gap-3 text-xs font-mono">
-            <div className="flex items-center gap-1.5 text-amber-400" title="Total Lighting Fixtures">
+            <div className="flex items-center gap-1.5 text-dept-lx" title="Total Lighting Fixtures">
               <Lightbulb className="h-3.5 w-3.5" />
               <span>LX: {stats.totalLightingFixtures}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-purple-400" title="Total Screens">
+            <div className="flex items-center gap-1.5 text-dept-vx" title="Total Screens">
               <Tv className="h-3.5 w-3.5" />
               <span>VX: {stats.totalScreens}</span>
             </div>
           </div>
 
           {/* Dual View Modes */}
-          <div className="inline-flex rounded-lg bg-slate-800/80 p-0.5 text-xs">
+          <div className="inline-flex rounded-lg bg-surface-2 border border-border-subtle p-0.5 text-xs">
             <button
               onClick={() => setViewMode('rundown')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
                 viewMode === 'rundown'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-2 hover:text-content-1'
               }`}
               title="Cue Rundown List"
             >
@@ -381,8 +381,8 @@ export const App: React.FC = () => {
               onClick={() => setViewMode('split')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
                 viewMode === 'split'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-2 hover:text-content-1'
               }`}
               title="Split Dual View"
             >
@@ -393,8 +393,8 @@ export const App: React.FC = () => {
               onClick={() => setViewMode('timeline')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
                 viewMode === 'timeline'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-2 hover:text-content-1'
               }`}
               title="Timeline Tracks"
             >
@@ -405,8 +405,8 @@ export const App: React.FC = () => {
               onClick={() => setViewMode('stage')}
               className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
                 viewMode === 'stage'
-                  ? 'bg-cyan-500 text-slate-950 shadow'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  : 'text-content-2 hover:text-content-1'
               }`}
               title="Stage 2D Preview"
             >
@@ -422,8 +422,8 @@ export const App: React.FC = () => {
               onClick={() => setIsOperatorLocked(!isOperatorLocked)}
               className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                 isOperatorLocked
-                  ? 'bg-amber-500 text-slate-950 font-bold ring-2 ring-amber-400'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                  ? 'bg-status-standby text-surface-0 font-bold ring-2 ring-status-standby/50'
+                  : 'bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle'
               }`}
               title={isOperatorLocked ? 'Operator Locked: Hotkeys disabled' : 'Unlocked: Hotkeys active'}
             >
@@ -434,7 +434,7 @@ export const App: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Unlock className="h-3.5 w-3.5 text-slate-400" />
+                  <Unlock className="h-3.5 w-3.5 text-content-3" />
                   <span>Lock</span>
                 </>
               )}
@@ -442,10 +442,10 @@ export const App: React.FC = () => {
 
             <button
               onClick={handleOpenProjectClick}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
+              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
               title="Open .lightstage Project"
             >
-              <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
+              <FolderOpen className="h-3.5 w-3.5 text-status-standby" />
               <span>Open</span>
             </button>
             <input
@@ -457,18 +457,18 @@ export const App: React.FC = () => {
             />
             <button
               onClick={() => setIsImportOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
+              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
               title="Import CSV/Excel"
             >
-              <Upload className="h-3.5 w-3.5 text-cyan-400" />
+              <Upload className="h-3.5 w-3.5 text-accent" />
               <span>Import</span>
             </button>
             <button
               onClick={() => setIsExportOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
+              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2.5 py-1.5 text-xs font-semibold transition-colors"
               title="Export Reports & Project"
             >
-              <Download className="h-3.5 w-3.5 text-emerald-400" />
+              <Download className="h-3.5 w-3.5 text-status-go" />
               <span>Export</span>
             </button>
           </div>

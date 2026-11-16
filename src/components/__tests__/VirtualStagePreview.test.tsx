@@ -87,4 +87,26 @@ describe('VirtualStagePreview Component', () => {
     const beams = container.querySelectorAll('polygon[fill="url(#beamGradient)"]');
     expect(beams.length).toBeGreaterThan(0);
   });
+
+  it('displays accurate color label and optical simulation legend for active lighting cue', () => {
+    const actId = useShowStore.getState().show.acts[0].id;
+    const kelvinCueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '4.0',
+      title: 'Warm Acoustic',
+      departments: {
+        lx: {
+          sceneName: 'Warm Front',
+          fixtureCount: 8,
+          color: { mode: 'kelvin', kelvin: 3200 },
+        },
+      },
+    });
+    useShowStore.getState().goCue(kelvinCueId);
+
+    render(<VirtualStagePreview />);
+    expect(screen.getByText(/3200K/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Mô phỏng xấp xỉ quang học, không thay thế đo đạc thực tế/i)
+    ).toBeInTheDocument();
+  });
 });

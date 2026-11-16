@@ -90,19 +90,19 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl rounded-xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-slate-100 flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-surface-1 p-6 shadow-2xl text-content-1 flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+        <div className="flex items-center justify-between border-b border-border-default pb-4 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base">Import Rundown / Cue Sheet</h3>
-              <p className="text-xs text-slate-400">Support CSV, TSV & auto-hardware counter</p>
+              <h3 className="font-bold text-content-1 text-base">Import Rundown / Cue Sheet</h3>
+              <p className="text-xs text-content-3">Support CSV, TSV & auto-hardware counter</p>
             </div>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:text-white">
+          <button onClick={onClose} className="rounded p-1 text-content-3 hover:text-content-1 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -111,22 +111,22 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
         <div className="flex-1 overflow-y-auto space-y-4">
           {step === 'input' && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-slate-700 hover:border-cyan-500/60 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-950/40 relative">
+              <div className="border-2 border-dashed border-border-default hover:border-accent rounded-xl p-6 text-center cursor-pointer transition-colors bg-surface-0 relative">
                 <input
                   type="file"
                   accept=".csv,.tsv,.txt"
                   onChange={handleFileUpload}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <Upload className="h-8 w-8 text-cyan-400 mx-auto mb-2" />
-                <p className="text-sm font-semibold text-slate-200">
+                <Upload className="h-8 w-8 text-accent mx-auto mb-2" />
+                <p className="text-sm font-semibold text-content-1">
                   Drop CSV file here or click to browse
                 </p>
-                <p className="text-xs text-slate-500 mt-1">UTF-8 encoded CSV / TSV formats</p>
+                <p className="text-xs text-content-3 mt-1">UTF-8 encoded CSV / TSV formats</p>
               </div>
 
               <div className="relative">
-                <div className="text-xs text-slate-400 font-semibold mb-1">
+                <div className="text-xs text-content-3 font-semibold mb-1">
                   Or paste CSV / TSV text directly:
                 </div>
                 <textarea
@@ -134,14 +134,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                   onChange={(e) => setRawText(e.target.value)}
                   placeholder={`STT,Tiết mục,Thời lượng,Ánh sáng,Màn LED,Âm thanh\n1.0,Opening,00:03:00,4 Beam 350W + 2 Follow,Màn LED cánh x 2,BGM Intro\n1.1,Speech,05:00,Follow,Logo Loop,Mic 1`}
                   rows={6}
-                  className="w-full rounded-lg border border-slate-800 bg-slate-950 p-3 font-mono text-xs text-slate-200 focus:border-cyan-500 focus:outline-none"
+                  className="w-full rounded-lg border border-border-default bg-surface-0 p-3 font-mono text-xs text-content-1 focus:border-accent focus:outline-none"
                 />
               </div>
 
               <button
                 disabled={!rawText.trim()}
                 onClick={() => handleProcessCsv(rawText)}
-                className="w-full rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-semibold py-2.5 text-xs transition-colors shadow"
+                className="w-full rounded-lg bg-surface-3 hover:bg-surface-2 disabled:opacity-50 text-content-1 font-semibold py-2.5 text-xs transition-colors shadow border border-border-default"
               >
                 Analyze Columns & Preview
               </button>
@@ -150,17 +150,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
           {step === 'mapping' && (
             <div className="space-y-4 text-xs">
-              <div className="rounded-lg bg-cyan-950/30 border border-cyan-800/40 p-3 text-cyan-200">
+              <div className="rounded-lg bg-surface-2 border border-border-default p-3 text-content-2">
                 Headers detected! Verify or adjust column mappings below:
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold mb-1 block">Title / Tiết mục (Required)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Title / Tiết mục (Required)</label>
                   <select
                     value={mapping.title}
                     onChange={(e) => setMapping({ ...mapping, title: e.target.value })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
@@ -169,11 +169,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-slate-400 font-semibold mb-1 block">Cue Number (STT)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Cue Number (STT)</label>
                   <select
                     value={mapping.cueNumber || ''}
                     onChange={(e) => setMapping({ ...mapping, cueNumber: e.target.value || undefined })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     <option value="">-- Auto generate --</option>
                     {parsedHeaders.map((h) => (
@@ -183,11 +183,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-slate-400 font-semibold mb-1 block">Act / Màn</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Act / Màn</label>
                   <select
                     value={mapping.act || ''}
                     onChange={(e) => setMapping({ ...mapping, act: e.target.value || undefined })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     <option value="">-- Default Act 1 --</option>
                     {parsedHeaders.map((h) => (
@@ -197,11 +197,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-slate-400 font-semibold mb-1 block">Duration / Thời lượng</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Duration / Thời lượng</label>
                   <select
                     value={mapping.duration || ''}
                     onChange={(e) => setMapping({ ...mapping, duration: e.target.value || undefined })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     <option value="">-- None (Default 1 min) --</option>
                     {parsedHeaders.map((h) => (
@@ -211,11 +211,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-amber-400 font-semibold mb-1 block">Lighting / Ánh sáng (LX)</label>
+                  <label className="text-dept-lx font-semibold mb-1 block">Lighting / Ánh sáng (LX)</label>
                   <select
                     value={mapping.lx || ''}
                     onChange={(e) => setMapping({ ...mapping, lx: e.target.value || undefined })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     <option value="">-- None --</option>
                     {parsedHeaders.map((h) => (
@@ -225,11 +225,11 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-purple-400 font-semibold mb-1 block">Visual LED / Màn LED (VX)</label>
+                  <label className="text-dept-vx font-semibold mb-1 block">Visual LED / Màn LED (VX)</label>
                   <select
                     value={mapping.vx || ''}
                     onChange={(e) => setMapping({ ...mapping, vx: e.target.value || undefined })}
-                    className="w-full rounded border border-slate-700 bg-slate-950 p-2 text-white"
+                    className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
                     <option value="">-- None --</option>
                     {parsedHeaders.map((h) => (
@@ -240,36 +240,36 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               {previewResult && (
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2">
+                <div className="rounded-lg border border-border-default bg-surface-0 p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-semibold text-slate-300">Extraction Summary:</div>
+                    <div className="text-xs font-semibold text-content-2">Extraction Summary:</div>
                     <div className="flex gap-4 text-xs font-mono">
-                      <span className="text-cyan-400">Total Cues: {previewResult.totalCues}</span>
-                      <span className="text-amber-400">Fixtures: {previewResult.totalLighting}</span>
-                      <span className="text-purple-400">Screens: {previewResult.totalScreens}</span>
+                      <span className="text-accent">Total Cues: {previewResult.totalCues}</span>
+                      <span className="text-dept-lx">Fixtures: {previewResult.totalLighting}</span>
+                      <span className="text-dept-vx">Screens: {previewResult.totalScreens}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 pt-2 border-t border-slate-800/80 text-xs">
-                    <span className="text-slate-400 font-medium">Hành động:</span>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                  <div className="flex items-center gap-4 pt-2 border-t border-border-default text-xs">
+                    <span className="text-content-3 font-medium">Hành động:</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-content-2">
                       <input
                         type="radio"
                         name="importMode"
                         value="replace"
                         checked={importMode === 'replace'}
                         onChange={() => setImportMode('replace')}
-                        className="text-cyan-500 focus:ring-0"
+                        className="text-accent focus:ring-0"
                       />
                       <span>Thay thế toàn bộ</span>
                     </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                    <label className="flex items-center gap-1.5 cursor-pointer text-content-2">
                       <input
                         type="radio"
                         name="importMode"
                         value="append"
                         checked={importMode === 'append'}
                         onChange={() => setImportMode('append')}
-                        className="text-cyan-500 focus:ring-0"
+                        className="text-accent focus:ring-0"
                       />
                       <span>Thêm vào cuối (Append)</span>
                     </label>
@@ -281,18 +281,18 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between border-t border-slate-800 pt-4 mt-4">
+        <div className="flex items-center justify-between border-t border-border-default pt-4 mt-4">
           {step === 'mapping' ? (
             <>
               <button
                 onClick={() => setStep('input')}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+                className="rounded-lg bg-surface-2 px-4 py-2 text-xs font-semibold text-content-2 hover:bg-surface-3 border border-border-default"
               >
                 Back
               </button>
               <button
                 onClick={handleConfirmImport}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white shadow"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-status-go hover:bg-status-go/90 px-4 py-2 text-xs font-bold text-surface-0 shadow"
               >
                 <Check className="h-4 w-4" />
                 <span>Confirm & Import Cues</span>
@@ -301,7 +301,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
           ) : (
             <button
               onClick={onClose}
-              className="ml-auto rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700"
+              className="ml-auto rounded-lg bg-surface-2 px-4 py-2 text-xs font-semibold text-content-2 hover:bg-surface-3 border border-border-default"
             >
               Cancel
             </button>

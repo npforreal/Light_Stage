@@ -35,10 +35,22 @@ export interface DeviceSpecification {
   notes?: string;
 }
 
+export type LightingColorMode = 'rgb' | 'rgbw' | 'rgba' | 'cmy' | 'kelvin' | 'gel' | 'name';
+
+export type LightingColor =
+  | { mode: 'rgb'; hex?: string; r?: number; g?: number; b?: number }
+  | { mode: 'rgbw'; r: number; g: number; b: number; w: number }
+  | { mode: 'rgba'; r: number; g: number; b: number; a: number }
+  | { mode: 'cmy'; c: number; m: number; y: number }
+  | { mode: 'kelvin'; kelvin: number }
+  | { mode: 'gel'; code: string; brand?: 'Rosco' | 'Lee' | 'GamColor'; approx?: boolean }
+  | { mode: 'name'; name: string };
+
 export interface LightingCue {
   sceneName?: string;
   intensity?: number; // 0 - 100
-  colorPreset?: string;
+  colorPreset?: string; // Legacy fallback hex
+  color?: LightingColor; // Structured color specification
   fixtureSummary?: string;
   fixtureCount: number;
   fixtures?: DeviceSpecification[];

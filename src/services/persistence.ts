@@ -119,7 +119,19 @@ export function parseLightStageFile(jsonString: string): ParseResult {
             durationMs: typeof cue.durationMs === 'number' ? cue.durationMs : 60000,
             scheduledTime: cue.scheduledTime,
             notes: cue.notes,
-            departments: cue.departments || {},
+            departments: {
+              ...cue.departments,
+              lx: cue.departments?.lx
+                ? {
+                    ...cue.departments.lx,
+                    color:
+                      cue.departments.lx.color ||
+                      (cue.departments.lx.colorPreset
+                        ? { mode: 'rgb' as const, hex: cue.departments.lx.colorPreset }
+                        : undefined),
+                  }
+                : undefined,
+            },
             totalLightingFixtures:
               typeof cue.totalLightingFixtures === 'number'
                 ? cue.totalLightingFixtures

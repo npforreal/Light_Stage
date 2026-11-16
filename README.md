@@ -5,7 +5,7 @@
 [![Frontend: React 19](https://img.shields.io/badge/Frontend-React%2019-61DAFB.svg?logo=react)](https://react.dev/)
 [![Language: TypeScript](https://img.shields.io/badge/Language-TypeScript%205.7-3178C6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![Styling: TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS%20v3-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com/)
-[![Tests: 74/74 Passing](https://img.shields.io/badge/Tests-74%2F74%20Passed-brightgreen.svg)]()
+[![Tests: 99/99 Passing](https://img.shields.io/badge/Tests-99%2F99%20Passed-brightgreen.svg)]()
 
 > **Light Stage** là ứng dụng desktop siêu nhẹ (Offline-First) chuyên dụng cho **Điều phối Sân khấu & Show Calling** (Stage Management & Live Show Control) trên **macOS** và **Windows**. Ứng dụng hỗ trợ hiển thị kịch bản cue rundown, đếm tự động thiết bị đèn/màn hình LED, chế độ hiển thị kép (Dual View: Bảng Rundown & Dải Timeline), sân khấu ảo 2D và hệ thống phím tắt tiêu chuẩn phòng điều khiển.
 
@@ -160,9 +160,9 @@ Trong lúc chương trình đang diễn ra, bạn có thể gọi lệnh cực k
 
 ---
 
-### 7. Sân khấu ảo 2D (Virtual Stage Preview)
+### 7. Sân khấu ảo 2D & Hệ Thống Khoa Học Màu Sắc (Color Science)
 
-Chế độ xem **Stage 2D** mô phỏng không gian biểu diễn trực tiếp:
+Chế độ xem **Stage 2D** mô phỏng không gian biểu diễn trực tiếp với độ chính xác quang học cao:
 - **Thư viện Preset bố cục**:
   - `End Stage (Tiêu chuẩn)`: Sân khấu hộp chữ nhật truyền thống cho hội nghị, nhà hát.
   - `Festival / Concert`: Sân khấu ngoài trời với hệ thống màn hình cánh lớn và giàn đèn truss đa tầng.
@@ -170,7 +170,13 @@ Chế độ xem **Stage 2D** mô phỏng không gian biểu diễn trực tiếp
 - **Hai góc nhìn camera**:
   - **Mặt trước (Front View)**: Nhìn trực diện từ phía khán phòng FOH về sân khấu.
   - **Từ trên xuống (Top-down View)**: Nhìn sơ đồ mặt bằng kỹ thuật bố trí vị trí các giàn đèn và màn hình.
-- **Phản ứng thời gian thực**: Khi bạn bấm **GO**, màn hình ảo trên sơ đồ sẽ đổi màu và hiển thị tên visual đang chiếu; các bóng đèn trên giàn truss sẽ phát ra các chùm sáng nón (beam cones) mô phỏng góc quét và cường độ ánh sáng thực tế.
+- **Hệ thống Khoa học Màu & Mô phỏng Quang học (Color Science Pipeline)**:
+  - **Không gian màu OKLCH & Tuyến tính (Linear Light)**: Quá trình pha màu, cộng sáng chùm đèn chồng nhau diễn ra trong không gian ánh sáng tuyến tính (Linear RGB + Tone mapping Reinhard), phản ánh trung thực hiện tượng quang học thực tế (pha màu đỏ + lục tạo ánh sáng vàng rực rỡ, không bị xỉn màu như cộng gamma).
+  - **Đa dạng nguồn màu**: Hỗ trợ nhiệt độ màu Kelvin (1000K–40000K, thuật toán Helland), lọc màu CMY, hệ đèn đa emitter RGBW/RGBA và gel màu sân khấu (Lee Filters, Rosco Supergel).
+  - **Gamut Mapping thông minh**: Tự động đưa các màu laser/LED bão hòa cao vượt gam sRGB về vùng hiển thị an toàn bằng cách giữ nguyên Độ sáng ($L$) và Sắc thái ($h$), giảm Độ bão hòa ($C$) trong không gian OKLCH. Kèm cờ cảnh báo *"Màu vượt gam sRGB (thực tế rực rỡ hơn)"*.
+  - **Độ tin cậy giao diện**: Thiết kế hệ thống semantic tokens OKLCH tối ưu phòng điều khiển tối, đạt chuẩn tương phản cao WCAG 2.2 ($\ge 4.5:1$) và APCA ($L_c \ge 75$), đảm bảo người khiếm thị màu (protanopia/deuteranopia) vẫn phân biệt chính xác trạng thái show nhờ nhãn trạng thái và biểu tượng đi kèm.
+  - *Tham khảo tài liệu chuyên sâu*: [Giáo trình Khoa học Màu Sắc Stage & Live Show](docs/COLOR_COURSE.md).
+  - *Lưu ý*: Mô phỏng trên đồ họa 2D là xấp xỉ quang học, không thay thế hoàn toàn máy đo phổ hay thiết kế DMX thực địa.
 
 ---
 

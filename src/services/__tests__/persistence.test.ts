@@ -108,5 +108,44 @@ describe('Persistence Service (.lightstage & Auto-Save)', () => {
       expect(hasAutoSave()).toBe(false);
       expect(loadAutoSave()).toBeNull();
     });
+
+    it('migrates legacy colorPreset hex into LightingColor rgb object', () => {
+      const legacyShowJson = JSON.stringify({
+        fileType: LIGHTSTAGE_FILE_TYPE,
+        schemaVersion: 1,
+        exportedAt: '2026-01-01T00:00:00.000Z',
+        show: {
+          id: 'legacy-1',
+          metadata: { title: 'Legacy Show', author: 'Test' },
+          acts: [
+            {
+              id: 'act-1',
+              title: 'Act 1',
+              cues: [
+                {
+                  id: 'cue-1',
+                  cueNumber: '1.0',
+                  title: 'Opening',
+                  status: 'pending',
+                  durationMs: 30000,
+                  departments: {
+                    lx: {
+                      fixtureCount: 8,
+                      colorPreset: '#ffaa00',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      });
+
+      const result = parseLightStageFile(legacyShowJson);
+      expect(result.success).toBe(true);
+      const cue = result.data?.acts[0].cues[0];
+      expect(cue?.departments.lx?.color).toEqual({ mode: 'rgb', hex: '#ffaa00' });
+      expect(cue?.departments.lx?.colorPreset).toBe('#ffaa00');
+    });
   });
 });

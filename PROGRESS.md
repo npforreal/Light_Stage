@@ -3,6 +3,45 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-16 — Hoàn thành Thiết kế lại Màu UI & Mô phỏng Ánh sáng Chính xác (Đợt 7)
+
+### Thay đổi
+- **Lõi khoa học màu (`src/services/color.ts`) (7.1)**:
+  - Triển khai toàn diện các hàm thuần toán không phụ thuộc UI: chuyển đổi sRGB ↔ Linear, Linear ↔ Oklab ↔ OKLCH, hex ↔ OKLCH.
+  - Thuật toán Gamut Mapping: giữ nguyên Lightness ($L$) và Hue ($h$), binary search giảm Chroma ($C$) trong không gian OKLCH đưa màu về trong gam sRGB an toàn, trả cờ `outOfGamut`.
+  - Mô phỏng nguồn sáng: nhiệt độ màu Kelvin (Helland, 1000K–40000K), lọc trừ CMY (`cmyToLinearRgb`), hệ đèn đa emitter RGBW/RGBA (`rgbwToLinearRgb`, `rgbaToLinearRgb`), tọa độ màu CIE xy (`xyToLinearRgb`).
+  - Tổng hợp quang học: đường cong dimmer bình phương vật lý `applyDimmer(intensity, 'square')`, cộng chùm sáng chồng nhau trong linear light `mixLinear(beams[])` kèm tone mapping mềm Reinhard.
+  - Đo độ tương phản: chuẩn WCAG 2.2 (`contrastWcag`) và APCA 0.98G-4g (`contrastApca`).
+- **Mô hình dữ liệu màu đèn & Tương thích ngược (7.2)**:
+  - Bổ sung `LightingColor` union vào `src/types/stage.ts` (`rgb | rgbw | rgba | cmy | kelvin | gel | name`).
+  - Xây dựng cơ sở dữ liệu `src/data/colors.ts` gồm gel sân khấu (Lee Filters, Rosco Supergel với CIE xy đã xác minh), tên màu sân khấu chuẩn, các hàm phân giải `resolveLightingColorToLinear`, `resolveLightingColorToHex`, `getLightingColorLabel`.
+  - Migration tự động trong `persistence.ts`: đọc file `.lightstage` cũ có `colorPreset` hex tự động chuyển đổi thành `{ mode: 'rgb', hex }`.
+  - Nâng cấp `hardwareParser.ts` và `importer.ts` bóc tách màu tự động từ text mô tả ("3200K", "Amber", "L201", "R255 G90 B20").
+  - Tích hợp swatch màu LX và tính năng click chuyển preset màu nhanh trên bảng kịch bản `RundownTable.tsx`.
+- **Hệ thống Semantic Tokens & Refactor UI (7.3)**:
+  - Xây dựng `scripts/gen_tokens.py` tự động sinh `src/styles/tokens.css` từ dải OKLCH cho 19 semantic tokens (surface-0..3, border, text-1..3, accent, dept-lx/vx/sq/st, status-go/standby/hold/danger).
+  - Tích hợp semantic tokens vào `tailwind.config.js` và `src/index.css`.
+  - Refactor toàn bộ 5 components trung tâm loại bỏ hoàn toàn các lớp màu thô (`slate-*`, `cyan-*`, `amber-*`): `App.tsx`, `RundownTable.tsx`, `TimelineTracks.tsx`, `ImportModal.tsx`, `ExportModal.tsx`.
+  - Thử nghiệm và kiểm chứng độ tương phản: mọi cặp màu chữ/nền đều đạt WCAG 2.2 $\ge 4.5:1$ và APCA $L_c \ge 75$; kiểm thử mô phỏng khiếm sắc (protanopia/deuteranopia) xác nhận trạng thái phân biệt rõ ràng qua độ chói và nhãn văn bản.
+- **Sân khấu 2D & Mô phỏng quang học chính xác (7.4)**:
+  - `VirtualStagePreview.tsx`: Kết nối toàn bộ pipeline màu quang học (LightingColor $\to$ linear $\to$ dimmer $\to$ gamut mapping $\to$ sRGB).
+  - Lớp chùm sáng beam chuyển sang kỹ thuật blend mode cộng sáng `mixBlendMode: 'screen'` và bộ lọc bloom mềm `feGaussianBlur stdDeviation="4"`.
+  - Bổ sung thanh legend quang học góc dưới: hiển thị swatch màu thực tế, mã hex, nhãn tên/nhiệt độ màu, cảnh báo khi màu vượt gam sRGB ("Màu vượt gam sRGB (thực tế rực rỡ hơn)") và ghi chú disclaimer rõ ràng.
+- **Tài liệu & Đóng đợt (7.5)**:
+  - Cập nhật `README.md` với mục mô tả hệ thống khoa học màu và liên kết `docs/COLOR_COURSE.md`.
+  - Đóng toàn bộ checklist Đợt 7 trong `PLAN.md`.
+
+### Quyết định kỹ thuật
+- **Linear Light Synthesis**: Việc cộng dồn chùm sáng trên sân khấu ảo bắt buộc phải diễn ra trong không gian ánh sáng tuyến tính (Linear RGB) trước khi áp dụng gamma encoding của sRGB để tránh hiện tượng màu bị tối sạm tại các vùng giao thoa.
+- **OKLCH Gamut Mapping**: Thay vì cắt cụt (clipping) từng kênh RGB làm biến dạng hue (ví dụ: biến màu lục bão hòa thành vàng hoặc xanh lơ), hệ thống giữ cố định $L$ và $h$ trong không gian OKLCH và chỉ giảm $C$ cho đến khi nằm trong gam sRGB.
+- **Không gian màu giao diện tối**: Màu bão hòa cao CHỈ được sử dụng cho trạng thái vận hành sống (Go/Standby/Hold/Danger) và chùm đèn thực tế; toàn bộ khung viền, bề mặt và chữ sử dụng màu trung tính dịu mắt với độ tương phản cao, chống lóa và bảo vệ mắt đạo diễn trong phòng điều khiển tối.
+
+### Kiểm chứng & Kết quả
+- `bash scripts/check.sh --fast`: 15/15 test suites passed, 99/99 unit tests passed (thêm 16 unit tests mới về khoa học màu, contrast, gamut mapping, migration và optical simulation).
+- `npm run build`: Production bundle Vite hoàn tất không lỗi trong 864ms (339kB js / 100kB gzip).
+- `python3 scripts/audit_workflow.py` & `python3 scripts/guard_check.py`: 100% checks passed, 0 drift violations.
+
+
 ## 2026-11-16 — Hoàn thành Sửa lỗi Vận hành & Độ tin cậy Live Show (Đợt 6)
 
 ### Thay đổi
@@ -60,17 +99,4 @@
 - `python3 scripts/guard_check.py`: Guard check OK: 0 new violations (0 baselined).
 - `python3 scripts/entropy_report.py`: 0 unreferenced tools, 0 tools missing from ARCHITECTURE.md.
 - `python3 scripts/handoff.py`: Snapshot bàn giao hoạt động hoàn hảo.
-
-## 2026-11-15 — Bổ sung Tài liệu Hướng dẫn Toàn diện (User & Dev), MIT License & Chính sách Bảo mật (Public Repo)
-
-### Thay đổi
-- Bổ sung `README.md` chuyên sâu chia làm 2 phần:
-  - **Phần 1 - Hướng dẫn Người dùng (Non-Tech)**: Giới thiệu nghiệp vụ sân khấu, hướng dẫn cài đặt (.dmg cho macOS, .exe/.msi cho Windows), tổng quan giao diện, hướng dẫn nhập dữ liệu thủ công / Excel / CSV, cơ chế đếm tự động đèn & màn hình LED, điều khiển show calling trực tiếp với phím tắt (Spacebar = GO, B = Standby), chế độ Operator Lock Mode, sân khấu ảo 2D và xuất báo cáo PDF / Excel.
-  - **Phần 2 - Hướng dẫn Lập trình viên (Developer Guide)**: Kiến trúc hệ thống Tauri v2 + React 19 + TypeScript + Zustand + TailwindCSS, cấu trúc thư mục, yêu cầu môi trường, hướng dẫn chạy dev / test / quality gate, quy trình đóng gói native installer và quy chuẩn conventional commits.
-- Bổ sung `LICENSE`: MIT License chuẩn bản quyền open-source năm 2026.
-- Bổ sung `SECURITY.md`: Chính sách bảo mật cho public repository (phiên bản hỗ trợ, quy trình báo cáo lỗ hổng qua GitHub Private Advisories hoặc email bảo mật có cam kết SLA 48h, phạm vi offline-first & an toàn sandbox).
-
-### Kiểm chứng & Kết quả
-- `bash scripts/check.sh --fast`: 14/14 test suites, 74/74 unit tests passed, type-check 0 errors.
-- `python3 scripts/audit_workflow.py`: ALL CHECKS PASSED, cấu trúc tài liệu và token discipline đạt chuẩn.
 

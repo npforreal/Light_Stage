@@ -1,4 +1,4 @@
-import { DeviceSpecification, LightingFixtureType, VisualScreenType, Act } from '../types/stage';
+import { DeviceSpecification, LightingFixtureType, VisualScreenType, Act, LightingColor } from '../types/stage';
 
 export interface HardwareItemStats {
   name: string;
@@ -272,4 +272,75 @@ export function calculateShowHardwareInventory(acts: Act[]): ShowHardwareInvento
     peakScreens,
     inventory,
   };
+}
+
+/**
+ * Parses lighting color specifications from freeform description or importer text.
+ * Examples: "3200K", "R255 G0 B0", "Amber", "L201", "#38bdf8", "Full CTO"
+ */
+export function parseLightingColorFromText(text: string): LightingColor | undefined {
+  if (!text || typeof text !== 'string') return undefined;
+  const str = text.trim();
+
+  // 1. Kelvin pattern: e.g. "3200K", "5600 K", "2700k"
+  const kelvinMatch = str.match(/(?:^|\b)(\d{4,5})\s*k\b/i);
+  if (kelvinMatch) {
+    const k = parseInt(kelvinMatch[1], 10);
+    if (k >= 1000 && k <= 40000) {
+      return { mode: 'kelvin', kelvin: k };
+    }
+  }
+
+  // 2. Hex color: e.g. "#ff0000", "#38bdf8"
+  const hexMatch = str.match(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/i);
+  if (hexMatch) {
+    return { mode: 'rgb', hex: hexMatch[0] };
+  }
+
+  // 3. RGB component pattern: "R255 G0 B0" or "RGB(255, 0, 0)"
+  const rgbMatch =
+    str.match(/rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i) ||
+    str.match(/r\s*(\d+)\s*g\s*(\d+)\s*b\s*(\d+)/i);
+  if (rgbMatch) {
+    const r = Math.min(255, parseInt(rgbMatch[1], 10));
+    const g = Math.min(255, parseInt(rgbMatch[2], 10));
+    const b = Math.min(255, parseInt(rgbMatch[3], 10));
+    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    return { mode: 'rgb', r, g, b, hex: `#${toHex(r)}${toHex(g)}${toHex(b)}` };
+  }
+
+  // 4. Gel filter code: e.g. "L201", "L204", "R02", "R26", "R80"
+  const gelMatch = str.match(/\b(L\d{2,3}|R\d{2,4})\b/i);
+  if (gelMatch) {
+    return { mode: 'gel', code: gelMatch[1].toUpperCase() };
+  }
+
+  // 5. Named presets / Vietnamese names: Amber, CTO, CTB, Đỏ, Xanh lá, Xanh dương...
+  const lower = str.toLowerCase();
+  if (/\b(?:amber|hổ\s+phách)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Amber' };
+  }
+  if (/\b(?:cto|full\s+cto)\b/i.test(lower)) {
+    return { mode: 'name', name: 'CTO' };
+  }
+  if (/\b(?:ctb|full\s+ctb)\b/i.test(lower)) {
+    return { mode: 'name', name: 'CTB' };
+  }
+  if (/\b(?:đỏ|red)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Đỏ Sân Khấu' };
+  }
+  if (/\b(?:xanh\s+lá|green|lục)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Xanh Lá' };
+  }
+  if (/\b(?:xanh\s+dương|blue|xanh\s+biển)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Xanh Dương' };
+  }
+  if (/\b(?:magenta|hồng|tím\s+hồng)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Magenta' };
+  }
+  if (/\b(?:cyan|xanh\s+lơ)\b/i.test(lower)) {
+    return { mode: 'name', name: 'Cyan' };
+  }
+
+  return undefined;
 }
