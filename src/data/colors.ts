@@ -141,9 +141,34 @@ export const NAMED_STAGE_COLORS: NamedColorEntry[] = [
   },
   {
     name: 'Xanh Dương (Primary Blue)',
-    aliases: ['xanh dương', 'blue', 'xanh đậm', 'cobalt'],
+    aliases: ['xanh dương', 'blue', 'xanh đậm', 'cobalt', 'xanh biển', 'xanh'],
     hex: '#2563eb',
     description: 'Màu xanh dương sâu thẳm',
+  },
+  {
+    name: 'Vàng Sân Khấu (Stage Yellow)',
+    aliases: ['vàng', 'yellow', 'vàng tươi'],
+    hex: '#eab308',
+    description: 'Màu vàng sân khấu rực rỡ',
+  },
+  {
+    name: 'Cam (Stage Orange)',
+    aliases: ['cam', 'orange', 'màu cam'],
+    hex: '#f97316',
+    description: 'Màu cam ấm áp',
+  },
+  {
+    name: 'Tím Sân Khấu (Stage Violet)',
+    aliases: ['tím', 'purple', 'violet', 'tím huế'],
+    hex: '#a855f7',
+    description: 'Màu tím huyền ảo kịch tính',
+  },
+  {
+    name: 'Trắng Sân Khấu (Stage White)',
+    aliases: ['trắng', 'white', 'bạch'],
+    hex: '#ffffff',
+    kelvin: 6500,
+    description: 'Ánh sáng trắng sân khấu',
   },
   {
     name: 'Magenta / Hồng Tím',

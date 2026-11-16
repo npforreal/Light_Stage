@@ -114,6 +114,45 @@ describe('Hardware Parser Engine', () => {
       expect(result[0].count).toBe(2);
       expect(result[0].subType).toBe('Blinder');
     });
+
+    it('separates color/temp from fixture counts ("Wash 12 cây 3200K")', () => {
+      const result = parseHardwareFromText('Wash 12 cây 3200K');
+      expect(result.length).toBe(1);
+      expect(result[0].count).toBe(12);
+      expect(result[0].subType).toBe('Wash');
+      expect(result[0].color).toEqual({ mode: 'kelvin', kelvin: 3200 });
+
+      const ctoResult = parseHardwareFromText('Spot 8 cây CTO');
+      expect(ctoResult.length).toBe(1);
+      expect(ctoResult[0].count).toBe(8);
+      expect(ctoResult[0].subType).toBe('Spot');
+      expect(ctoResult[0].color?.mode).toBe('name');
+      expect(ctoResult[0].color && 'name' in ctoResult[0].color && ctoResult[0].color.name).toContain('CTO');
+    });
+
+    it('detects screen count from "Logo Loop" and visual loops', () => {
+      const logoResult = parseHardwareFromText('Logo Loop', 'Visual');
+      expect(logoResult.length).toBe(1);
+      expect(logoResult[0].count).toBe(1);
+      expect(logoResult[0].category).toBe('Visual');
+      expect(logoResult[0].subType).toBe('MainScreen');
+
+      const videoLoopResult = parseHardwareFromText('Video Loop x 2', 'Visual');
+      expect(videoLoopResult.length).toBe(1);
+      expect(videoLoopResult[0].count).toBe(2);
+      expect(videoLoopResult[0].category).toBe('Visual');
+    });
+
+    it('maps Vietnamese color names properly in parseLightingColorFromText', async () => {
+      const { parseLightingColorFromText } = await import('../hardwareParser');
+      expect(parseLightingColorFromText('3200K')).toEqual({ mode: 'kelvin', kelvin: 3200 });
+      expect(parseLightingColorFromText('Đỏ')).toEqual({ mode: 'name', name: 'Đỏ Sân Khấu' });
+      expect(parseLightingColorFromText('Xanh')).toEqual({ mode: 'name', name: 'Xanh Dương' });
+      expect(parseLightingColorFromText('Vàng')).toEqual({ mode: 'name', name: 'Vàng Sân Khấu' });
+      expect(parseLightingColorFromText('Cam')).toEqual({ mode: 'name', name: 'Cam' });
+      expect(parseLightingColorFromText('Tím')).toEqual({ mode: 'name', name: 'Tím Sân Khấu' });
+      expect(parseLightingColorFromText('Hổ phách')).toEqual({ mode: 'name', name: 'Amber' });
+    });
   });
 
   describe('calculateShowHardwareInventory', () => {

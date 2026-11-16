@@ -111,9 +111,56 @@ describe('Importer Service (Time Parser, CSV Reader & Auto-Mapping)', () => {
       expect(mapping.stage).toBe('Sân khấu');
       expect(mapping.notes).toBe('Ghi chú');
     });
+
+    it('auto-detects Color and short ST/SQ headers', () => {
+      const headers = ['Cue', 'Title', 'Color', 'ST', 'SQ'];
+      const mapping = autoDetectColumnMapping(headers);
+
+      expect(mapping.color).toBe('Color');
+      expect(mapping.stage).toBe('ST');
+      expect(mapping.sq).toBe('SQ');
+    });
   });
 
   describe('convertRowsToActs', () => {
+    it('supports dedicated Color, SQ, and ST columns', () => {
+      const headers = ['Cue', 'Title', 'LX', 'Color', 'SQ', 'ST'];
+      const mapping = autoDetectColumnMapping(headers);
+
+      const rows: Record<string, string>[] = [
+        {
+          Cue: '1.0',
+          Title: 'Opening Scene',
+          LX: 'Wash 12 cây',
+          Color: '3200K',
+          SQ: 'Track 01 - Intro.mp3',
+          ST: 'MC tiến ra giữa sân khấu',
+        },
+        {
+          Cue: '1.1',
+          Title: 'Dramatic Act',
+          LX: 'Spot 4 cây',
+          Color: 'Đỏ',
+          SQ: 'Battle Theme',
+          ST: 'Vũ đoàn xuất hiện',
+        },
+      ];
+
+      const result = convertRowsToActs(rows, mapping);
+      expect(result.acts.length).toBe(1);
+      const cue1 = result.acts[0].cues[0];
+      expect(cue1.departments.lx?.fixtureCount).toBe(12);
+      expect(cue1.departments.lx?.color).toEqual({ mode: 'kelvin', kelvin: 3200 });
+      expect(cue1.departments.sq?.trackName).toBe('Track 01 - Intro.mp3');
+      expect(cue1.departments.st?.actionDescription).toBe('MC tiến ra giữa sân khấu');
+
+      const cue2 = result.acts[0].cues[1];
+      expect(cue2.departments.lx?.fixtureCount).toBe(4);
+      expect(cue2.departments.lx?.color?.mode).toBe('name');
+      expect(cue2.departments.sq?.trackName).toBe('Battle Theme');
+      expect(cue2.departments.st?.actionDescription).toBe('Vũ đoàn xuất hiện');
+    });
+
     it('converts raw rows into structured Acts with extracted hardware counts', () => {
       const headers = ['STT', 'Tiết mục', 'Màn', 'Thời lượng', 'Ánh sáng', 'Màn LED'];
       const mapping = autoDetectColumnMapping(headers);

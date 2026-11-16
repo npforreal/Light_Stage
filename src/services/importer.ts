@@ -11,6 +11,7 @@ export interface ColumnMapping {
   vx?: string;
   sq?: string;
   stage?: string;
+  color?: string;
   notes?: string;
 }
 
@@ -201,12 +202,16 @@ export function autoDetectColumnMapping(headers: string[]): ColumnMapping {
       mapping.vx = original;
     }
     // Sound (SQ)
-    else if (!mapping.sq && /(^sq$|sound|âm thanh|nhạc|audio|mic|stinger)/i.test(lower)) {
+    else if (!mapping.sq && /(^sq$|sound|âm thanh|nhạc|audio|mic|stinger|audio\s*track)/i.test(lower)) {
       mapping.sq = original;
     }
     // Stage / Action (ST)
-    else if (!mapping.stage && /(^stage$|^action$|sân khấu|đạo cụ|diễn viên|mc|kịch bản)/i.test(lower)) {
+    else if (!mapping.stage && /(^stage$|^action$|^st$|sân khấu|đạo cụ|diễn viên|mc|kịch bản|chỉ dẫn)/i.test(lower)) {
       mapping.stage = original;
+    }
+    // Color / Màu sắc
+    else if (!mapping.color && /(^color$|^colour$|^màu$|màu sắc|ánh sáng màu|gel|kelvin)/i.test(lower)) {
+      mapping.color = original;
     }
     // Notes
     else if (!mapping.notes && /(ghi chú|lưu ý|notes?|remark)/i.test(lower)) {
@@ -265,9 +270,13 @@ export function convertRowsToActs(
 
     // Extract LX hardware & notes
     const lxText = (mapping.lx && row[mapping.lx]?.trim()) || '';
+    const colorText = (mapping.color && row[mapping.color]?.trim()) || '';
     const lxDevices = lxText ? parseHardwareFromText(lxText, 'Lighting') : [];
     const lxCount = lxDevices.reduce((sum, d) => sum + d.count, 0);
-    const parsedColor = lxText ? parseLightingColorFromText(lxText) : undefined;
+    const parsedColor =
+      (colorText ? parseLightingColorFromText(colorText) : undefined) ||
+      (lxText ? parseLightingColorFromText(lxText) : undefined) ||
+      lxDevices.find((d) => d.color)?.color;
 
     // Extract VX hardware & notes
     const vxText = (mapping.vx && row[mapping.vx]?.trim()) || '';
@@ -282,9 +291,9 @@ export function convertRowsToActs(
     const newCue: Cue = {
       ...createCue(targetAct.id, cueNumber, rawTitle, durationMs),
       departments: {
-        lx: lxText
+        lx: lxText || parsedColor
           ? {
-              sceneName: lxText,
+              sceneName: lxText || 'Lighting Scene',
               fixtureCount: lxCount,
               fixtures: lxDevices,
               color: parsedColor,

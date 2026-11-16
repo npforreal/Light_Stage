@@ -1,4 +1,5 @@
 import { DeviceSpecification, LightingFixtureType, VisualScreenType, Act, LightingColor } from '../types/stage';
+import { NAMED_STAGE_COLORS } from '../data/colors';
 
 export interface HardwareItemStats {
   name: string;
@@ -30,13 +31,14 @@ export function classifyDevice(name: string, defaultCategory: 'Lighting' | 'Visu
     return { category: defaultCategory, subType: 'Other' };
   }
 
-  // Visual / LED Screen detection with word boundary checks
+  // Visual / LED Screen / Loops detection with word boundary checks
   if (
-    /(?:màn\s+led|led\s+screen|màn\s+hình|led\s+main|led\s+cánh|led\s+sàn|\bbanner\b)/i.test(lower) ||
-    (/\bled\b/i.test(lower) && !/\bpar\s+led\b/i.test(lower))
+    /(?:màn\s+led|led\s+screen|màn\s+hình|led\s+main|led\s+cánh|led\s+sàn|\bbanner\b|\bloop\b|\bvisual\b|\bvideo\b|\bclip\b|\blogo\b)/i.test(lower) ||
+    (/\bled\b/i.test(lower) && !/\bpar\s+led\b/i.test(lower)) ||
+    defaultCategory === 'Visual'
   ) {
     let subType: VisualScreenType = 'Other';
-    if (/(?:main|chính|trung\s+tâm)/i.test(lower)) {
+    if (/(?:main|chính|trung\s+tâm|logo|loop|video|visual|clip)/i.test(lower)) {
       subType = 'MainScreen';
     } else if (/(?:cánh|wing|trái|phải|left|right)/i.test(lower)) {
       subType = 'WingScreen';
@@ -83,18 +85,22 @@ export function classifyDevice(name: string, defaultCategory: 'Lighting' | 'Visu
 /**
  * Checks whether text contains authentic lighting or visual hardware keywords with word boundary
  */
-function containsHardwareKeyword(text: string): boolean {
+function containsHardwareKeyword(text: string, defaultCategory: 'Lighting' | 'Visual' = 'Lighting'): boolean {
   const lower = text.toLowerCase();
   // Filter out non-fixtures
   if (/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/i.test(lower)) {
     const stripped = lower.replace(/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/gi, '');
-    if (!/\b(?:beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen)\b/i.test(stripped)) {
+    if (!/\b(?:beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|loop|video|visual|logo)\b/i.test(stripped)) {
       return false;
     }
   }
 
+  if (defaultCategory === 'Visual' && lower.trim().length > 0) {
+    return true;
+  }
+
   return (
-    /\b(?:beam|spot|wash|parled|par\s+led|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|banner)\b/i.test(lower) ||
+    /\b(?:beam|spot|wash|parled|par\s+led|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|banner|loop|video|visual|logo|clip)\b/i.test(lower) ||
     /(?:màn\s+led|màn\s+hình|mặt\s+trời|rọi|chớp|khói|cây\s+follow)/i.test(lower)
   );
 }
@@ -124,22 +130,48 @@ export function parseHardwareFromText(
 
   for (const clause of clauses) {
     // Skip clauses that are false-positive noise
-    if (!containsHardwareKeyword(clause)) {
+    if (!containsHardwareKeyword(clause, defaultCategory)) {
       continue;
     }
 
+    // Separate color/temperature from clause before matching quantity & device name
+    const detectedColor = parseLightingColorFromText(clause);
+    let clauseForCount = clause;
+    if (detectedColor) {
+      // Strip Kelvin, e.g. "3200k", "5600K"
+      clauseForCount = clauseForCount.replace(/\b\d{4,5}\s*k\b/gi, ' ');
+      // Strip Hex e.g. "#ff0000"
+      clauseForCount = clauseForCount.replace(/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/gi, ' ');
+      // Strip Gel e.g. "L201", "R02"
+      clauseForCount = clauseForCount.replace(/\b(?:L\d{2,3}|R\d{2,4})\b/gi, ' ');
+      // Strip named colors e.g. "CTO", "Đỏ", "Xanh", "Vàng", "Cam", "Tím", etc.
+      if (detectedColor.mode === 'name') {
+        const colorNames = [
+          'amber', 'hổ phách', 'cto', 'full cto', 'ctb', 'full ctb',
+          'đỏ rực', 'đỏ', 'red', 'xanh lá', 'green', 'lục',
+          'xanh dương', 'xanh biển', 'xanh lơ', 'xanh đậm', 'xanh', 'blue',
+          'vàng tươi', 'vàng', 'yellow', 'màu cam', 'cam', 'orange',
+          'tím huế', 'tím', 'purple', 'violet', 'trắng lạnh', 'trắng', 'white',
+          'magenta', 'tím hồng', 'hồng', 'pink', 'cyan'
+        ];
+        const regex = new RegExp(`(^|\\b)(${colorNames.join('|')})(\\b|$)`, 'gi');
+        clauseForCount = clauseForCount.replace(regex, ' ');
+      }
+      clauseForCount = clauseForCount.replace(/\s+/g, ' ').trim();
+    }
+
     let count: number | null = null;
-    let cleanName = clause;
+    let cleanName = clauseForCount;
 
     // Transition pattern: "Blinder 2 -> 0" or "Beam 4 -> 8"
-    const transitionMatch = clause.match(/^(.+?)\s+(\d+)\s*(?:->|→)\s*(\d+)/i);
+    const transitionMatch = clauseForCount.match(/^(.+?)\s+(\d+)\s*(?:->|→)\s*(\d+)/i);
     if (transitionMatch) {
       cleanName = transitionMatch[1].trim();
       const primaryCount = parseInt(transitionMatch[2], 10);
       count = primaryCount > 0 ? primaryCount : parseInt(transitionMatch[3], 10);
     } else {
       // Pattern 1: Suffix multiplier with optional notes: "Beam x 4 (FOH)", "Spot: 4", "Par LED * 6"
-      const suffixMatch = clause.match(
+      const suffixMatch = clauseForCount.match(
         /^(.+?)\s*(?:[xX*:]|\bx\b)\s*(\d+)\s*(?:cây|cái|chiếc|bộ|màn|tấm)?(?:\s*(\([^)]+\)|\[[^\]]+\]))?$/i
       );
       if (suffixMatch) {
@@ -147,13 +179,13 @@ export function parseHardwareFromText(
         count = parseInt(suffixMatch[2], 10);
       } else {
         // Pattern 2: Prefix multiplier: "4 Beam 350W", "12x Par LED", "2 cây Follow"
-        const prefixMatch = clause.match(/^(\d+)\s*(?:x|X|\*|cây|cái|chiếc|bộ|màn|tấm)?\s*(.+)$/i);
+        const prefixMatch = clauseForCount.match(/^(\d+)\s*(?:x|X|\*|cây|cái|chiếc|bộ|màn|tấm)?\s*(.+)$/i);
         if (prefixMatch) {
           count = parseInt(prefixMatch[1], 10);
           cleanName = prefixMatch[2].trim();
         } else {
-          // Pattern 3: Vietnamese unit pattern: "Beam 4 cây", "Follow 2 chiếc"
-          const unitSuffixMatch = clause.match(/^(.+?)\s+(\d+)\s+(?:cây|cái|chiếc|bộ|màn|tấm)(?:\s*(\([^)]+\)))?$/i);
+          // Pattern 3: Vietnamese unit pattern: "Beam 4 cây", "Follow 2 chiếc", "Wash 12 cây"
+          const unitSuffixMatch = clauseForCount.match(/^(.+?)\s+(\d+)\s+(?:cây|cái|chiếc|bộ|màn|tấm)(?:\s*(\([^)]+\)))?$/i);
           if (unitSuffixMatch) {
             cleanName = unitSuffixMatch[3]
               ? `${unitSuffixMatch[1].trim()} ${unitSuffixMatch[3].trim()}`
@@ -172,9 +204,9 @@ export function parseHardwareFromText(
 
     // Fallback: If no explicit quantity detected but contains a known keyword, default count to 1
     if (count === null || isNaN(count) || count <= 0) {
-      if (containsHardwareKeyword(clause)) {
+      if (containsHardwareKeyword(clause, defaultCategory)) {
         count = 1;
-        cleanName = clause;
+        cleanName = clauseForCount || clause;
       } else {
         continue; // Not recognized as hardware
       }
@@ -182,6 +214,9 @@ export function parseHardwareFromText(
 
     // Clean up trailing punctuation & spaces (escaping literal hyphen)
     cleanName = cleanName.replace(/^[ \-:]+|[ \-:]+$/g, '').trim();
+    if (!cleanName) {
+      cleanName = clause.replace(/\b\d+\b/g, '').trim();
+    }
     if (!cleanName) continue;
 
     const { category, subType } = classifyDevice(cleanName, defaultCategory);
@@ -192,6 +227,7 @@ export function parseHardwareFromText(
       category,
       subType,
       count,
+      color: detectedColor,
     });
   }
 
@@ -315,31 +351,19 @@ export function parseLightingColorFromText(text: string): LightingColor | undefi
     return { mode: 'gel', code: gelMatch[1].toUpperCase() };
   }
 
-  // 5. Named presets / Vietnamese names: Amber, CTO, CTB, Đỏ, Xanh lá, Xanh dương...
+  // 5. Named presets / Vietnamese names (including all presets in NAMED_STAGE_COLORS)
   const lower = str.toLowerCase();
-  if (/\b(?:amber|hổ\s+phách)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Amber' };
-  }
-  if (/\b(?:cto|full\s+cto)\b/i.test(lower)) {
-    return { mode: 'name', name: 'CTO' };
-  }
-  if (/\b(?:ctb|full\s+ctb)\b/i.test(lower)) {
-    return { mode: 'name', name: 'CTB' };
-  }
-  if (/\b(?:đỏ|red)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Đỏ Sân Khấu' };
-  }
-  if (/\b(?:xanh\s+lá|green|lục)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Xanh Lá' };
-  }
-  if (/\b(?:xanh\s+dương|blue|xanh\s+biển)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Xanh Dương' };
-  }
-  if (/\b(?:magenta|hồng|tím\s+hồng)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Magenta' };
-  }
-  if (/\b(?:cyan|xanh\s+lơ)\b/i.test(lower)) {
-    return { mode: 'name', name: 'Cyan' };
+  for (const entry of NAMED_STAGE_COLORS) {
+    const primaryName = entry.name.includes('(') ? entry.name.split(' (')[0].trim() : entry.name;
+    if (lower === entry.name.toLowerCase() || lower === primaryName.toLowerCase()) {
+      return { mode: 'name', name: primaryName };
+    }
+    for (const alias of entry.aliases) {
+      const aliasRe = new RegExp(`(^|\\b|\\s)${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\b|\\s|$)`, 'i');
+      if (aliasRe.test(lower)) {
+        return { mode: 'name', name: primaryName };
+      }
+    }
   }
 
   return undefined;
