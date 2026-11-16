@@ -33,6 +33,7 @@ export interface DeviceSpecification {
   subType: LightingFixtureType | VisualScreenType | string;
   count: number;
   notes?: string;
+  color?: LightingColor;
 }
 
 export type LightingColorMode = 'rgb' | 'rgbw' | 'rgba' | 'cmy' | 'kelvin' | 'gel' | 'name';

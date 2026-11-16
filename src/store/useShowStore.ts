@@ -24,6 +24,14 @@ export interface ShowState {
   activeCueId: string | null;
   standbyCueId: string | null;
 
+  // History / Undo / Redo
+  past: Show[];
+  future: Show[];
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
+
   // Show Actions
   loadShow: (show: Show) => void;
   appendActs: (acts: Act[]) => void;
@@ -46,6 +54,7 @@ export interface ShowState {
   // State Machine / Playback Actions
   standbyCue: (cueId: string) => void;
   goCue: (cueId?: string) => void;
+  goNextCue: () => void;
   holdCue: (cueId?: string) => void;
   skipCue: (cueId: string) => void;
   resetCue: (cueId: string) => void;
@@ -61,6 +70,27 @@ export interface ShowState {
   getDeviceStats: () => DeviceStats;
 }
 
+function cloneShow(show: Show): Show {
+  return typeof structuredClone === 'function'
+    ? structuredClone(show)
+    : JSON.parse(JSON.stringify(show));
+}
+
+function pushHistory(state: { past: Show[]; future: Show[]; show: Show }): {
+  past: Show[];
+  future: Show[];
+  canUndo: boolean;
+  canRedo: boolean;
+} {
+  const nextPast = [...state.past, cloneShow(state.show)].slice(-30);
+  return {
+    past: nextPast,
+    future: [],
+    canUndo: true,
+    canRedo: false,
+  };
+}
+
 export const useShowStore = create<ShowState>((set, get) => {
   const initialShow = createDefaultShow();
   const initialCues = initialShow.acts[0]?.cues ?? [];
@@ -71,6 +101,56 @@ export const useShowStore = create<ShowState>((set, get) => {
     isDirty: false,
     activeCueId: null,
     standbyCueId: initialStandby,
+    past: [],
+    future: [],
+    canUndo: false,
+    canRedo: false,
+
+    undo: () => {
+      set((state) => {
+        if (state.past.length === 0) return state;
+        const previousShow = state.past[state.past.length - 1];
+        const newPast = state.past.slice(0, -1);
+        const newFuture = [cloneShow(state.show), ...state.future].slice(0, 30);
+        const allCues = previousShow.acts.flatMap((a) => a.cues);
+        const activeValid = allCues.some((c) => c.id === state.activeCueId);
+        const standbyValid = allCues.some((c) => c.id === state.standbyCueId);
+
+        return {
+          show: previousShow,
+          past: newPast,
+          future: newFuture,
+          canUndo: newPast.length > 0,
+          canRedo: true,
+          isDirty: true,
+          activeCueId: activeValid ? state.activeCueId : null,
+          standbyCueId: standbyValid ? state.standbyCueId : (allCues[0]?.id ?? null),
+        };
+      });
+    },
+
+    redo: () => {
+      set((state) => {
+        if (state.future.length === 0) return state;
+        const nextShow = state.future[0];
+        const newFuture = state.future.slice(1);
+        const newPast = [...state.past, cloneShow(state.show)].slice(-30);
+        const allCues = nextShow.acts.flatMap((a) => a.cues);
+        const activeValid = allCues.some((c) => c.id === state.activeCueId);
+        const standbyValid = allCues.some((c) => c.id === state.standbyCueId);
+
+        return {
+          show: nextShow,
+          past: newPast,
+          future: newFuture,
+          canUndo: true,
+          canRedo: newFuture.length > 0,
+          isDirty: true,
+          activeCueId: activeValid ? state.activeCueId : null,
+          standbyCueId: standbyValid ? state.standbyCueId : (allCues[0]?.id ?? null),
+        };
+      });
+    },
 
     loadShow: (show: Show) => {
       const allCues = show.acts.flatMap((a) => a.cues);
@@ -82,17 +162,23 @@ export const useShowStore = create<ShowState>((set, get) => {
         isDirty: false,
         activeCueId: active,
         standbyCueId: standby,
+        past: [],
+        future: [],
+        canUndo: false,
+        canRedo: false,
       });
     },
 
     appendActs: (newActs: Act[]) => {
       set((state) => {
+        const history = pushHistory(state);
         const existingCount = state.show.acts.length;
         const normalized = newActs.map((act, index) => ({
           ...act,
           order: existingCount + index + 1,
         }));
         return {
+          ...history,
           isDirty: true,
           show: {
             ...state.show,
@@ -114,11 +200,16 @@ export const useShowStore = create<ShowState>((set, get) => {
         isDirty: true,
         activeCueId: null,
         standbyCueId: firstCueId,
+        past: [],
+        future: [],
+        canUndo: false,
+        canRedo: false,
       });
     },
 
     updateMetadata: (patch: Partial<ShowMetadata>) => {
       set((state) => ({
+        ...pushHistory(state),
         isDirty: true,
         show: {
           ...state.show,
@@ -133,6 +224,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     updateSettings: (patch: Partial<ShowSettings>) => {
       set((state) => ({
+        ...pushHistory(state),
         isDirty: true,
         show: {
           ...state.show,
@@ -157,6 +249,7 @@ export const useShowStore = create<ShowState>((set, get) => {
           cues: [],
         };
         return {
+          ...pushHistory(state),
           isDirty: true,
           show: {
             ...state.show,
@@ -169,6 +262,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     updateAct: (actId: string, patch: Partial<Omit<Act, 'id' | 'cues'>>) => {
       set((state) => ({
+        ...pushHistory(state),
         isDirty: true,
         show: {
           ...state.show,
@@ -187,6 +281,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         const standbyStillExists = allRemainingCues.some((c) => c.id === state.standbyCueId);
 
         return {
+          ...pushHistory(state),
           isDirty: true,
           show: {
             ...state.show,
@@ -245,6 +340,7 @@ export const useShowStore = create<ShowState>((set, get) => {
       };
 
       set((state) => {
+        const history = pushHistory(state);
         const updatedActs = state.show.acts.map((act) => {
           if (act.id !== actId) return act;
           if (!afterCueId) {
@@ -260,6 +356,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         });
 
         return {
+          ...history,
           isDirty: true,
           show: {
             ...state.show,
@@ -274,6 +371,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     updateCue: (cueId: string, patch: Partial<Cue>) => {
       set((state) => {
+        const history = pushHistory(state);
         const updatedActs = state.show.acts.map((act) => ({
           ...act,
           cues: act.cues.map((cue) => {
@@ -289,6 +387,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         }));
 
         return {
+          ...history,
           isDirty: true,
           show: {
             ...state.show,
@@ -300,6 +399,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     deleteCue: (cueId: string) => {
       set((state) => {
+        const history = pushHistory(state);
         const updatedActs = state.show.acts.map((act) => ({
           ...act,
           cues: act.cues.filter((c) => c.id !== cueId),
@@ -307,6 +407,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         const allRemaining = updatedActs.flatMap((a) => a.cues);
 
         return {
+          ...history,
           isDirty: true,
           show: {
             ...state.show,
@@ -323,6 +424,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     reorderCues: (actId: string, cueIds: string[]) => {
       set((state) => {
+        const history = pushHistory(state);
         const updatedActs = state.show.acts.map((act) => {
           if (act.id !== actId) return act;
           const cueMap = new Map(act.cues.map((c) => [c.id, c]));
@@ -333,6 +435,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         });
 
         return {
+          ...history,
           isDirty: true,
           show: {
             ...state.show,
@@ -436,6 +539,27 @@ export const useShowStore = create<ShowState>((set, get) => {
         activeCueId: targetId,
         standbyCueId: nextStandbyId,
       });
+    },
+
+    goNextCue: () => {
+      const state = get();
+      const allCues = state.getAllCues();
+      if (allCues.length === 0) return;
+
+      if (state.standbyCueId) {
+        state.goCue(state.standbyCueId);
+        return;
+      }
+
+      if (state.activeCueId) {
+        const currentIndex = allCues.findIndex((c) => c.id === state.activeCueId);
+        if (currentIndex !== -1 && currentIndex < allCues.length - 1) {
+          state.goCue(allCues[currentIndex + 1].id);
+          return;
+        }
+      }
+
+      state.goCue();
     },
 
     holdCue: (cueId?: string) => {
@@ -599,3 +723,80 @@ export const useShowStore = create<ShowState>((set, get) => {
     },
   };
 });
+
+export interface GlobalShortcutOptions {
+  onSave?: () => void;
+}
+
+/**
+ * Global Keyboard Shortcut Handler
+ * Supports:
+ * - Ctrl+Z / Cmd+Z: Undo
+ * - Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y / Cmd+Y: Redo
+ * - Ctrl+S / Cmd+S: Save / Export
+ */
+export function handleGlobalKeyDown(e: KeyboardEvent, options?: GlobalShortcutOptions): boolean {
+  const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+  if (!isCtrlOrCmd) return false;
+
+  const key = e.key.toLowerCase();
+
+  // Undo: Ctrl+Z / Cmd+Z (without Shift)
+  if (key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    const store = useShowStore.getState();
+    if (store.canUndo) {
+      store.undo();
+      return true;
+    }
+    return false;
+  }
+
+  // Redo: Ctrl+Shift+Z / Cmd+Shift+Z OR Ctrl+Y / Cmd+Y
+  if ((key === 'z' && e.shiftKey) || (key === 'y' && !e.shiftKey)) {
+    e.preventDefault();
+    const store = useShowStore.getState();
+    if (store.canRedo) {
+      store.redo();
+      return true;
+    }
+    return false;
+  }
+
+  // Save: Ctrl+S / Cmd+S
+  if (key === 's') {
+    e.preventDefault();
+    if (options?.onSave) {
+      options.onSave();
+    } else {
+      useShowStore.getState().markSaved();
+    }
+    return true;
+  }
+
+  return false;
+}
+
+let globalShortcutsCleanup: (() => void) | null = null;
+
+export function attachGlobalShortcuts(
+  target: EventTarget = window,
+  options?: GlobalShortcutOptions
+): () => void {
+  const listener = (event: Event) => {
+    handleGlobalKeyDown(event as KeyboardEvent, options);
+  };
+
+  target.addEventListener('keydown', listener);
+  return () => {
+    target.removeEventListener('keydown', listener);
+  };
+}
+
+// Auto-attach when running in browser
+if (typeof window !== 'undefined') {
+  if (typeof globalShortcutsCleanup === 'function') {
+    (globalShortcutsCleanup as () => void)();
+  }
+  globalShortcutsCleanup = attachGlobalShortcuts(window);
+}

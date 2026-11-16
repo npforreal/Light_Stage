@@ -1,4 +1,5 @@
 import { Show, LightStageFile } from '../types/stage';
+import { useShowStore } from '../store/useShowStore';
 
 export const LIGHTSTAGE_FILE_TYPE = 'lightstage_project';
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -249,4 +250,54 @@ export function clearAutoSave(): void {
   } catch {
     // Ignore error
   }
+}
+
+let autoSaveUnsubscribe: (() => void) | null = null;
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Subscribes to useShowStore mutations and automatically saves whenever show data changes.
+ * Debounced to optimize disk/storage writes during rapid edits.
+ */
+export function setupAutoSaveSubscription(debounceMs = 200): () => void {
+  if (autoSaveUnsubscribe) {
+    autoSaveUnsubscribe();
+    autoSaveUnsubscribe = null;
+  }
+
+  autoSaveUnsubscribe = useShowStore.subscribe((state, prevState) => {
+    if (state.show !== prevState?.show) {
+      if (autoSaveTimer) clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => {
+        saveAutoSave(state.show);
+      }, debounceMs);
+    }
+  });
+
+  return () => {
+    if (autoSaveUnsubscribe) {
+      autoSaveUnsubscribe();
+      autoSaveUnsubscribe = null;
+    }
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = null;
+    }
+  };
+}
+
+export function stopAutoSaveSubscription(): void {
+  if (autoSaveUnsubscribe) {
+    autoSaveUnsubscribe();
+    autoSaveUnsubscribe = null;
+  }
+  if (autoSaveTimer) {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+  }
+}
+
+// Auto-initialize in browser/desktop environment
+if (typeof window !== 'undefined') {
+  setupAutoSaveSubscription();
 }

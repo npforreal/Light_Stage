@@ -147,5 +147,24 @@ describe('Persistence Service (.lightstage & Auto-Save)', () => {
       expect(cue?.departments.lx?.color).toEqual({ mode: 'rgb', hex: '#ffaa00' });
       expect(cue?.departments.lx?.colorPreset).toBe('#ffaa00');
     });
+
+    it('triggers auto-save on useShowStore mutations via subscription', async () => {
+      const { setupAutoSaveSubscription, stopAutoSaveSubscription, loadAutoSave } = await import('../persistence');
+      const { useShowStore } = await import('../../store/useShowStore');
+
+      // Setup immediate subscription (0ms debounce for test)
+      setupAutoSaveSubscription(0);
+
+      useShowStore.getState().newShow('Subscription AutoSave Test');
+
+      // Wait a tick for microtask/timer
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      const autoSaved = loadAutoSave();
+      expect(autoSaved).toBeDefined();
+      expect(autoSaved?.metadata.title).toBe('Subscription AutoSave Test');
+
+      stopAutoSaveSubscription();
+    });
   });
 });

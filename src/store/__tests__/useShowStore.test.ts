@@ -164,6 +164,111 @@ describe('useShowStore', () => {
       useShowStore.getState().prevCue();
       expect(useShowStore.getState().standbyCueId).toBe(cue2);
     });
+
+    it('fires next cue with goNextCue()', () => {
+      useShowStore.getState().standbyCue(cue1);
+      useShowStore.getState().goNextCue();
+
+      expect(useShowStore.getState().activeCueId).toBe(cue1);
+      expect(useShowStore.getState().getCueById(cue1)?.status).toBe('Go');
+      expect(useShowStore.getState().standbyCueId).toBe(cue2);
+
+      useShowStore.getState().goNextCue();
+      expect(useShowStore.getState().getCueById(cue1)?.status).toBe('Completed');
+      expect(useShowStore.getState().activeCueId).toBe(cue2);
+      expect(useShowStore.getState().getCueById(cue2)?.status).toBe('Go');
+      expect(useShowStore.getState().standbyCueId).toBe(cue3);
+    });
+  });
+
+  describe('Undo / Redo & History Stack (Đợt 8.4)', () => {
+    it('records mutations and supports undo and redo', () => {
+      const store = useShowStore.getState();
+      store.newShow('History Show');
+
+      expect(useShowStore.getState().canUndo).toBe(false);
+      expect(useShowStore.getState().canRedo).toBe(false);
+
+      const actId = useShowStore.getState().show.acts[0].id;
+      const c1 = useShowStore.getState().show.acts[0].cues[0].id;
+
+      // Mutation 1: update cue title
+      useShowStore.getState().updateCue(c1, { title: 'Renamed Cue' });
+      expect(useShowStore.getState().canUndo).toBe(true);
+      expect(useShowStore.getState().canRedo).toBe(false);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Renamed Cue');
+
+      // Undo mutation 1
+      useShowStore.getState().undo();
+      expect(useShowStore.getState().canUndo).toBe(false);
+      expect(useShowStore.getState().canRedo).toBe(true);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Pre-Show / Walk-in');
+
+      // Redo mutation 1
+      useShowStore.getState().redo();
+      expect(useShowStore.getState().canUndo).toBe(true);
+      expect(useShowStore.getState().canRedo).toBe(false);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Renamed Cue');
+
+      // Mutation 2: add a cue
+      const c2 = useShowStore.getState().addCue(actId, { title: 'Second Cue' });
+      expect(useShowStore.getState().getAllCues().length).toBe(2);
+
+      // Undo mutation 2
+      useShowStore.getState().undo();
+      expect(useShowStore.getState().getAllCues().length).toBe(1);
+
+      // Redo mutation 2
+      useShowStore.getState().redo();
+      expect(useShowStore.getState().getAllCues().length).toBe(2);
+      expect(useShowStore.getState().getCueById(c2)?.title).toBe('Second Cue');
+    });
+
+    it('enforces maximum history stack size of 30', () => {
+      useShowStore.getState().newShow('Stack Limit Show');
+
+      for (let i = 1; i <= 35; i++) {
+        useShowStore.getState().updateMetadata({ title: `Title ${i}` });
+      }
+
+      expect(useShowStore.getState().past.length).toBe(30);
+    });
+
+    it('handles global keyboard shortcuts for undo, redo, and save', async () => {
+      const { handleGlobalKeyDown } = await import('../useShowStore');
+      useShowStore.getState().newShow('Shortcut Show');
+      const c1 = useShowStore.getState().show.acts[0].cues[0].id;
+
+      useShowStore.getState().updateCue(c1, { title: 'Modified Before Undo' });
+      expect(useShowStore.getState().canUndo).toBe(true);
+
+      // Ctrl+Z
+      const undoEvent = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
+      const undoHandled = handleGlobalKeyDown(undoEvent);
+      expect(undoHandled).toBe(true);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Pre-Show / Walk-in');
+      expect(useShowStore.getState().canRedo).toBe(true);
+
+      // Ctrl+Y (Redo)
+      const redoEvent = new KeyboardEvent('keydown', { key: 'y', ctrlKey: true });
+      const redoHandled = handleGlobalKeyDown(redoEvent);
+      expect(redoHandled).toBe(true);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Modified Before Undo');
+
+      // Ctrl+Shift+Z (Redo variant)
+      useShowStore.getState().undo();
+      const redoShiftZEvent = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, shiftKey: true });
+      const redoShiftZHandled = handleGlobalKeyDown(redoShiftZEvent);
+      expect(redoShiftZHandled).toBe(true);
+      expect(useShowStore.getState().getCueById(c1)?.title).toBe('Modified Before Undo');
+
+      // Ctrl+S (Save)
+      let saveCalled = false;
+      const saveEvent = new KeyboardEvent('keydown', { key: 's', ctrlKey: true });
+      const saveHandled = handleGlobalKeyDown(saveEvent, { onSave: () => { saveCalled = true; } });
+      expect(saveHandled).toBe(true);
+      expect(saveCalled).toBe(true);
+    });
   });
 
   describe('Device Stats Aggregation', () => {

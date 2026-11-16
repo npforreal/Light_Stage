@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShowStore } from './useShowStore';
 
 export interface ClockState {
   isRunning: boolean;
@@ -68,6 +69,25 @@ export const useClockStore = create<ClockState>((set) => ({
       isRunning: false,
       isPaused: true,
     });
+    try {
+      const showStore = useShowStore.getState();
+      if (showStore && showStore.activeCueId) {
+        const activeCue = showStore.getCueById(showStore.activeCueId);
+        if (activeCue && activeCue.status === 'Go') {
+          const updatedActs = showStore.show.acts.map((act) => ({
+            ...act,
+            cues: act.cues.map((cue) =>
+              cue.id === showStore.activeCueId ? { ...cue, status: 'Hold' as const } : cue
+            ),
+          }));
+          useShowStore.setState({
+            show: { ...showStore.show, acts: updatedActs },
+          });
+        }
+      }
+    } catch {
+      // Ignore in unmounted / isolated test context
+    }
   },
 
   resumeClock: () => {
@@ -82,6 +102,25 @@ export const useClockStore = create<ClockState>((set) => ({
       isRunning: false,
       isPaused: false,
     });
+    try {
+      const showStore = useShowStore.getState();
+      if (showStore && showStore.activeCueId) {
+        const activeCue = showStore.getCueById(showStore.activeCueId);
+        if (activeCue && activeCue.status === 'Go') {
+          const updatedActs = showStore.show.acts.map((act) => ({
+            ...act,
+            cues: act.cues.map((cue) =>
+              cue.id === showStore.activeCueId ? { ...cue, status: 'Hold' as const } : cue
+            ),
+          }));
+          useShowStore.setState({
+            show: { ...showStore.show, acts: updatedActs },
+          });
+        }
+      }
+    } catch {
+      // Ignore in unmounted / isolated test context
+    }
   },
 
   resetClock: () => {
@@ -93,6 +132,14 @@ export const useClockStore = create<ClockState>((set) => ({
       cueRemainingMs: state.cueDurationMs,
       isOverrun: false,
     }));
+    try {
+      const showStore = useShowStore.getState();
+      if (showStore && showStore.resetAllCues) {
+        showStore.resetAllCues();
+      }
+    } catch {
+      // Ignore in unmounted / isolated test context
+    }
   },
 
   tick: (deltaMs: number) => {
