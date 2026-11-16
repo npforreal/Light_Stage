@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useClockStore } from './useClockStore';
 import {
   Show,
   Cue,
@@ -25,6 +26,7 @@ export interface ShowState {
 
   // Show Actions
   loadShow: (show: Show) => void;
+  appendActs: (acts: Act[]) => void;
   newShow: (title?: string) => void;
   updateMetadata: (patch: Partial<ShowMetadata>) => void;
   updateSettings: (patch: Partial<ShowSettings>) => void;
@@ -80,6 +82,27 @@ export const useShowStore = create<ShowState>((set, get) => {
         isDirty: false,
         activeCueId: active,
         standbyCueId: standby,
+      });
+    },
+
+    appendActs: (newActs: Act[]) => {
+      set((state) => {
+        const existingCount = state.show.acts.length;
+        const normalized = newActs.map((act, index) => ({
+          ...act,
+          order: existingCount + index + 1,
+        }));
+        return {
+          isDirty: true,
+          show: {
+            ...state.show,
+            acts: [...state.show.acts, ...normalized],
+            metadata: {
+              ...state.show.metadata,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        };
       });
     },
 
@@ -176,11 +199,40 @@ export const useShowStore = create<ShowState>((set, get) => {
     },
 
     addCue: (actId: string, cueData?: Partial<Cue>, afterCueId?: string) => {
-      const newCueNumber = cueData?.cueNumber || '1.0';
+      const state = get();
+      const allExistingCues = state.getAllCues();
+      const targetAct = state.show.acts.find((a) => a.id === actId);
+      const actOrder = targetAct ? targetAct.order : 1;
+      const existingActCues = targetAct ? targetAct.cues : [];
+
+      let computedNumber = cueData?.cueNumber;
+      if (!computedNumber) {
+        // Auto-increment cue number (1.0, 2.0...) ensuring no collisions
+        let nextNum = existingActCues.reduce((max, c) => {
+          const parsed = parseFloat(c.cueNumber);
+          return !isNaN(parsed) && parsed > max ? parsed : max;
+        }, 0);
+        nextNum = nextNum > 0 ? nextNum + 1.0 : actOrder * 1.0;
+        computedNumber = nextNum.toFixed(1);
+
+        // Guard against any collisions across the entire show
+        let counter = 1;
+        while (allExistingCues.some((c) => c.cueNumber === computedNumber)) {
+          computedNumber = (nextNum + counter * 0.1).toFixed(1);
+          counter++;
+        }
+      } else {
+        // Warn if user provides a duplicate cue number
+        const isDuplicate = allExistingCues.some((c) => c.cueNumber === computedNumber);
+        if (isDuplicate) {
+          console.warn(`[LightStage] Duplicate cue number "${computedNumber}" detected in show.`);
+        }
+      }
+
       const newCueTitle = cueData?.title || 'New Cue';
       const created = createCue(
         actId,
-        newCueNumber,
+        computedNumber,
         newCueTitle,
         cueData?.durationMs ?? 60000,
         cueData?.departments ?? {}
@@ -188,6 +240,7 @@ export const useShowStore = create<ShowState>((set, get) => {
       const cueToInsert: Cue = {
         ...created,
         ...cueData,
+        cueNumber: computedNumber,
         id: created.id,
       };
 
@@ -331,6 +384,12 @@ export const useShowStore = create<ShowState>((set, get) => {
       const targetIndex = allCues.findIndex((c) => c.id === targetId);
       if (targetIndex === -1) return;
 
+      const targetCue = allCues[targetIndex];
+
+      // Centralized clock synchronization: set duration and start clock
+      useClockStore.getState().syncCueDuration(targetCue.durationMs, true);
+      useClockStore.getState().startClock();
+
       // Determine next standby cue if autoStandbyNext is enabled
       let nextStandbyId: string | null = null;
       if (state.show.settings.autoStandbyNext) {
@@ -346,9 +405,9 @@ export const useShowStore = create<ShowState>((set, get) => {
       const updatedActs = state.show.acts.map((act) => ({
         ...act,
         cues: act.cues.map((cue) => {
-          // If this was the previous active cue (running 'Go'), complete it
+          // If this was the previous active cue (running 'Go' or 'Hold'), complete it
           if (cue.id === state.activeCueId && cue.id !== targetId) {
-            if (cue.status === 'Go') {
+            if (cue.status === 'Go' || cue.status === 'Hold') {
               return { ...cue, status: 'Completed' as const };
             }
           }
@@ -390,6 +449,8 @@ export const useShowStore = create<ShowState>((set, get) => {
           cue.id === targetId ? { ...cue, status: 'Hold' as const } : cue
         ),
       }));
+
+      useClockStore.getState().pauseClock();
 
       set({
         show: { ...state.show, acts: updatedActs },

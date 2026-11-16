@@ -52,4 +52,39 @@ describe('VirtualStagePreview Component', () => {
     expect(screen.getByText(/LED Screens/i)).toBeInTheDocument();
     expect(screen.getByText(/Lighting Trusses/i)).toBeInTheDocument();
   });
+
+  it('reflects truth: does not emit beams when cue has no LX and does not claim LIVE FEED when cue has no VX', () => {
+    // Cue with no LX and no VX
+    const actId = useShowStore.getState().show.acts[0].id;
+    const emptyCueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '2.0',
+      title: 'Dark Cue',
+      departments: {},
+    });
+    useShowStore.getState().goCue(emptyCueId);
+
+    const { container } = render(<VirtualStagePreview />);
+    expect(screen.queryByText(/LIVE FEED ACTIVE/i)).not.toBeInTheDocument();
+    // No beam cones in DOM
+    const beams = container.querySelectorAll('polygon[fill="url(#beamGradient)"]');
+    expect(beams.length).toBe(0);
+  });
+
+  it('renders beams and LIVE FEED when cue has active LX and VX', () => {
+    const actId = useShowStore.getState().show.acts[0].id;
+    const liveCueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '3.0',
+      title: 'Full Production',
+      departments: {
+        lx: { sceneName: 'Rock Concert', fixtureCount: 12 },
+        vx: { contentName: 'Hero Loop', screenCount: 2 },
+      },
+    });
+    useShowStore.getState().goCue(liveCueId);
+
+    const { container } = render(<VirtualStagePreview />);
+    expect(screen.getAllByText(/LIVE FEED ACTIVE/i).length).toBeGreaterThan(0);
+    const beams = container.querySelectorAll('polygon[fill="url(#beamGradient)"]');
+    expect(beams.length).toBeGreaterThan(0);
+  });
 });

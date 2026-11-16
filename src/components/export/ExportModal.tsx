@@ -38,10 +38,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
   const handlePrintPdf = () => {
     const html = generatePrintableCueSheetHtml(show, selectedRole);
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(html);
-      printWindow.document.close();
+    let iframe = document.getElementById('print-iframe') as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'print-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+    }
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc) {
+      doc.open();
+      doc.write(html);
+      doc.close();
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
     }
   };
 

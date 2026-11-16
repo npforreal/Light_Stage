@@ -77,3 +77,56 @@ Mô phỏng 2D trực quan hệ thống màn hình LED và giàn đèn với kh�
 - [x] Xuất file Run of Show (ROS) tổng quan và Cue Sheet lọc riêng cho từng bộ phận (LX, VX, SQ) ra PDF chuẩn in ấn.
 - [x] Xuất lại file Excel đã qua chuẩn hóa và thống kê thiết bị.
 - [x] Stress testing, kiểm tra rò rỉ bộ nhớ (no memory leak) và đóng gói installer native cho macOS (`.dmg`) và Windows (`.exe` / `.msi`).
+## Đợt 6: Sửa lỗi Vận hành & Độ tin cậy Live Show
+
+> Nguồn: đánh giá đa góc độ ngày 2026-11-15 (test thủ công trên browser 1280×800 + đọc code). Thứ tự giai đoạn theo mức nghiêm trọng khi chạy live.
+
+### Mục tiêu đợt
+Không mất dữ liệu show, phím tắt và đồng hồ đúng tuyệt đối khi gọi cue, giao diện dùng được ở mọi cỡ cửa sổ hợp lệ (≥ 960×600), export an toàn.
+
+### Giai đoạn 6.1: Chống mất dữ liệu (Critical)
+- [x] 6.1.1 Nối autosave: gọi `saveAutoSave` (debounce ~1s) khi `show` đổi; hiển thị trạng thái "Đã lưu / chưa lưu" từ `isDirty`.
+- [x] 6.1.2 Khi khởi động: nếu có autosave, hỏi khôi phục (dùng `loadAutoSave`), có nút bỏ.
+- [x] 6.1.3 Nút "Open Project (.lightstage)" dùng `parseLightStageFile`; báo lỗi rõ khi file hỏng/sai phiên bản.
+- [x] 6.1.4 Import CSV và New Show: hỏi xác nhận khi `isDirty`, cho phép "Thêm vào cuối" thay vì thay thế toàn bộ (`ImportModal.tsx:61`).
+- [x] 6.1.5 Cảnh báo thoát khi `isDirty` (`beforeunload`; với Tauri dùng sự kiện đóng cửa sổ).
+- Kiểm chứng: test persistence/store, browser: sửa cue → reload → khôi phục đúng; mở lại file đã lưu.
+
+### Giai đoạn 6.2: Đồng hồ & phím tắt đúng khi gọi cue (Critical)
+- [x] 6.2.1 Gom logic GO vào một hàm duy nhất (store/hook): `goCue` + `syncCueDuration(cue.durationMs, true)` + `startClock`; hotkey, nút bảng và timeline đều gọi hàm này.
+- [x] 6.2.2 Hotkey: chỉ bỏ qua khi focus ở input/textarea/select/contenteditable; khi focus ở button thì `blur()` hoặc vẫn GO nhưng không kích hoạt nút (test cả Space và Enter).
+- [x] 6.2.3 Đồng hồ dùng mốc `performance.now()` thay vì cộng `tick(100)` để không trôi và không chậm khi cửa sổ ở nền.
+- [x] 6.2.4 Định nghĩa lại Delta (so với thời điểm kế hoạch bắt đầu cue hiện tại); ghi quyết định vào PROGRESS.
+- [x] 6.2.5 Trạng thái cue: Esc đặt rõ Hold + dừng đồng hồ; cue đã chạy xong chuyển Done thay vì để Hold/Go.
+- [x] 6.2.6 Cue number tự tăng, không trùng (`1.0`, `2.0`…), cảnh báo khi người dùng nhập trùng.
+- Kiểm chứng: test store/clock (GO cue 01:00 → remainder 01:00), test hotkey có button focus, browser lặp lại kịch bản đã lỗi.
+
+### Giai đoạn 6.3: Bố cục responsive & Operator Lock luôn thấy được (High)
+- [x] 6.3.1 Header co giãn ở 960–1920px: rút gọn nhãn, ẩn Wall Clock hoặc gom nút phụ vào menu; Lock/Import/Export luôn nằm trong màn hình.
+- [x] 6.3.2 Operator Lock luôn hiển thị cố định; hiển thị banner rõ khi đang khoá.
+- [x] 6.3.3 Kiểm tra `scrollWidth === clientWidth` ở 960, 1280, 1920 (test browser, kèm ảnh).
+- Kiểm chứng: đo bằng JS trên browser tại 3 độ rộng + chụp màn hình.
+
+### Giai đoạn 6.4: Parser đếm đúng (Medium)
+- [x] 6.4.1 `hardwareParser.ts`: thay `includes()` bằng khớp từ (word boundary/từ khoá có biên), nhận "Spare", "Party" không phải fixture; giữ hỗ trợ tiếng Việt có dấu.
+- [x] 6.4.2 Giới hạn số lượng hợp lý (ví dụ 1–9999), vượt thì cảnh báo thay vì nhận.
+- [x] 6.4.3 Xử lý "Beam x 4 (FOH)" và ngoặc/ghi chú đuôi; thêm test hồi quy các ca đã lỗi (`Spare cable 3`, `Party mode`, `x 4000000000`, `Blinder 2 -> 0`).
+- Kiểm chứng: vitest `hardwareParser`, `importer`, `stress` (hiệu năng vẫn dưới ngưỡng).
+
+### Giai đoạn 6.5: Stage 2D không nói sai & Export an toàn (Medium)
+- [x] 6.5.1 `VirtualStagePreview.tsx`: cue không có LX → không phát beam; không có VX → màn hiện "Standby/Off" thay vì "Visual Loop LIVE FEED ACTIVE" (phần màu chính xác thuộc Đợt 7).
+- [x] 6.5.2 `exporter.ts`: escape HTML mọi chuỗi người dùng/CSV chèn vào bản in; test với `<script>`/`<img onerror>`.
+- [x] 6.5.3 CSV export: chống CSV injection (ô bắt đầu bằng `= + - @` thì thêm tiền tố an toàn); test.
+- [x] 6.5.4 In PDF: thay `window.open`+`document.write` bằng cách chạy được trong Tauri webview (iframe ẩn/`window.print` hoặc lệnh Tauri); thử trên bản build.
+- [x] 6.5.5 `tauri.conf.json`: bật CSP chặt (`default-src 'self'`, cho phép style inline cần thiết), kiểm tra app vẫn chạy.
+- [x] 6.5.6 Import: hoặc hỗ trợ `.xlsx` thật, hoặc sửa README/UI chỉ nói CSV/TSV (chốt phương án).
+- Kiểm chứng: vitest exporter/stage; browser mở Export, in thử; `npm run build`.
+
+### Giai đoạn 6.6: Đóng đợt
+- [x] 6.6.1 `bash scripts/check.sh --fast`, `npm run build`, `python3 scripts/audit_workflow.py`.
+- [x] 6.6.2 Ghi PROGRESS.md, `python3 scripts/archive_logs.py`, commit Conventional Commits (mỗi giai đoạn một commit, không push).
+
+### Rủi ro & quyết định cần chốt
+- Cần cài Rust/cargo để kiểm tra bản build Tauri thật (6.5.4, 6.5.5); môi trường hiện chưa có cargo.
+- Định nghĩa Delta (6.2.4) và phương án `.xlsx` (6.5.6) cần người dùng chốt.
+

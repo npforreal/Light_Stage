@@ -3,6 +3,8 @@ import {
   generateCueSheetCsv,
   generateHardwareInventoryCsv,
   generatePrintableCueSheetHtml,
+  escapeHtml,
+  escapeCsvCell,
 } from '../exporter';
 import { createDefaultShow } from '../../types/stage';
 
@@ -29,6 +31,14 @@ describe('Exporter Service', () => {
       expect(vxCsv).toContain('Màn LED (VX)');
       expect(vxCsv).not.toContain('Ánh sáng (LX)');
     });
+
+    it('sanitizes CSV injection vectors starting with =, +, -, @, \\t, \\r', () => {
+      expect(escapeCsvCell('=cmd|/C calc')).toBe("'=cmd|/C calc");
+      expect(escapeCsvCell('+12345')).toBe("'+12345");
+      expect(escapeCsvCell('-SUM(A1:A10)')).toBe("'-SUM(A1:A10)");
+      expect(escapeCsvCell('@SUM(A1:A10)')).toBe("'@SUM(A1:A10)");
+      expect(escapeCsvCell('Normal text')).toBe('Normal text');
+    });
   });
 
   describe('generateHardwareInventoryCsv', () => {
@@ -51,6 +61,26 @@ describe('Exporter Service', () => {
       expect(html).toContain('@media print');
       expect(html).toContain('window.print()');
       expect(html).toContain('Pre-Show / Walk-in');
+    });
+
+    it('escapes user strings to prevent HTML injection and XSS', () => {
+      const xssShow = createDefaultShow('<script>alert("PWNED")</script>');
+      xssShow.acts[0].cues[0].title = '<img src=x onerror=alert(1)>';
+      xssShow.acts[0].cues[0].notes = 'Danger & "quotes" \'apostrophe\' <tags>';
+
+      const html = generatePrintableCueSheetHtml(xssShow, 'ALL');
+      expect(html).not.toContain('<script>alert("PWNED")</script>');
+      expect(html).toContain('&lt;script&gt;alert(&quot;PWNED&quot;)&lt;/script&gt;');
+      expect(html).not.toContain('<img src=x onerror=alert(1)>');
+      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+      expect(html).toContain('Danger &amp; &quot;quotes&quot; &#39;apostrophe&#39; &lt;tags&gt;');
+    });
+
+    it('pure escapeHtml works on diverse values', () => {
+      expect(escapeHtml(null)).toBe('');
+      expect(escapeHtml(undefined)).toBe('');
+      expect(escapeHtml('Normal')).toBe('Normal');
+      expect(escapeHtml('A & B < C > D "E" \'F\'')).toBe('A &amp; B &lt; C &gt; D &quot;E&quot; &#39;F&#39;');
     });
   });
 });

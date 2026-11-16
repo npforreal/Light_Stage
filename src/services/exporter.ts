@@ -3,11 +3,30 @@ import { calculateShowHardwareInventory } from './hardwareParser';
 import { formatDuration } from '../store/useClockStore';
 
 /**
- * Escapes a cell value for RFC-4180 CSV
+ * Escapes HTML characters to prevent XSS in printable views
  */
-function escapeCsvCell(value: string | number | null | undefined): string {
+export function escapeHtml(str: string | number | null | undefined): string {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Escapes a cell value for RFC-4180 CSV and prevents formula injection (DDE attacks)
+ */
+export function escapeCsvCell(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+
+  // Prevent CSV injection: if cell starts with =, +, -, @, \t, or \r, prefix with single quote '
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -135,31 +154,31 @@ export function generatePrintableCueSheetHtml(show: Show, role: 'ALL' | 'LX' | '
   for (const act of show.acts) {
     tableRowsHtml += `
       <tr class="act-header">
-        <td colspan="10"><strong>${act.title}</strong> (${act.cues.length} cues)</td>
+        <td colspan="10"><strong>${escapeHtml(act.title)}</strong> (${act.cues.length} cues)</td>
       </tr>
     `;
 
     for (const cue of act.cues) {
       let deptCells = '';
       if (role === 'ALL' || role === 'LX') {
-        deptCells += `<td>${cue.departments.lx ? `${cue.departments.lx.sceneName || 'Preset'} (${cue.totalLightingFixtures} fix)` : '—'}</td>`;
+        deptCells += `<td>${cue.departments.lx ? `${escapeHtml(cue.departments.lx.sceneName || 'Preset')} (${cue.totalLightingFixtures} fix)` : '—'}</td>`;
       }
       if (role === 'ALL' || role === 'VX') {
-        deptCells += `<td>${cue.departments.vx ? `${cue.departments.vx.contentName || 'Loop'} (${cue.totalScreens} scr)` : '—'}</td>`;
+        deptCells += `<td>${cue.departments.vx ? `${escapeHtml(cue.departments.vx.contentName || 'Loop')} (${cue.totalScreens} scr)` : '—'}</td>`;
       }
       if (role === 'ALL' || role === 'SQ') {
-        deptCells += `<td>${cue.departments.sq ? cue.departments.sq.trackName || 'Audio' : '—'}</td>`;
+        deptCells += `<td>${cue.departments.sq ? escapeHtml(cue.departments.sq.trackName || 'Audio') : '—'}</td>`;
       }
       if (role === 'ALL' || role === 'ST') {
-        deptCells += `<td>${cue.departments.st ? cue.departments.st.actionDescription || 'Action' : '—'}</td>`;
+        deptCells += `<td>${cue.departments.st ? escapeHtml(cue.departments.st.actionDescription || 'Action') : '—'}</td>`;
       }
 
       tableRowsHtml += `
         <tr>
-          <td style="font-weight: bold; font-family: monospace;">${cue.cueNumber}</td>
+          <td style="font-weight: bold; font-family: monospace;">${escapeHtml(cue.cueNumber)}</td>
           <td>
-            <strong>${cue.title}</strong>
-            ${cue.notes ? `<br/><small style="color: #64748b; font-style: italic;">${cue.notes}</small>` : ''}
+            <strong>${escapeHtml(cue.title)}</strong>
+            ${cue.notes ? `<br/><small style="color: #64748b; font-style: italic;">${escapeHtml(cue.notes)}</small>` : ''}
           </td>
           <td style="font-family: monospace;">${formatDuration(cue.durationMs)}</td>
           ${deptCells}
@@ -173,7 +192,7 @@ export function generatePrintableCueSheetHtml(show: Show, role: 'ALL' | 'LX' | '
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${show.metadata.title} — Cue Sheet (${role})</title>
+  <title>${escapeHtml(show.metadata.title)} — Cue Sheet (${role})</title>
   <style>
     @page { size: A4 landscape; margin: 12mm; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; padding: 12px; }
@@ -193,8 +212,8 @@ export function generatePrintableCueSheetHtml(show: Show, role: 'ALL' | 'LX' | '
 <body>
   <div class="header">
     <div>
-      <div class="title">${show.metadata.title}</div>
-      <div class="meta">Venue: ${show.metadata.venue || 'Main Stage'} | Report: ${role === 'ALL' ? 'Master Cue Sheet' : `${role} Department Cue Sheet`}</div>
+      <div class="title">${escapeHtml(show.metadata.title)}</div>
+      <div class="meta">Venue: ${escapeHtml(show.metadata.venue || 'Main Stage')} | Report: ${role === 'ALL' ? 'Master Cue Sheet' : `${role} Department Cue Sheet`}</div>
     </div>
     <div class="meta" style="text-align: right;">
       Total Cues: ${allCues.length} | Total Duration: ${formatDuration(totalDurationMs, { includeHours: true })}<br/>

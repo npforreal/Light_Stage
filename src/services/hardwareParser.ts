@@ -25,55 +25,55 @@ export function classifyDevice(name: string, defaultCategory: 'Lighting' | 'Visu
 } {
   const lower = name.toLowerCase();
 
-  // Visual / LED Screen detection
+  // Exclude non-hardware phrases like "party mode", "spare cable"
+  if (/\b(?:spare|party|parallel|particle)\b/i.test(lower) && !/\b(?:beam|spot|wash|blinder|follow|laser|strobe|smoke|haze)\b/i.test(lower)) {
+    return { category: defaultCategory, subType: 'Other' };
+  }
+
+  // Visual / LED Screen detection with word boundary checks
   if (
-    lower.includes('màn led') ||
-    lower.includes('led screen') ||
-    lower.includes('màn hình') ||
-    lower.includes('led main') ||
-    lower.includes('led cánh') ||
-    lower.includes('led sàn') ||
-    lower.includes('banner')
+    /(?:màn\s+led|led\s+screen|màn\s+hình|led\s+main|led\s+cánh|led\s+sàn|\bbanner\b)/i.test(lower) ||
+    (/\bled\b/i.test(lower) && !/\bpar\s+led\b/i.test(lower))
   ) {
     let subType: VisualScreenType = 'Other';
-    if (lower.includes('main') || lower.includes('chính') || lower.includes('trung tâm')) {
+    if (/(?:main|chính|trung\s+tâm)/i.test(lower)) {
       subType = 'MainScreen';
-    } else if (lower.includes('cánh') || lower.includes('wing') || lower.includes('trái') || lower.includes('phải') || lower.includes('left') || lower.includes('right')) {
+    } else if (/(?:cánh|wing|trái|phải|left|right)/i.test(lower)) {
       subType = 'WingScreen';
-    } else if (lower.includes('sàn') || lower.includes('floor')) {
+    } else if (/(?:sàn|floor)/i.test(lower)) {
       subType = 'FloorScreen';
-    } else if (lower.includes('banner') || lower.includes('ribbon') || lower.includes('dải')) {
+    } else if (/(?:banner|ribbon|dải)/i.test(lower)) {
       subType = 'Banner';
     }
     return { category: 'Visual', subType };
   }
 
-  // Lighting detection
-  if (lower.includes('beam')) {
+  // Lighting detection with word boundaries
+  if (/\bbeam\b/i.test(lower)) {
     return { category: 'Lighting', subType: 'Beam' };
   }
-  if (lower.includes('spot')) {
+  if (/\bspot\b/i.test(lower)) {
     return { category: 'Lighting', subType: 'Spot' };
   }
-  if (lower.includes('wash')) {
+  if (/\bwash\b/i.test(lower)) {
     return { category: 'Lighting', subType: 'Wash' };
   }
-  if (lower.includes('par') || lower.includes('parled') || lower.includes('par led')) {
+  if (/\b(?:parled|par\s+led|par)\b/i.test(lower) && !/\b(?:spare|party|separate)\b/i.test(lower)) {
     return { category: 'Lighting', subType: 'ParLED' };
   }
-  if (lower.includes('blinder') || lower.includes('mặt trời')) {
+  if (/\bblinder\b|mặt\s+trời/i.test(lower)) {
     return { category: 'Lighting', subType: 'Blinder' };
   }
-  if (lower.includes('follow') || lower.includes('rọi')) {
+  if (/\bfollow\b|rọi/i.test(lower)) {
     return { category: 'Lighting', subType: 'Follow' };
   }
-  if (lower.includes('laser')) {
+  if (/\blaser\b/i.test(lower)) {
     return { category: 'Lighting', subType: 'Laser' };
   }
-  if (lower.includes('strobe') || lower.includes('chớp')) {
+  if (/\bstrobe\b|chớp/i.test(lower)) {
     return { category: 'Lighting', subType: 'Strobe' };
   }
-  if (lower.includes('smoke') || lower.includes('khói') || lower.includes('haze') || lower.includes('fog')) {
+  if (/\b(?:smoke|haze|fog)\b|khói/i.test(lower)) {
     return { category: 'Lighting', subType: 'Smoke' };
   }
 
@@ -81,9 +81,29 @@ export function classifyDevice(name: string, defaultCategory: 'Lighting' | 'Visu
 }
 
 /**
+ * Checks whether text contains authentic lighting or visual hardware keywords with word boundary
+ */
+function containsHardwareKeyword(text: string): boolean {
+  const lower = text.toLowerCase();
+  // Filter out non-fixtures
+  if (/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/i.test(lower)) {
+    const stripped = lower.replace(/\b(?:spare|party|cable|dây\s+cáp|đạo\s+cụ|ghế|bàn|quạt)\b/gi, '');
+    if (!/\b(?:beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen)\b/i.test(stripped)) {
+      return false;
+    }
+  }
+
+  return (
+    /\b(?:beam|spot|wash|parled|par\s+led|par|blinder|follow|laser|strobe|smoke|haze|fog|led|screen|banner)\b/i.test(lower) ||
+    /(?:màn\s+led|màn\s+hình|mặt\s+trời|rọi|chớp|khói|cây\s+follow)/i.test(lower)
+  );
+}
+
+/**
  * Extracts individual device specifications and quantities from freeform text.
  * Examples:
  * - "4 Beam 350W + 2 Follow" -> Beam 350W (4), Follow (2)
+ * - "Beam x 4 (FOH)" -> Beam (FOH) (4)
  * - "Màn LED cánh x 2" -> Màn LED cánh (2)
  * - "Spot 1000W x 4, 12 Par LED" -> Spot 1000W (4), Par LED (12)
  * - "2 cây Follow, 8 cái Beam" -> Follow (2), Beam (8)
@@ -103,47 +123,56 @@ export function parseHardwareFromText(
   const results: DeviceSpecification[] = [];
 
   for (const clause of clauses) {
+    // Skip clauses that are false-positive noise
+    if (!containsHardwareKeyword(clause)) {
+      continue;
+    }
+
     let count: number | null = null;
     let cleanName = clause;
 
-    // Pattern 1: Suffix multiplier: "Beam 350W x 4", "Màn LED cánh * 2", "Spot: 4"
-    const suffixMatch = clause.match(/^(.+?)\s*(?:[xX*:]|\bx\b)\s*(\d+)\s*(?:cây|cái|chiếc|bộ|màn|tấm)?$/i);
-    if (suffixMatch) {
-      cleanName = suffixMatch[1].trim();
-      count = parseInt(suffixMatch[2], 10);
+    // Transition pattern: "Blinder 2 -> 0" or "Beam 4 -> 8"
+    const transitionMatch = clause.match(/^(.+?)\s+(\d+)\s*(?:->|→)\s*(\d+)/i);
+    if (transitionMatch) {
+      cleanName = transitionMatch[1].trim();
+      const primaryCount = parseInt(transitionMatch[2], 10);
+      count = primaryCount > 0 ? primaryCount : parseInt(transitionMatch[3], 10);
     } else {
-      // Pattern 2: Prefix multiplier: "4 Beam 350W", "12x Par LED", "2 cây Follow"
-      const prefixMatch = clause.match(/^(\d+)\s*(?:x|X|\*|cây|cái|chiếc|bộ|màn|tấm)?\s*(.+)$/i);
-      if (prefixMatch) {
-        count = parseInt(prefixMatch[1], 10);
-        cleanName = prefixMatch[2].trim();
+      // Pattern 1: Suffix multiplier with optional notes: "Beam x 4 (FOH)", "Spot: 4", "Par LED * 6"
+      const suffixMatch = clause.match(
+        /^(.+?)\s*(?:[xX*:]|\bx\b)\s*(\d+)\s*(?:cây|cái|chiếc|bộ|màn|tấm)?(?:\s*(\([^)]+\)|\[[^\]]+\]))?$/i
+      );
+      if (suffixMatch) {
+        cleanName = suffixMatch[3] ? `${suffixMatch[1].trim()} ${suffixMatch[3].trim()}` : suffixMatch[1].trim();
+        count = parseInt(suffixMatch[2], 10);
       } else {
-        // Pattern 3: Vietnamese unit pattern: "Beam 4 cây", "Follow 2 chiếc"
-        const unitSuffixMatch = clause.match(/^(.+?)\s+(\d+)\s+(?:cây|cái|chiếc|bộ|màn|tấm)$/i);
-        if (unitSuffixMatch) {
-          cleanName = unitSuffixMatch[1].trim();
-          count = parseInt(unitSuffixMatch[2], 10);
+        // Pattern 2: Prefix multiplier: "4 Beam 350W", "12x Par LED", "2 cây Follow"
+        const prefixMatch = clause.match(/^(\d+)\s*(?:x|X|\*|cây|cái|chiếc|bộ|màn|tấm)?\s*(.+)$/i);
+        if (prefixMatch) {
+          count = parseInt(prefixMatch[1], 10);
+          cleanName = prefixMatch[2].trim();
+        } else {
+          // Pattern 3: Vietnamese unit pattern: "Beam 4 cây", "Follow 2 chiếc"
+          const unitSuffixMatch = clause.match(/^(.+?)\s+(\d+)\s+(?:cây|cái|chiếc|bộ|màn|tấm)(?:\s*(\([^)]+\)))?$/i);
+          if (unitSuffixMatch) {
+            cleanName = unitSuffixMatch[3]
+              ? `${unitSuffixMatch[1].trim()} ${unitSuffixMatch[3].trim()}`
+              : unitSuffixMatch[1].trim();
+            count = parseInt(unitSuffixMatch[2], 10);
+          }
         }
       }
     }
 
+    // Limit check: 1 to 9999. If quantity exceeds reasonable limit (e.g. 4000000000) or is negative/zero, reject
+    if (count !== null && (count <= 0 || count > 9999)) {
+      console.warn(`[LightStage] Quantity ${count} out of reasonable range (1-9999) in clause: "${clause}".`);
+      continue;
+    }
+
     // Fallback: If no explicit quantity detected but contains a known keyword, default count to 1
     if (count === null || isNaN(count) || count <= 0) {
-      const lower = clause.toLowerCase();
-      const hasKnownHardware =
-        lower.includes('beam') ||
-        lower.includes('spot') ||
-        lower.includes('wash') ||
-        lower.includes('par') ||
-        lower.includes('blinder') ||
-        lower.includes('follow') ||
-        lower.includes('laser') ||
-        lower.includes('strobe') ||
-        lower.includes('khói') ||
-        lower.includes('màn led') ||
-        lower.includes('led');
-
-      if (hasKnownHardware) {
+      if (containsHardwareKeyword(clause)) {
         count = 1;
         cleanName = clause;
       } else {
@@ -151,8 +180,8 @@ export function parseHardwareFromText(
       }
     }
 
-    // Clean up trailing punctuation & spaces
-    cleanName = cleanName.replace(/^[ -:]+|[ -:]+$/g, '').trim();
+    // Clean up trailing punctuation & spaces (escaping literal hyphen)
+    cleanName = cleanName.replace(/^[ \-:]+|[ \-:]+$/g, '').trim();
     if (!cleanName) continue;
 
     const { category, subType } = classifyDevice(cleanName, defaultCategory);

@@ -95,9 +95,9 @@ Giao diện của Light Stage được thiết kế theo tông nền tối (Dark
 
 Bạn có thể xây dựng kịch bản biểu diễn bằng 2 cách:
 
-#### Cách 1: Nhập từ file Excel / CSV (Khuyên dùng)
-1. Bấm nút **Import CSV** trên thanh công cụ.
-2. Kéo thả file `.csv` hoặc chọn file kịch bản của bạn.
+#### Cách 1: Nhập từ file CSV / TSV (Xuất từ Excel hoặc Google Sheets)
+1. Bấm nút **Import** trên thanh công cụ.
+2. Kéo thả file `.csv` / `.tsv` (hoặc dán trực tiếp dữ liệu dạng bảng sao chép từ Excel / Google Sheets).
 3. Hệ thống sẽ tự động phát hiện các cột tương ứng:
    - `Cue / Số thứ tự`: Số hiệu cue (ví dụ: `1.0`, `1.1`, `2.0`).
    - `Tiêu đề / Tên tiết mục`: Tên phân cảnh (ví dụ: `Intro Mở Màn`, `Ca khúc 1`).

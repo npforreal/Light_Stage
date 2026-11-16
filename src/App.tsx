@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useShowStore } from './store/useShowStore';
 import { useClockStore, formatDuration } from './store/useClockStore';
+import {
+  saveAutoSave,
+  loadAutoSave,
+  hasAutoSave,
+  getAutoSaveMeta,
+  clearAutoSave,
+  parseLightStageFile,
+  AutoSaveMeta,
+} from './services/persistence';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
 import { VirtualStagePreview } from './components/stage/VirtualStagePreview';
@@ -18,6 +27,7 @@ import {
   SplitSquareVertical,
   Upload,
   Download,
+  FolderOpen,
   Eye,
   Lock,
   Unlock,
@@ -28,6 +38,9 @@ export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
 export const App: React.FC = () => {
   const show = useShowStore((s) => s.show);
   const getDeviceStats = useShowStore((s) => s.getDeviceStats);
+  const isDirty = useShowStore((s) => s.isDirty);
+  const markSaved = useShowStore((s) => s.markSaved);
+  const loadShow = useShowStore((s) => s.loadShow);
   const activeCue = useShowStore((s) => s.getActiveCue());
   const standbyCue = useShowStore((s) => s.getStandbyCue());
   const goCue = useShowStore((s) => s.goCue);
@@ -50,8 +63,43 @@ export const App: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isOperatorLocked, setIsOperatorLocked] = useState(false);
   const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
+  const [recoveryMeta, setRecoveryMeta] = useState<AutoSaveMeta | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const stats = getDeviceStats();
+
+  // Startup check: discover existing autosave and prompt user to recover
+  useEffect(() => {
+    if (hasAutoSave()) {
+      const meta = getAutoSaveMeta();
+      if (meta) {
+        setRecoveryMeta(meta);
+      }
+    }
+  }, []);
+
+  // Debounced Autosave: saves after 1 second of inactivity whenever show changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const timer = setTimeout(() => {
+      saveAutoSave(show);
+      markSaved();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [show, isDirty, markSaved]);
+
+  // Window exit protection: warn if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   // Wall clock ticker: updates every second
   useEffect(() => {
@@ -61,11 +109,15 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Show clock ticker engine: ticks smoothly every 100ms
+  // Show clock ticker engine: uses performance.now() to prevent drift when tab is backgrounded
   useEffect(() => {
     if (!isRunning) return;
+    let lastTime = performance.now();
     const interval = setInterval(() => {
-      tick(100);
+      const now = performance.now();
+      const delta = now - lastTime;
+      lastTime = now;
+      tick(delta);
     }, 100);
     return () => clearInterval(interval);
   }, [isRunning, tick]);
@@ -77,28 +129,37 @@ export const App: React.FC = () => {
     const activeIdx = allCues.findIndex((c) => c.id === activeCue.id);
     if (activeIdx === -1) return 0;
 
-    let scheduledCumulativeMs = 0;
-    for (let i = 0; i <= activeIdx; i++) {
-      scheduledCumulativeMs += allCues[i].durationMs;
+    // Delta relative to planned start time of the active cue plus any overrun
+    let plannedStartMs = 0;
+    for (let i = 0; i < activeIdx; i++) {
+      plannedStartMs += allCues[i].durationMs;
     }
-
-    return scheduledCumulativeMs - masterElapsedMs;
+    const actualStartMs = masterElapsedMs - useClockStore.getState().cueElapsedMs;
+    const cueOverrunMs = Math.max(0, useClockStore.getState().cueElapsedMs - activeCue.durationMs);
+    return plannedStartMs - actualStartMs - cueOverrunMs;
   }, [getAllCues, activeCue, masterElapsedMs]);
 
-  // Keyboard Shortcuts: Space = GO, B = Standby / Next, Arrows = Next/Prev, Esc = Hold/Pause
+  // Keyboard Shortcuts: Space/Enter = GO, B = Standby / Next, Arrows = Next/Prev, Esc = Hold/Pause
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isOperatorLocked) return; // Prevent triggering hotkeys when locked
 
       const activeTag = document.activeElement?.tagName.toLowerCase();
-      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
-        return; // Don't intercept when typing in inputs
+      const isContentEditable =
+        document.activeElement?.getAttribute('contenteditable') === 'true' ||
+        document.activeElement?.getAttribute('contenteditable') === '';
+
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || isContentEditable) {
+        return; // Don't intercept when user is typing
       }
 
-      if (e.code === 'Space') {
+      if (activeTag === 'button' && (e.code === 'Space' || e.code === 'Enter')) {
+        (document.activeElement as HTMLElement)?.blur();
+      }
+
+      if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         goCue();
-        startClock();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
         nextCue();
@@ -111,13 +172,41 @@ export const App: React.FC = () => {
       } else if (e.key === 'Escape') {
         e.preventDefault();
         holdCue();
-        pauseClock();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goCue, nextCue, prevCue, holdCue, startClock, pauseClock, isOperatorLocked]);
+  }, [goCue, nextCue, prevCue, holdCue, isOperatorLocked]);
+
+  const handleOpenProjectClick = () => {
+    if (isDirty && typeof window !== 'undefined' && window.confirm) {
+      const confirmed = window.confirm(
+        'Dự án hiện tại có thay đổi chưa lưu. Bạn có chắc chắn muốn mở file dự án khác không?'
+      );
+      if (!confirmed) return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+      const result = parseLightStageFile(content);
+      if (result.success && result.data) {
+        loadShow(result.data);
+      } else {
+        alert(`Lỗi mở file .lightstage:\n${result.error || 'Dữ liệu file không hợp lệ'}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   return (
     <div className="flex h-screen w-screen flex-col bg-slate-950 text-slate-100 overflow-hidden font-sans">
@@ -137,21 +226,35 @@ export const App: React.FC = () => {
                 v0.1.0
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 truncate max-w-[200px]" title={show.metadata.title}>
-              {show.metadata.title}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-[200px]" title={show.metadata.title}>
+                {show.metadata.title}
+              </span>
+              <span className="text-slate-600">•</span>
+              {isDirty ? (
+                <span className="flex items-center gap-1 text-[10px] text-amber-400 font-mono font-medium" title="Có thay đổi chưa lưu">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Chưa lưu
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-medium" title="Đã lưu">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  Đã lưu
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Master Clock & Calling Readout */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 min-w-0">
           {/* Active Cue Quick Card */}
-          <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 text-xs">
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 text-xs flex-shrink-0">
             <div className="flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
                 Standby
               </span>
-              <span className="font-semibold text-amber-400 truncate max-w-[120px]">
+              <span className="font-semibold text-amber-400 truncate max-w-[90px] lg:max-w-[120px]">
                 {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
               </span>
             </div>
@@ -160,22 +263,22 @@ export const App: React.FC = () => {
               <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
                 Active Go
               </span>
-              <span className="font-semibold text-emerald-400 truncate max-w-[120px]">
+              <span className="font-semibold text-emerald-400 truncate max-w-[90px] lg:max-w-[120px]">
                 {activeCue ? `${activeCue.cueNumber} ${activeCue.title}` : 'None'}
               </span>
             </div>
           </div>
 
           {/* Master & Cue Clock Readout */}
-          <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 font-mono">
-            {/* Wall Clock */}
-            <div className="flex flex-col items-center">
+          <div className="flex items-center gap-2 lg:gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1 font-mono flex-shrink-0">
+            {/* Wall Clock (hidden below xl) */}
+            <div className="hidden xl:flex flex-col items-center">
               <span className="text-[9px] uppercase tracking-wider text-slate-500">Wall Clock</span>
               <span className="text-xs font-semibold text-slate-300">
                 {wallClock}
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="hidden xl:block h-6 w-px bg-slate-800" />
             {/* Show Elapsed */}
             <div className="flex flex-col items-center">
               <span className="text-[9px] uppercase tracking-wider text-slate-500">Show Time</span>
@@ -211,7 +314,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Clock Transport Controls */}
-          <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5">
+          <div className="flex items-center gap-1 bg-slate-800/60 rounded-lg p-0.5 flex-shrink-0">
             {isRunning ? (
               <button
                 onClick={pauseClock}
@@ -247,9 +350,9 @@ export const App: React.FC = () => {
         </div>
 
         {/* View Mode Switcher & Stats */}
-        <div className="flex items-center gap-4">
-          {/* Hardware Stats Badges */}
-          <div className="flex items-center gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
+          {/* Hardware Stats Badges (visible on xl screens) */}
+          <div className="hidden xl:flex items-center gap-3 text-xs font-mono">
             <div className="flex items-center gap-1.5 text-amber-400" title="Total Lighting Fixtures">
               <Lightbulb className="h-3.5 w-3.5" />
               <span>LX: {stats.totalLightingFixtures}</span>
@@ -338,6 +441,21 @@ export const App: React.FC = () => {
             </button>
 
             <button
+              onClick={handleOpenProjectClick}
+              className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
+              title="Open .lightstage Project"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-amber-400" />
+              <span>Open</span>
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelected}
+              accept=".lightstage,.json"
+              className="hidden"
+            />
+            <button
               onClick={() => setIsImportOpen(true)}
               className="inline-flex items-center gap-1 rounded-lg bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-semibold text-slate-200 transition-colors"
               title="Import CSV/Excel"
@@ -356,6 +474,58 @@ export const App: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Startup Recovery Notice Banner */}
+      {recoveryMeta && (
+        <div className="bg-cyan-950/95 border-b border-cyan-700 px-4 py-2 flex items-center justify-between text-xs text-cyan-100 z-40">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-cyan-300">Phát hiện bản tự động lưu:</span>
+            <span>
+              "{recoveryMeta.showTitle}" ({recoveryMeta.cueCount} cues) lưu lúc{' '}
+              {new Date(recoveryMeta.savedAt).toLocaleTimeString()}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const recovered = loadAutoSave();
+                if (recovered) {
+                  loadShow(recovered);
+                }
+                setRecoveryMeta(null);
+              }}
+              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1 rounded shadow transition-colors"
+            >
+              Khôi phục
+            </button>
+            <button
+              onClick={() => {
+                clearAutoSave();
+                setRecoveryMeta(null);
+              }}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded transition-colors"
+            >
+              Bỏ qua
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Operator Lock Safety Banner */}
+      {isOperatorLocked && (
+        <div className="bg-amber-500/20 border-b border-amber-500/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-amber-300 z-30">
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
+            <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Toàn bộ phím tắt điều khiển đã được vô hiệu hóa để bảo đảm an toàn live show.</span>
+          </div>
+          <button
+            onClick={() => setIsOperatorLocked(false)}
+            className="rounded bg-amber-500 text-slate-950 px-2.5 py-0.5 text-[11px] font-bold hover:bg-amber-400 transition-colors"
+          >
+            Mở khóa
+          </button>
+        </div>
+      )}
 
       {/* Main Workspace Area */}
       <main className="flex flex-1 flex-col overflow-hidden">

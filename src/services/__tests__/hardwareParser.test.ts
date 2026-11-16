@@ -88,6 +88,32 @@ describe('Hardware Parser Engine', () => {
       expect(parseHardwareFromText('')).toEqual([]);
       expect(parseHardwareFromText('Diễn viên đứng giữa sân khấu')).toEqual([]);
     });
+
+    it('rejects false positives like "Spare cable 3" or "Party mode"', () => {
+      expect(parseHardwareFromText('Spare cable 3')).toEqual([]);
+      expect(parseHardwareFromText('Party mode setup')).toEqual([]);
+      expect(parseHardwareFromText('Ghế MC + Bàn tròn')).toEqual([]);
+    });
+
+    it('rejects out-of-range counts exceeding 9999', () => {
+      expect(parseHardwareFromText('Beam x 4000000000')).toEqual([]);
+    });
+
+    it('handles notes in parentheses like "Beam x 4 (FOH)"', () => {
+      const result = parseHardwareFromText('Beam x 4 (FOH)');
+      expect(result.length).toBe(1);
+      expect(result[0].count).toBe(4);
+      expect(result[0].name).toContain('Beam');
+      expect(result[0].name).toContain('(FOH)');
+      expect(result[0].subType).toBe('Beam');
+    });
+
+    it('handles cue transitions like "Blinder 2 -> 0"', () => {
+      const result = parseHardwareFromText('Blinder 2 -> 0');
+      expect(result.length).toBe(1);
+      expect(result[0].count).toBe(2);
+      expect(result[0].subType).toBe('Blinder');
+    });
   });
 
   describe('calculateShowHardwareInventory', () => {

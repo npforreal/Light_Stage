@@ -24,11 +24,25 @@ export const VirtualStagePreview: React.FC = () => {
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-  // Lighting state from active cue
+  // Lighting & Visual state from active cue
   const lxCue = activeCue?.departments?.lx;
   const vxCue = activeCue?.departments?.vx;
 
-  const isShowActive = Boolean(activeCue);
+  const hasLx = Boolean(
+    activeCue &&
+      lxCue &&
+      (Boolean(lxCue.sceneName) ||
+        (lxCue.fixtureCount ?? 0) > 0 ||
+        (lxCue.fixtures && lxCue.fixtures.length > 0))
+  );
+  const hasVx = Boolean(
+    activeCue &&
+      vxCue &&
+      (Boolean(vxCue.contentName) ||
+        (vxCue.screenCount ?? 0) > 0 ||
+        (vxCue.screens && vxCue.screens.length > 0))
+  );
+
   const fixtureColor = lxCue?.colorPreset || '#38bdf8'; // Default cyan-sky
   const beamIntensity = (lxCue?.intensity ?? 80) / 100;
 
@@ -179,10 +193,10 @@ export const VirtualStagePreview: React.FC = () => {
                   const svgH = (screen.height / 100) * 380;
 
                   const isMain = screen.type === 'Main';
-                  const activeScreenContent = vxCue?.contentName || (isShowActive ? 'Visual Loop' : 'Standby');
+                  const activeScreenContent = hasVx ? (vxCue?.contentName || 'Visual Active') : `${screen.name} (Off)`;
 
                   return (
-                    <g key={screen.id} filter={isShowActive ? 'url(#screenGlow)' : undefined}>
+                    <g key={screen.id} filter={hasVx ? 'url(#screenGlow)' : undefined}>
                       {/* Screen Frame */}
                       <rect
                         x={svgX}
@@ -190,8 +204,8 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW}
                         height={svgH}
                         rx="4"
-                        fill={isShowActive ? '#1e1b4b' : '#090d16'}
-                        stroke={isShowActive ? '#818cf8' : '#334155'}
+                        fill={hasVx ? '#1e1b4b' : '#090d16'}
+                        stroke={hasVx ? '#818cf8' : '#334155'}
                         strokeWidth="2.5"
                       />
 
@@ -202,8 +216,8 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW - 8}
                         height={svgH - 8}
                         rx="2"
-                        fill={isShowActive ? '#312e81' : '#030712'}
-                        opacity={isShowActive ? 0.9 : 0.6}
+                        fill={hasVx ? '#312e81' : '#030712'}
+                        opacity={hasVx ? 0.9 : 0.4}
                       />
 
                       {/* Screen Label & Active Content */}
@@ -212,15 +226,15 @@ export const VirtualStagePreview: React.FC = () => {
                         y={svgY + svgH / 2}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fill={isShowActive ? '#e0e7ff' : '#64748b'}
+                        fill={hasVx ? '#e0e7ff' : '#475569'}
                         fontSize={isMain ? 14 : 11}
                         fontWeight="bold"
                         fontFamily="sans-serif"
                       >
-                        {isShowActive ? activeScreenContent : screen.name}
+                        {activeScreenContent}
                       </text>
 
-                      {isShowActive && (
+                      {hasVx && (
                         <text
                           x={svgX + svgW / 2}
                           y={svgY + svgH / 2 + 18}
@@ -274,12 +288,12 @@ export const VirtualStagePreview: React.FC = () => {
 
                         return (
                           <g key={fIdx}>
-                            {/* Beam Cone when show is active */}
-                            {isShowActive && (
+                            {/* Beam Cone only when cue has active lighting */}
+                            {hasLx && (
                               <polygon
                                 points={`${fixX - 4},${trussY + 6} ${fixX + 4},${trussY + 6} ${fixX + 45},${trussY + 280} ${fixX - 45},${trussY + 280}`}
                                 fill="url(#beamGradient)"
-                                opacity={0.7}
+                                opacity={0.7 * beamIntensity}
                               />
                             )}
 
@@ -290,7 +304,7 @@ export const VirtualStagePreview: React.FC = () => {
                               width="10"
                               height="9"
                               rx="2"
-                              fill={isShowActive ? fixtureColor : '#334155'}
+                              fill={hasLx ? fixtureColor : '#334155'}
                               stroke="#0f172a"
                               strokeWidth="1"
                             />
@@ -299,7 +313,7 @@ export const VirtualStagePreview: React.FC = () => {
                               cx={fixX}
                               cy={trussY + 6}
                               r="3"
-                              fill={isShowActive ? '#ffffff' : '#1e293b'}
+                              fill={hasLx ? '#ffffff' : '#1e293b'}
                             />
                           </g>
                         );
@@ -351,15 +365,15 @@ export const VirtualStagePreview: React.FC = () => {
                         width={svgW}
                         height="14"
                         rx="2"
-                        fill={isShowActive ? '#4338ca' : '#1e293b'}
-                        stroke={isShowActive ? '#a5b4fc' : '#475569'}
+                        fill={hasVx ? '#4338ca' : '#1e293b'}
+                        stroke={hasVx ? '#a5b4fc' : '#475569'}
                         strokeWidth="2"
                       />
                       <text
                         x={svgX + svgW / 2}
                         y={svgY - 5}
                         textAnchor="middle"
-                        fill={isShowActive ? '#c7d2fe' : '#64748b'}
+                        fill={hasVx ? '#c7d2fe' : '#64748b'}
                         fontSize="10"
                         fontWeight="bold"
                       >
@@ -407,20 +421,20 @@ export const VirtualStagePreview: React.FC = () => {
 
                         return (
                           <g key={fIdx}>
-                            {isShowActive && (
+                            {hasLx && (
                               <circle
                                 cx={fixX}
                                 cy={trussY}
                                 r="12"
                                 fill={fixtureColor}
-                                opacity="0.2"
+                                opacity="0.25"
                               />
                             )}
                             <circle
                               cx={fixX}
                               cy={trussY}
                               r="4"
-                              fill={isShowActive ? fixtureColor : '#475569'}
+                              fill={hasLx ? fixtureColor : '#475569'}
                               stroke="#0f172a"
                               strokeWidth="1"
                             />

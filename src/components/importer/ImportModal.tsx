@@ -10,13 +10,16 @@ interface ImportModalProps {
 
 export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => {
   const loadShow = useShowStore((s) => s.loadShow);
+  const appendActs = useShowStore((s) => s.appendActs);
   const currentShow = useShowStore((s) => s.show);
+  const isDirty = useShowStore((s) => s.isDirty);
 
   const [rawText, setRawText] = useState('');
   const [parsedHeaders, setParsedHeaders] = useState<string[]>([]);
   const [parsedRows, setParsedRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({ title: '' });
   const [step, setStep] = useState<'input' | 'mapping' | 'preview'>('input');
+  const [importMode, setImportMode] = useState<'replace' | 'append'>('replace');
 
   if (!isOpen) return null;
 
@@ -57,7 +60,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
   const handleConfirmImport = () => {
     const result = convertRowsToActs(parsedRows, mapping, 'Act 1');
-    if (result.acts.length > 0) {
+    if (result.acts.length === 0) return;
+
+    if (importMode === 'replace') {
+      if (isDirty && typeof window !== 'undefined' && window.confirm) {
+        const confirmed = window.confirm(
+          'Dự án hiện tại có thay đổi chưa lưu. Bạn có chắc chắn muốn thay thế toàn bộ show bằng dữ liệu import?'
+        );
+        if (!confirmed) return;
+      }
       loadShow({
         ...currentShow,
         acts: result.acts,
@@ -66,10 +77,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
           updatedAt: new Date().toISOString(),
         },
       });
-      onClose();
-      setStep('input');
-      setRawText('');
+    } else {
+      appendActs(result.acts);
     }
+
+    onClose();
+    setStep('input');
+    setRawText('');
   };
 
   const previewResult = step === 'mapping' ? convertRowsToActs(parsedRows, mapping) : null;
@@ -226,12 +240,39 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               {previewResult && (
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-1">
-                  <div className="text-xs font-semibold text-slate-300">Extraction Summary:</div>
-                  <div className="flex gap-4 text-xs font-mono">
-                    <span className="text-cyan-400">Total Cues: {previewResult.totalCues}</span>
-                    <span className="text-amber-400">Fixtures: {previewResult.totalLighting}</span>
-                    <span className="text-purple-400">Screens: {previewResult.totalScreens}</span>
+                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold text-slate-300">Extraction Summary:</div>
+                    <div className="flex gap-4 text-xs font-mono">
+                      <span className="text-cyan-400">Total Cues: {previewResult.totalCues}</span>
+                      <span className="text-amber-400">Fixtures: {previewResult.totalLighting}</span>
+                      <span className="text-purple-400">Screens: {previewResult.totalScreens}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 pt-2 border-t border-slate-800/80 text-xs">
+                    <span className="text-slate-400 font-medium">Hành động:</span>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="replace"
+                        checked={importMode === 'replace'}
+                        onChange={() => setImportMode('replace')}
+                        className="text-cyan-500 focus:ring-0"
+                      />
+                      <span>Thay thế toàn bộ</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                      <input
+                        type="radio"
+                        name="importMode"
+                        value="append"
+                        checked={importMode === 'append'}
+                        onChange={() => setImportMode('append')}
+                        className="text-cyan-500 focus:ring-0"
+                      />
+                      <span>Thêm vào cuối (Append)</span>
+                    </label>
                   </div>
                 </div>
               )}
