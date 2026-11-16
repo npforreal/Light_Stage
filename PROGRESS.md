@@ -3,6 +3,57 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-16 — Hoàn thành Toàn diện Đợt 8 & Đợt 9 qua Native Swarm
+
+### Thay đổi
+- **Đồng bộ Transport, Vòng đời Cue & Hoàn tác Undo/Redo (Đợt 8.1, 8.4, 9.3)**:
+  - Đồng bộ Master Clock và Rundown Table: `resetClock()` đưa tất cả cue về `Pending`, cue đầu về `Standby`, `activeCueId: null`; `pauseClock()` và `stopClock()` chuyển cue `Go` sang `Hold`. Bổ sung nút `Go Next Cue`.
+  - Triển khai ngăn xếp hoàn tác 30 bước (`past`, `future`, `canUndo`, `canRedo`, `undo()`, `redo()`) cho mọi thao tác sửa kịch bản. Hỗ trợ phím tắt toàn cục `Ctrl+Z`, `Ctrl+Y`, `Ctrl+S`.
+  - Khắc phục triệt để Autosave: lưu mỗi khi dữ liệu show thay đổi qua subscription mà không phụ thuộc cờ `isDirty`.
+  - Nâng cấp `hardwareParser` và `importer`: bóc tách độc lập nhiệt độ màu / màu tiếng Việt khỏi số lượng fixture (ví dụ: *"Wash 12 cây 3200K"* $\to$ 12 fixtures, màu 3200K); tự động nhận diện màn hình từ *"Logo Loop"*; hỗ trợ ánh xạ cột Màu, SQ, ST.
+- **Hệ thống Cảnh báo Thính giác & Đồng hồ Sân khấu Phụ (Đợt 8.2, 8.5)**:
+  - Xây dựng `audioAlerts.ts` thuần Web Audio API: bíp đếm ngược 5 giây cuối (880Hz / 80ms tại 5..1s, 1760Hz / 200ms tại 0s GO), bíp kép 440Hz khi overrun; hỗ trợ user gesture unlock và audio mute toggle.
+  - Xây dựng màn hình phụ `StageClockWindow.tsx` tối ưu cho bàn MC / cánh gà: đếm ngược kích thước khổng lồ, delta, active/standby cue; đồng bộ real-time đa cửa sổ qua `BroadcastChannel` và `localStorage`.
+- **Tái thiết kế Giao diện Header & Nhập liệu Rundown (Đợt 9.1, 9.2, 9.5, 9.6)**:
+  - Header 2 tầng chống đè lấn: Tầng 1 (Live Operations: Transport, Clocks, Clocks tabular-nums, Go Next); Tầng 2 (Tools: Views, Lock, Audio Mute, Stage Clock, Import/Export, Rename show trực tiếp, menu thu gọn "..." dưới 1100px).
+  - Sửa trực tiếp ô LX, VX, SQ, ST trên bảng Rundown: LX tích hợp Color Picker popover (presets, Kelvin slider, hex, gamut warning); VX (nội dung, số màn); SQ (track, volume); ST (chỉ dẫn). Chống kích hoạt GO khi đang gõ phím Space. Thêm/xóa/nhân đôi cue trực tiếp.
+  - Chuẩn hoá huy hiệu trạng thái cue; thêm modal Chào mừng `WelcomeModal` (4 bước, lưu localStorage) và bảng Trợ giúp `HelpModal` phím tắt.
+- **Tái thiết kế Sân khấu ảo 2D & Auto-Patch Đèn (Đợt 8.3, 9.4)**:
+  - Hệ toạ độ mét thực tế: Centerline (x=0), Plaster Line (y=0), trim Z. 3 Presets chuẩn USITT: EndStage, Festival, Thrust.
+  - Thuật toán `placeFixtures(rig, cueUsage)` tất định: đối xứng SL/SR, xử lý tràn rig không cắt xén, hỗ trợ gán tay `@position`.
+  - Top-down view (Centerline, Plaster Line, SL/SR, 9 zones, FOH ngoài sân khấu y < 0) & Front view theo chiều sâu; chùm sáng theo góc nhắm và beam angle; công tắc khói Haze, đường cong Dimmer và công suất kW; huy hiệu đối chiếu "Nhập X · Hiển thị X".
+
+### Quyết định kỹ thuật
+- Vận hành song song qua Swarm với 6 agents chuyên trách (`worker-core`, `worker-audio-clock`, `worker-stage2d`, `worker-ui-rundown`, `verifier`, `monitor`), phân tách ranh giới tệp tin hoàn toàn độc lập, không xảy ra xung đột merge.
+- Tách biệt tuyệt đối giữa Rig (phần cứng vật lý) và Cue (trạng thái kích hoạt theo cảnh), giúp giao diện 2D luôn đồng nhất giữa Front view và Top-down plan.
+
+### Kiểm chứng & Kết quả
+- `bash scripts/check.sh --fast`: 23/23 test suites passed, 174/174 unit tests passed (0 failures).
+- `tsc --noEmit` & `npm run build`: 0 lỗi biên dịch TypeScript, bundle sản phẩm hoàn tất thành công trong 1.06s.
+- `python3 scripts/audit_workflow.py` & `python3 scripts/guard_check.py`: 100% checks passed, 0 drift violations.
+
+
+### Thay đổi
+- **Kiểm thử Hành trình Người dùng Thực tế (`src/__tests__/realUserJourney.test.tsx`)**:
+  - Xây dựng 6 kịch bản kiểm thử tích hợp mô phỏng toàn diện hành trình làm việc của một Đạo diễn sân khấu (Show Caller):
+    1. *Khởi động & FOH Dark UI*: Nhận diện thương hiệu, tiêu đề show, đồng hồ Show Time/Cue Remainder/Delta và thống kê phần cứng.
+    2. *Crash Recovery*: Banner khôi phục màu Cyan tự động phát hiện bản lưu và phục hồi chỉ với 1 click.
+    3. *Live Calling & Hotkey Safety*: Kích hoạt Go bằng Space, Esc để Hold, Operator Lock khóa phím ngăn chặn bấm nhầm.
+    4. *Optical Stage 2D*: Kiểm tra hiển thị camera Front View, Top-Down Plan, nhãn nhiệt độ màu 3200K, đồng bộ visual lên 3 màn hình LED.
+    5. *Hardware Parser*: Kiểm tra khả năng tự động đếm số lượng đèn và màn hình từ chuỗi mô tả phức tạp.
+    6. *Export & Print*: Dialog xuất báo cáo lọc theo từng bộ phận chuyên môn, in ấn PDF và xuất file JSON `.lightstage`.
+- **Tổng hợp Vấn đề Phát hiện & Lập Kế hoạch Đợt 8**:
+  - Lưu trữ lossless các đợt cũ vào `archive/PLAN.md`.
+  - Thiết lập roadmap chi tiết cho Đợt 8 gồm 5 giai đoạn: Đồng bộ Transport & Cue Lifecycle (8.1), Cảnh báo thính giác Web Audio synthesized alerts (8.2), Tùy biến Stage 2D & Dimmer curves (8.3), Undo/Redo history & Hotkey lưu nhanh (8.4), Cửa sổ đồng hồ sân khấu phụ Stage Confidence Clock (8.5).
+
+### Quyết định kỹ thuật
+- **Đồng bộ Cue - Clock**: Xác định việc reset đồng hồ bắt buộc phải đưa cue state về `Pending`/`Standby` để tránh hiện tượng lệch pha giữa Master Clock và Rundown Table.
+- **Synthesized Audio Alerts**: Ưu tiên tạo âm thanh bíp qua Web Audio API (OscillatorNode) thay vì tải file `.mp3` bên ngoài, loại bỏ hoàn toàn độ trễ (zero latency) và bảo đảm ứng dụng hoạt động offline hoàn hảo khi không có kết nối mạng.
+
+### Kiểm chứng & Kết quả
+- `bash scripts/check.sh --fast`: 16/16 test suites passed, 105/105 unit tests passed (thêm 6 unit tests mới trong `realUserJourney.test.tsx`).
+- `python3 scripts/audit_workflow.py` & `python3 scripts/guard_check.py`: 100% checks passed, 0 drift violations, prime workflow health.
+
 ## 2026-11-16 — Hoàn thành Thiết kế lại Màu UI & Mô phỏng Ánh sáng Chính xác (Đợt 7)
 
 ### Thay đổi
@@ -76,27 +127,4 @@
 - `bash scripts/check.sh --fast`: 14/14 test suites passed, 83/83 unit tests passed, TypeScript 0 errors, guard_check 0 violations.
 - `npm run build`: Production bundle Vite hoàn tất thành công trong 863ms (325kB js / 95kB gzip).
 - Toàn bộ 23/23 tiêu chí trong Đợt 6 của `PLAN.md` đã được kiểm chứng và đạt yêu cầu.
-
-## 2026-11-15 — Thiết lập & Kích hoạt Agentic Engineering Workflow 2.0 cho Dự án
-
-### Thay đổi
-- Khởi tạo và đồng bộ bộ công cụ Agentic Engineering Workflow 2.0:
-  - Bổ sung `ARCHITECTURE.md`: Tài liệu kiến trúc phân tầng (Types, Store, Services, UI Presentation, Tauri harness) và danh mục đăng ký công cụ bắt buộc.
-  - Tích hợp `scripts/guard_check.py` & `scripts/guard-baseline.txt`: Rào chắn chống trôi kiến trúc R1-R6 (đăng ký tool, usage header, phân tầng, layout whitelist hỗ trợ Tauri v2 và modern web) với cơ chế bánh cóc baseline (ratchet).
-  - Tích hợp `scripts/entropy_report.py`: Báo cáo entropy định kỳ phát hiện tool mồ côi, code trùng lặp.
-  - Tích hợp `scripts/routing_check.py` & `scripts/skill_lint.py`: Bộ kiểm tra định tuyến và ngân sách token.
-  - Cấu hình `.githooks/pre-commit` (kích hoạt qua `git config core.hooksPath .githooks`): Chặn rò rỉ secret và tự động chạy fast quality gate trước mỗi commit.
-  - Nâng cấp `scripts/check.sh`: Thêm bước kiểm tra drift guard tự động vào cổng kiểm thử chất lượng.
-  - Cập nhật `AGENTS.md` và `.gitignore` (bảo vệ `scratch/`, `.env`).
-
-### Quyết định kỹ thuật
-- Tùy biến `scripts/guard_check.py` để nhận diện cấu trúc dự án Tauri v2 (`src-tauri`) và các tệp cấu hình web hiện đại (`index.html`, `vite.config.ts`, `tailwind.config.js`, `postcss.config.js`, `SECURITY.md`) thay vì nạp vào baseline ngoại lệ, đảm bảo chuẩn kiến trúc sạch 0 violations.
-- Giữ nguyên toàn bộ lộ trình và ngữ cảnh nghiệp vụ của dự án (`PLAN.md`, `PROGRESS.md`, `AGENTS.md`, Đợt 6 và Đợt 7) mà không làm gián đoạn tiến độ.
-
-### Kiểm chứng & Kết quả
-- `bash scripts/check.sh --fast`: All quality gate checks passed (TypeScript 0 errors, 14/14 test suites passed, 74/74 unit tests passed, audit_workflow OK, guard_check OK 0 violations).
-- `python3 scripts/audit_workflow.py`: ALL CHECKS PASSED.
-- `python3 scripts/guard_check.py`: Guard check OK: 0 new violations (0 baselined).
-- `python3 scripts/entropy_report.py`: 0 unreferenced tools, 0 tools missing from ARCHITECTURE.md.
-- `python3 scripts/handoff.py`: Snapshot bàn giao hoạt động hoàn hảo.
 
