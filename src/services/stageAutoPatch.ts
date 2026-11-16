@@ -17,6 +17,8 @@ export interface CueFixtureRequirement {
   subType?: string;
   target?: string;
   raw?: string;
+  /** True when the source type could not be recognized (drawn at a default slot). */
+  unclassified?: boolean;
 }
 
 export interface PlacedFixture extends Fixture {
@@ -55,7 +57,38 @@ export const DEFAULT_PLACEMENT_RULES: Record<FixtureType, RigPosition[]> = {
   Strobe: ['Truss', 'Floor'],
   Par: ['FOH', 'Truss'],
   Laser: ['Truss', 'Floor'],
+  Smoke: ['Floor', 'Truss'],
 };
+
+/** Maps a cue device sub-type (or freeform name) onto a Stage 2D fixture type. */
+export function mapSubTypeToFixtureType(subType?: string): FixtureType {
+  const lower = String(subType || '').toLowerCase();
+  if (lower.includes('beam')) return 'Beam';
+  if (lower.includes('follow')) return 'Follow';
+  if (lower.includes('wash')) return 'Wash';
+  if (lower.includes('blinder')) return 'Blinder';
+  if (lower.includes('strobe')) return 'Strobe';
+  if (lower.includes('laser')) return 'Laser';
+  if (lower.includes('smoke') || lower.includes('haze') || lower.includes('fog')) return 'Smoke';
+  if (lower.includes('par')) return 'Par';
+  if (lower.includes('spot')) return 'Spot';
+  return 'Par';
+}
+
+/** Maps a freeform position label (e.g. 'Back-L', 'back', 'sân khấu') onto a rig position. */
+export function mapPositionToRigPosition(position?: string): RigPosition | undefined {
+  if (!position) return undefined;
+  const lower = position.toLowerCase();
+  if (lower.includes('foh') || lower.includes('front')) return 'FOH';
+  if (lower.includes('floor')) return 'Floor';
+  if (lower.includes('boom') || lower.includes('side') || lower.includes('cánh')) return 'SideBoom';
+  if (lower.includes('ladder')) return 'Ladder';
+  if (lower.includes('box')) return 'BoxBoom';
+  if (lower.includes('mid')) return 'Mid';
+  if (lower.includes('back')) return 'Back';
+  if (lower.includes('truss')) return 'Truss';
+  return undefined;
+}
 
 /**
  * Parse manual override syntax:
@@ -85,28 +118,13 @@ export function parseFixtureSyntax(text: string): CueFixtureRequirement[] {
 
     // Normalize fixture type
     const lower = cleanClause.toLowerCase();
-    let type: FixtureType = 'Spot';
-    if (lower.includes('beam')) type = 'Beam';
-    else if (lower.includes('follow')) type = 'Follow';
-    else if (lower.includes('wash')) type = 'Wash';
-    else if (lower.includes('blinder')) type = 'Blinder';
-    else if (lower.includes('strobe') || lower.includes('atomic')) type = 'Strobe';
-    else if (lower.includes('par')) type = 'Par';
-    else if (lower.includes('laser')) type = 'Laser';
-    else if (lower.includes('spot')) type = 'Spot';
+    const knownType = /(beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog)/i.test(lower);
+    const type: FixtureType = mapSubTypeToFixtureType(lower);
 
     // Normalize preferred position
     let preferredPosition: RigPosition | undefined;
     if (positionRaw) {
-      const posLower = positionRaw.toLowerCase();
-      if (posLower.includes('foh')) preferredPosition = 'FOH';
-      else if (posLower.includes('floor')) preferredPosition = 'Floor';
-      else if (posLower.includes('boom') || posLower.includes('side')) preferredPosition = 'SideBoom';
-      else if (posLower.includes('ladder')) preferredPosition = 'Ladder';
-      else if (posLower.includes('box')) preferredPosition = 'BoxBoom';
-      else if (posLower.includes('back')) preferredPosition = 'Truss';
-      else if (posLower.includes('mid')) preferredPosition = 'Truss';
-      else preferredPosition = 'Truss';
+      preferredPosition = mapPositionToRigPosition(positionRaw);
     }
 
     requirements.push({
@@ -114,6 +132,7 @@ export function parseFixtureSyntax(text: string): CueFixtureRequirement[] {
       count: Math.max(1, count),
       preferredPosition: preferredPosition || positionRaw,
       raw: clause,
+      unclassified: !knownType,
     });
   }
 
@@ -126,13 +145,24 @@ export function parseFixtureSyntax(text: string): CueFixtureRequirement[] {
 export function extractCueRequirements(cue: LightingCue | any): CueFixtureRequirement[] {
   if (!cue) return [];
 
-  // 1. If explicit fixtures array (DeviceSpecification[]) exists
+  // 1. If explicit fixtures array (DeviceSpecification[]) exists — authoritative source
   if (Array.isArray(cue.fixtures) && cue.fixtures.length > 0) {
-    return cue.fixtures.map((spec: any) => {
-      const typeStr = String(spec.subType || spec.name || 'Spot');
-      const reqs = parseFixtureSyntax(`${spec.count || 1} ${typeStr}`);
-      return reqs[0] ?? { type: 'Spot', count: spec.count || 1 };
-    });
+    return cue.fixtures
+      .filter((spec: any) => Number(spec.count) > 0)
+      .map((spec: any) => {
+        const subType = String(spec.subType || spec.name || '');
+        const known = /(beam|spot|wash|par|blinder|follow|laser|strobe|smoke|haze|fog)/i.test(subType);
+        return {
+          type: mapSubTypeToFixtureType(subType),
+          count: Math.max(1, Math.floor(Number(spec.count))),
+          preferredPosition: spec.position
+            ? (mapPositionToRigPosition(String(spec.position)) ?? String(spec.position))
+            : undefined,
+          subType,
+          raw: `${spec.name || subType} x${spec.count}${spec.position ? ` @${spec.position}` : ''}`,
+          unclassified: !known,
+        };
+      });
   }
 
   // 2. If fixtureSummary text is provided
@@ -141,9 +171,9 @@ export function extractCueRequirements(cue: LightingCue | any): CueFixtureRequir
     if (parsed.length > 0) return parsed;
   }
 
-  // 3. If only fixtureCount is provided
+  // 3. If only fixtureCount is provided (legacy)
   if (typeof cue.fixtureCount === 'number' && cue.fixtureCount > 0) {
-    return [{ type: 'Spot', count: cue.fixtureCount }];
+    return [{ type: 'Spot', count: cue.fixtureCount, unclassified: true }];
   }
 
   return [];
@@ -185,6 +215,15 @@ export function placeFixtures(
 
   const warnings: string[] = [];
   let isOverflown = false;
+
+  const unclassifiedCount = requirements
+    .filter((req) => req.unclassified)
+    .reduce((acc, req) => acc + req.count, 0);
+  if (unclassifiedCount > 0) {
+    warnings.push(
+      `Có ${unclassifiedCount} đèn chưa phân loại — đã đặt ở vị trí mặc định (Par).`
+    );
+  }
 
   // Track availability of base rig fixtures
   const usedFixtureIds = new Set<string>();

@@ -146,6 +146,11 @@ describe('Persistence Service (.lightstage & Auto-Save)', () => {
       const cue = result.data?.acts[0].cues[0];
       expect(cue?.departments.lx?.color).toEqual({ mode: 'rgb', hex: '#ffaa00' });
       expect(cue?.departments.lx?.colorPreset).toBe('#ffaa00');
+      // Legacy fixtureCount-only cues migrate to one explicit unclassified row
+      expect(cue?.departments.lx?.fixtures).toHaveLength(1);
+      expect(cue?.departments.lx?.fixtures?.[0].name).toBe('Chưa phân loại');
+      expect(cue?.departments.lx?.fixtures?.[0].count).toBe(8);
+      expect(cue?.totalLightingFixtures).toBe(8);
     });
 
     it('triggers auto-save on useShowStore mutations via subscription', async () => {

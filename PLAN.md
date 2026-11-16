@@ -197,3 +197,60 @@ Người lạ mở app lần đầu phải tự: tạo show, nhập nội dung c
 - 9.4F phụ thuộc 9.2 (nhập đèn theo loại/số lượng/vị trí) và 9.4A (mô hình dữ liệu): thứ tự làm 9.3 → 9.2 → 9.4A → 9.4F → 9.4B–E. Bảng luật đặt chỗ (9.4.16) là quy ước nghề chứ không có chuẩn duy nhất: cần người làm đèn thật duyệt trước khi chốt.
 - Chốt ngôn ngữ giao diện (Việt hoá hoàn toàn hay song ngữ) trước 9.1.3/9.6.
 - Chế độ Live/Edit (9.5.4) thay đổi bố cục lớn, cần chốt với người vận hành thật.
+
+## Đợt 10: Hoàn thiện Đợt 8–9 sau Review (Số lượng đèn, Ký hiệu Stage, Xác minh Browser)
+
+> Nguồn: review bản Antigravity ngày 2026-11-16 (commit `1ec5b4d`): check.sh 23/23 suite, 174/174 test, build OK, audit/guard OK; test thủ công trên browser ở 960 và 1280px. Đã xác minh chạy được: header 2 tầng (không nút bị che), sửa ô LX bằng popover, Welcome/Help, Undo, top-down có centerline/plaster line/SL-SR/FOH ngoài sân khấu, auto-patch đối xứng, bộ đếm đối chiếu.
+> Không tuyên bố "hoàn thành Đợt 8–9" cho tới khi đóng đợt này. Mức: **[C]** nghiêm trọng, **[H]** cao, **[M]** trung bình, **[L]** thấp.
+
+### Mục tiêu đợt
+(1) Nhập đèn trong cue ⇒ bảng Rundown, Stage 2D, kiểm kê, báo cáo cùng một con số. (2) Hoàn thành các mục 9.4 còn dở. (3) Chạy thật kịch bản người dùng trên browser và sửa hết Critical/High. (4) Làm cho nhật ký tiến độ khớp thực tế.
+
+### Phát hiện từ review
+- [C] **Nhập đèn cho số lượng sai.** Ô "Mô tả Fixture" nhập `Beam x8, Spot x4 @FOH, Wash x12, Follow x2, Blinder x4` (30 đèn) nhưng ô "Số lượng Đèn" vẫn 12 và được ưu tiên khi lưu: Rundown hiện "12 fix", Stage 2D vẽ 30, bộ đếm đỏ "Nhập 12 · Hiển thị 30". Hai nguồn sự thật cho cùng một số.
+- [H] **Nhật ký không khớp thực tế.** `PROGRESS.md` ghi "hoàn thành toàn diện Đợt 8 & 9" và "hỗ trợ gán tay `@position`", trong khi PLAN còn 13 mục `[ ]` (9.4.5, 9.4.10, 9.4.11, 9.4.13, 9.4.14, 9.4.20, 9.7.x, 9.8.x). `realUserJourney.test.tsx` chạy trên jsdom, không phải browser, nên chưa thoả 9.7.
+- [H] **Stage 2D không phân biệt loại đèn**: mọi đèn là chấm giống nhau (chưa có ký hiệu theo loại, thước mét, đánh số USITT).
+- [M] **Popover sửa LX bị cắt ở 960×640**: phần Intensity/Kelvin/hex và nút lưu bị panel Timeline che.
+- [M] Welcome/nút Import còn ghi "Excel/CSV" trong khi chỉ nhận `.csv/.tsv/.txt`.
+- [L] 4 file `src/components/{ExportModal,ImportModal,RundownTable,VirtualStagePreview}.tsx` chỉ là một dòng re-export, làm lẫn cấu trúc thư mục.
+- Chưa kiểm được: Stage Clock Window đa cửa sổ, âm thanh thật (autoplay), 1920px, Export/Print trong Tauri, cargo.
+
+### Giai đoạn 10.1: Một nguồn sự thật cho số lượng đèn (Critical)
+- [x] 10.1.1 Xác định: **danh sách đèn (loại × số lượng × vị trí) là nguồn duy nhất**; `fixtureCount`/`totalLightingFixtures` luôn **suy ra** từ danh sách (hoặc ô tổng chỉ đọc). Bỏ ô nhập số lượng tách rời hoặc đồng bộ hai chiều không lệch.
+- [x] 10.1.2 Ô nhập đèn dạng danh sách có cấu trúc (hàng: loại · số lượng · vị trí tuỳ chọn · thêm/xoá) song song với ô gõ nhanh `Beam x8, Spot x4 @FOH`; gõ nhanh và danh sách phản chiếu lẫn nhau.
+- [x] 10.1.3 Dữ liệu cũ (chỉ có `fixtureCount`, không có danh sách): migrate sang một dòng "Chưa phân loại × N", không mất số.
+- [x] 10.1.4 Mọi nơi dùng cùng số: Rundown, Timeline, header (LX/VX), kiểm kê, Export CSV/PDF, Stage 2D (kiểm lại cả `getDeviceStats`).
+- [x] 10.1.5 Test: nhập mô tả 30 đèn → Rundown "30 fix", kiểm kê 30, Stage "Nhập 30 · Hiển thị 30"; sửa số trong danh sách → tất cả cập nhật; bộ đếm chỉ đỏ khi thực sự có lỗi hiển thị. Test thuộc tính N ngẫu nhiên (đã có cho `placeFixtures`) mở rộng tới tầng UI/store.
+
+### Giai đoạn 10.2: Hoàn thành các mục 9.4 còn dở
+- [ ] 10.2.1 (9.4.20) Parser và ô nhập nhận **loại + số lượng + vị trí** (`@FOH`, `@Back-L`…); loại lạ → chip "Chưa phân loại" + cảnh báo, không bỏ im lặng. Sửa PROGRESS cho khớp.
+- [ ] 10.2.2 (9.4.5) Ký hiệu theo loại (Beam/Spot/Wash/Follow/Blinder/Strobe/Par khác hình/khác màu viền), đánh số downstage→upstage, SL trước; thước mét và khoảng cách khi rê chuột; chú giải (legend) rõ.
+- [ ] 10.2.3 (9.4.10) Config sửa được rig: thêm/xoá/di chuyển truss, đèn, màn LED (nhập mét/trim hoặc kéo thả), gán loại, góc chùm; liên kết với bảng kiểm kê và cảnh báo khi cue dùng nhiều hơn rig có.
+- [ ] 10.2.4 (9.4.11) Cảnh báo không chặn: lệch trái/phải, thiếu front/back light cho khu vực chính, vượt tải truss.
+- [ ] 10.2.5 (9.4.13) Chế độ xem/xuất "Light plot" + bảng đèn trong Export, in được.
+- [ ] 10.2.6 (9.4.14) Legend LX Color không đè sân khấu ở vùng nhỏ.
+- [ ] 10.2.7 Kiểm chứng riêng vị trí: với mỗi loại, mọi đèn nằm ở vị trí thuộc danh sách cho phép; chụp front + top-down ở 3 preset.
+
+### Giai đoạn 10.3: Sửa lỗi UI nhỏ
+- [ ] 10.3.1 Popover sửa ô (LX/VX/SQ/ST) không bị cắt ở 960×640: tự đảo hướng, cuộn trong popover hoặc dùng portal; nút Lưu/Huỷ luôn thấy được.
+- [ ] 10.3.2 Đổi chữ "Excel" thành đúng định dạng được hỗ trợ ở Welcome, nút Import, tooltip (hoặc hỗ trợ `.xlsx` thật nếu đã chốt ở Đợt 6.5.6).
+- [ ] 10.3.3 Dọn 4 file re-export `src/components/*.tsx` (sửa import về đúng thư mục con, xoá stub), cập nhật `ARCHITECTURE.md` nếu có nhắc.
+- [ ] 10.3.4 Kiểm tra `elementFromPoint` mọi nút header ở 960/1024/1280/1920, trong cả trạng thái có banner khôi phục.
+
+### Giai đoạn 10.4: Test như người dùng thật bằng browser (thay thế 9.7 và 8.6 chưa chạy)
+- [ ] 10.4.1 Chạy toàn bộ `docs/USER_TEST_SCRIPT.md` (A–E) ở 960, 1280, 1920; xoá localStorage trước kịch bản A; chụp ảnh front + top-down ở 3 preset làm bằng chứng.
+- [ ] 10.4.2 Mục riêng: tạo show 3 cue từ đầu không import; nhập "Beam x8, Spot x4, Wash x12, Follow x2, Blinder x4" và đối chiếu số đèn từng loại giữa danh sách, Rundown, Stage (front + top-down), kiểm kê, export.
+- [ ] 10.4.3 Mục Đợt 8 chưa kiểm: mở Stage Clock Window và đồng bộ với cửa sổ chính (2 tab), âm thanh sau lần tương tác đầu, Reset/Pause/Stop đồng bộ cue, Ctrl+S.
+- [ ] 10.4.4 Ghi báo cáo vào PROGRESS.md (ngày, viewport, đạt/không đạt từng kịch bản, ảnh/số đo); lỗi mới ghi lại vào PLAN.md; sửa hết Critical/High trước khi sang 10.5.
+- [ ] 10.4.5 Kiểm chứng desktop Tauri: cài cargo rồi `cargo check`/build, thử Export/Print và Stage Clock Window trong Tauri. Nếu chưa cài được cargo, ghi rõ lý do + danh sách phần chưa kiểm vào PROGRESS; không tuyên bố đóng đợt khi phần desktop còn bỏ ngỏ.
+
+### Giai đoạn 10.5: Đóng đợt & làm sạch nhật ký
+- [ ] 10.5.1 Sửa PROGRESS.md: mục "Đợt 8 & 9" ghi đúng phần đã xong/chưa xong; ghi rõ test jsdom ≠ test browser.
+- [ ] 10.5.2 Đánh `[x]` các mục 9.4.x, 9.7.x, 9.8.x và 8.6.x chỉ khi có kiểm chứng (lệnh/ảnh) trong PROGRESS; mục chưa làm giữ `[ ]`.
+- [ ] 10.5.3 `bash scripts/check.sh --fast`, `npm run build`, `python3 scripts/audit_workflow.py`, `python3 scripts/guard_check.py`.
+- [ ] 10.5.4 `python3 scripts/archive_logs.py`, commit từng giai đoạn (Conventional Commits, không push).
+
+### Rủi ro & quyết định cần chốt
+- 10.1 đổi nguồn sự thật của số lượng đèn: cần migrate cue cũ và file `.lightstage` đã lưu (có test round-trip), tránh đổi số đã nhập.
+- Quy trình: giao việc cho agent bên ngoài phải kèm kiểm chứng bằng browser, không chỉ test jsdom; người duyệt đối chiếu PLAN với PROGRESS trước khi đóng đợt.
+- Chưa có cargo nên chưa kiểm được build Tauri, in PDF trong Tauri, cửa sổ phụ Tauri (nên cài cargo trước 10.4.3).

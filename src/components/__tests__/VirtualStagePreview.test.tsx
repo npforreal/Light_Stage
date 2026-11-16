@@ -158,6 +158,30 @@ describe('VirtualStagePreview Component', () => {
     expect(screen.getAllByText(/9\.4 kW/i).length).toBeGreaterThan(0);
   });
 
+  it('shows "Nhập 30 · Hiển thị 30" for a 30-fixture device list (Đợt 10.1)', () => {
+    const actId = useShowStore.getState().show.acts[0].id;
+    const cueId = useShowStore.getState().addCue(actId, {
+      cueNumber: '6.0',
+      title: 'Thirty Fixtures',
+      departments: {
+        lx: {
+          sceneName: 'Full Rig',
+          fixtures: [
+            { id: 'a', name: 'Beam', category: 'Lighting', subType: 'Beam', count: 8 },
+            { id: 'b', name: 'Spot', category: 'Lighting', subType: 'Spot', count: 4, position: 'FOH' },
+            { id: 'c', name: 'Wash', category: 'Lighting', subType: 'Wash', count: 12 },
+            { id: 'd', name: 'Follow', category: 'Lighting', subType: 'Follow', count: 2 },
+            { id: 'e', name: 'Blinder', category: 'Lighting', subType: 'Blinder', count: 4 },
+          ],
+        },
+      },
+    });
+    useShowStore.getState().goCue(cueId);
+
+    render(<VirtualStagePreview />);
+    expect(screen.getByText(/Nhập 30 · Hiển thị 30/i)).toBeInTheDocument();
+  });
+
   it('toggles haze on and off in toolbar', () => {
     render(<VirtualStagePreview />);
     const hazeBtn = screen.getByRole('button', { name: /Haze: ON/i });

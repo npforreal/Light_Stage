@@ -3,6 +3,24 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-16 — Đợt 10.1: Một nguồn sự thật cho số lượng đèn
+
+### Thay đổi
+- **Mô hình dữ liệu**: `DeviceSpecification.position` (FOH/Back/Mid/Floor…) và `LightingCue.fixtureCount` chuyển thành cache suy ra; `calculateCueDeviceCounts` ưu tiên tổng `fixtures[]`.
+- **Service mới `src/services/fixtureModel.ts`**: parse/format danh sách đèn, chuẩn hoá cue/show, migrate dữ liệu cũ (`fixtureCount` → một dòng "Chưa phân loại × N"), đếm theo loại.
+- **Store/persistence**: `addCue`, `updateCue`, `appendActs`, `loadShow`, `parseLightStageFile` đều chuẩn hoá qua `normalizeCue`/`normalizeShow`; `getDeviceStats` tính trực tiếp từ `departments`.
+- **`hardwareParser`**: tách vị trí khỏi tên (`@FOH`, `(FOH)`, `[Mid]`), không còn nhét vị trí vào tên thiết bị.
+- **RundownTable**: bỏ ô "Số lượng Đèn" tách rời; thay bằng ô nhập nhanh + danh sách có cấu trúc (loại · số lượng · vị trí · thêm/xoá), tổng chỉ đọc, chip cảnh báo "Chưa phân loại".
+- **Stage 2D / Timeline / Export**: dùng chung số suy ra; `placeFixtures` nhận vị trí từ danh sách và cảnh báo đèn chưa phân loại.
+
+### Quyết định kỹ thuật
+- Giữ `fixtureCount` trong schema (optional) để tương thích file cũ, nhưng mọi ghi mới đều bị chuẩn hoá lại từ danh sách — không còn hai nguồn sự thật.
+- Migration ưu tiên `fixtureSummary` trước `fixtureCount` để cue cũ có mô tả vẫn giữ đúng loại đèn.
+
+### Kiểm chứng & Kết quả
+- `bash scripts/check.sh --fast`: 24/24 test suites, 188/188 unit tests passed; audit workflow 0 failure (1 warning: PLAN.md 256 dòng, sẽ archive ở 10.5.4); guard check 0 vi phạm.
+- Test mới: `fixtureModel.test.ts` (8 ca, gồm property test format→parse), store (3 ca), RundownTable (2 ca), VirtualStagePreview "Nhập 30 · Hiển thị 30", persistence migrate.
+
 ## 2026-11-16 — Hoàn thành Toàn diện Đợt 8 & Đợt 9 qua Native Swarm
 
 ### Thay đổi

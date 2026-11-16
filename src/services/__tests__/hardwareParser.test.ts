@@ -104,7 +104,7 @@ describe('Hardware Parser Engine', () => {
       expect(result.length).toBe(1);
       expect(result[0].count).toBe(4);
       expect(result[0].name).toContain('Beam');
-      expect(result[0].name).toContain('(FOH)');
+      expect(result[0].position).toBe('FOH');
       expect(result[0].subType).toBe('Beam');
     });
 

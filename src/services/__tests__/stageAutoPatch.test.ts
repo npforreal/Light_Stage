@@ -29,7 +29,7 @@ describe('stageAutoPatch service', () => {
       expect(res).toHaveLength(2);
       expect(res[0].type).toBe('Beam');
       expect(res[0].count).toBe(4);
-      expect(res[0].preferredPosition).toBe('Truss');
+      expect(res[0].preferredPosition).toBe('Back');
 
       expect(res[1].type).toBe('Follow');
       expect(res[1].count).toBe(2);

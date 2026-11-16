@@ -57,7 +57,7 @@ export const VirtualStagePreview: React.FC = () => {
     return placeFixtures(config, lxCue);
   }, [config, lxCue]);
 
-  const requestedCount = lxCue?.fixtureCount ?? (placementResult.requestedCount || 0);
+  const requestedCount = placementResult.requestedCount;
   const activeCount = hasLx ? placementResult.activeCount : 0;
   const isCountMismatch = hasLx && requestedCount > 0 && requestedCount !== activeCount;
 

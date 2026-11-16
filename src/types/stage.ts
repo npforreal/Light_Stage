@@ -32,6 +32,8 @@ export interface DeviceSpecification {
   category: 'Lighting' | 'Visual';
   subType: LightingFixtureType | VisualScreenType | string;
   count: number;
+  /** Optional rig position, e.g. 'FOH', 'Back', 'Back-L', 'Mid', 'Floor'. */
+  position?: string;
   notes?: string;
   color?: LightingColor;
 }
@@ -53,7 +55,8 @@ export interface LightingCue {
   colorPreset?: string; // Legacy fallback hex
   color?: LightingColor; // Structured color specification
   fixtureSummary?: string;
-  fixtureCount: number;
+  /** Derived cache: always equals the sum of `fixtures`. Never edit independently. */
+  fixtureCount?: number;
   fixtures?: DeviceSpecification[];
   notes?: string;
 }
@@ -146,14 +149,33 @@ export interface LightStageFile {
 }
 
 /**
- * Calculates fixture and screen counts from department cues
+ * Sums the instance counts of a device specification list.
+ * Negative / non-finite / fractional counts are sanitized to whole numbers.
+ */
+export function sumDeviceCounts(devices?: DeviceSpecification[]): number {
+  if (!Array.isArray(devices)) return 0;
+  return devices.reduce((sum, device) => {
+    const count = Number(device?.count);
+    if (!Number.isFinite(count) || count <= 0) return sum;
+    return sum + Math.floor(count);
+  }, 0);
+}
+
+/**
+ * Calculates fixture and screen counts from department cues.
+ * The device list (`fixtures` / `screens`) is the single source of truth;
+ * `fixtureCount` / `screenCount` are only a legacy fallback when no list exists.
  */
 export function calculateCueDeviceCounts(departments: DepartmentCues): {
   lightingCount: number;
   screenCount: number;
 } {
-  const lightingCount = departments.lx?.fixtureCount ?? 0;
-  const screenCount = departments.vx?.screenCount ?? 0;
+  const lx = departments.lx;
+  const vx = departments.vx;
+  const hasFixtureList = Array.isArray(lx?.fixtures) && lx.fixtures.length > 0;
+  const hasScreenList = Array.isArray(vx?.screens) && vx.screens.length > 0;
+  const lightingCount = hasFixtureList ? sumDeviceCounts(lx?.fixtures) : (lx?.fixtureCount ?? 0);
+  const screenCount = hasScreenList ? sumDeviceCounts(vx?.screens) : (vx?.screenCount ?? 0);
   return { lightingCount, screenCount };
 }
 
@@ -172,7 +194,29 @@ export function createDefaultShow(title = 'Untitled Show'): Show {
     status: 'Pending',
     durationMs: 300000, // 5 mins
     departments: {
-      lx: { sceneName: 'Walk-in Ambience', fixtureCount: 12, intensity: 60 },
+      lx: {
+        sceneName: 'Walk-in Ambience',
+        fixtureCount: 12,
+        fixtures: [
+          {
+            id: 'dev-default-wash-1',
+            name: 'Wash',
+            category: 'Lighting',
+            subType: 'Wash',
+            count: 8,
+            position: 'FOH',
+          },
+          {
+            id: 'dev-default-spot-1',
+            name: 'Spot',
+            category: 'Lighting',
+            subType: 'Spot',
+            count: 4,
+            position: 'Truss',
+          },
+        ],
+        intensity: 60,
+      },
       vx: { contentName: 'Event Logo Loop', screenCount: 1, loop: true },
       sq: { trackName: 'BGM Lounge Playlist', volume: 70 },
       st: { actionDescription: 'House doors open, audience seating' },

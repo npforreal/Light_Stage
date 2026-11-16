@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useShowStore } from '../../store/useShowStore';
 import { useClockStore, formatDuration } from '../../store/useClockStore';
 import { Cue } from '../../types/stage';
+import { getCueLightingCount } from '../../services/fixtureModel';
 import { ZoomIn, ZoomOut, Lightbulb, Tv, Volume2, Flag } from 'lucide-react';
 
 export const TimelineTracks: React.FC = () => {
@@ -217,13 +218,13 @@ export const TimelineTracks: React.FC = () => {
                     key={cue.id}
                     style={{ left: `${left}px`, width: `${width}px` }}
                     className="absolute top-1.5 bottom-1.5 rounded border border-dept-lx/40 bg-dept-lx/20 px-1.5 py-0.5 text-[10px] text-dept-lx overflow-hidden truncate flex flex-col justify-center"
-                    title={`LX: ${cue.departments.lx.sceneName || 'Preset'} (${cue.totalLightingFixtures} fixtures)`}
+                    title={`LX: ${cue.departments.lx.sceneName || 'Preset'} (${getCueLightingCount(cue)} fixtures)`}
                   >
                     <span className="font-semibold truncate">
                       {cue.departments.lx.sceneName || 'Preset'}
                     </span>
                     <span className="font-mono text-[9px] text-dept-lx">
-                      {cue.totalLightingFixtures} fix
+                      {getCueLightingCount(cue)} fix
                     </span>
                   </div>
                 );

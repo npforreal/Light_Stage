@@ -1,4 +1,5 @@
 import { Show, LightStageFile } from '../types/stage';
+import { normalizeShow } from './fixtureModel';
 import { useShowStore } from '../store/useShowStore';
 
 export const LIGHTSTAGE_FILE_TYPE = 'lightstage_project';
@@ -146,7 +147,7 @@ export function parseLightStageFile(jsonString: string): ParseResult {
     })),
   };
 
-  return { success: true, data: normalizedShow };
+  return { success: true, data: normalizeShow(normalizedShow) };
 }
 
 /**

@@ -1,8 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useShowStore } from '../../store/useShowStore';
 import { useClockStore, formatDuration } from '../../store/useClockStore';
-import { Cue, CueStatus, LightingColor } from '../../types/stage';
+import { Cue, CueStatus, DeviceSpecification, LightingColor, sumDeviceCounts } from '../../types/stage';
 import { parseTimeString } from '../../services/importer';
+import {
+  LIGHTING_FIXTURE_TYPES,
+  UNCLASSIFIED_LABEL,
+  createDeviceSpec,
+  formatFixtureSummary,
+  getCueLightingCount,
+  getEditableFixtures,
+  hasUnclassifiedFixtures,
+  parseFixtureText,
+} from '../../services/fixtureModel';
 import {
   resolveLightingColorToHex,
   getLightingColorLabel,
@@ -66,14 +76,14 @@ export const RundownTable: React.FC = () => {
   const [draftLx, setDraftLx] = useState<{
     sceneName: string;
     fixtureSummary: string;
-    fixtureCount: number;
+    fixtures: DeviceSpecification[];
     intensity: number;
     color: LightingColor;
     hex: string;
   }>({
     sceneName: '',
     fixtureSummary: '',
-    fixtureCount: 0,
+    fixtures: [],
     intensity: 100,
     color: { mode: 'kelvin', kelvin: 3200 },
     hex: '#ffd199',
@@ -127,10 +137,11 @@ export const RundownTable: React.FC = () => {
       const currentHex = resolveLightingColorToHex(initialColor);
       const initialKelvin = initialColor.mode === 'kelvin' ? initialColor.kelvin : 3200;
 
+      const fixtures = getEditableFixtures(lx);
       setDraftLx({
         sceneName: lx?.sceneName || cue.title,
-        fixtureSummary: lx?.fixtureSummary || (lx?.fixtureCount ? `${lx.fixtureCount} fixtures` : 'All fixtures'),
-        fixtureCount: lx?.fixtureCount ?? cue.totalLightingFixtures ?? 0,
+        fixtureSummary: lx?.fixtureSummary || (fixtures.length ? formatFixtureSummary(fixtures) : ''),
+        fixtures,
         intensity: lx?.intensity ?? 100,
         color: initialColor,
         hex: currentHex,
@@ -172,14 +183,18 @@ export const RundownTable: React.FC = () => {
       const parsedSec = parseTimeString(draftDuration);
       updateCue(cueId, { durationMs: parsedSec > 0 ? parsedSec * 1000 : 60000 });
     } else if (field === 'lx') {
+      const validFixtures = draftLx.fixtures.filter((f) => Number(f.count) > 0);
       updateCue(cueId, {
         departments: {
           ...cue.departments,
           lx: {
             ...cue.departments.lx,
             sceneName: draftLx.sceneName.trim(),
-            fixtureSummary: draftLx.fixtureSummary.trim(),
-            fixtureCount: Number(draftLx.fixtureCount) || 0,
+            fixtures: validFixtures.length > 0 ? validFixtures : undefined,
+            fixtureCount: sumDeviceCounts(validFixtures),
+            fixtureSummary:
+              draftLx.fixtureSummary.trim() ||
+              (validFixtures.length > 0 ? formatFixtureSummary(validFixtures) : undefined),
             intensity: Math.max(0, Math.min(100, Number(draftLx.intensity))),
             color: draftLx.color,
             colorPreset: draftLx.hex,
@@ -616,35 +631,216 @@ export const RundownTable: React.FC = () => {
                                 />
                               </div>
 
-                              {/* Fixtures summary & count */}
-                              <div className="grid grid-cols-2 gap-2">
+                              {/* Fixtures: quick entry + structured rows (single source of truth) */}
+                              <div className="space-y-1.5">
                                 <div>
                                   <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
-                                    Mô tả Fixture
+                                    Nhập nhanh (loại × số lượng @vị trí)
                                   </label>
                                   <input
                                     type="text"
                                     value={draftLx.fixtureSummary}
-                                    onChange={(e) => setDraftLx({ ...draftLx, fixtureSummary: e.target.value })}
+                                    onChange={(e) => {
+                                      const text = e.target.value;
+                                      const parsed = parseFixtureText(text);
+                                      setDraftLx((prev) => ({
+                                        ...prev,
+                                        fixtureSummary: text,
+                                        fixtures:
+                                          text.trim() === ''
+                                            ? []
+                                            : parsed.length > 0
+                                              ? parsed
+                                              : prev.fixtures,
+                                      }));
+                                    }}
                                     onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
                                     className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
-                                    placeholder="12 Wash 3200K"
+                                    placeholder="Beam x8, Spot x4 @FOH, Wash x12"
                                   />
                                 </div>
-                                <div>
-                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
-                                    Số lượng Đèn
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={draftLx.fixtureCount}
-                                    onChange={(e) => setDraftLx({ ...draftLx, fixtureCount: Number(e.target.value) })}
-                                    onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
-                                    className="w-full rounded border border-border-default bg-surface-0 px-2 py-1 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
-                                  />
+
+                                <div className="rounded border border-border-default bg-surface-0/60">
+                                  <div className="flex items-center justify-between border-b border-border-subtle px-2 py-1">
+                                    <span className="text-[10px] font-semibold text-content-3">
+                                      Danh sách đèn
+                                    </span>
+                                    <span className="font-mono text-[10px] font-bold text-dept-lx">
+                                      Tổng: {sumDeviceCounts(draftLx.fixtures)} đèn
+                                    </span>
+                                  </div>
+
+                                  <div className="max-h-40 divide-y divide-border-subtle overflow-y-auto">
+                                    {draftLx.fixtures.length === 0 && (
+                                      <p className="px-2 py-2 text-[10px] text-content-3">
+                                        Chưa có đèn. Gõ nhanh ở trên hoặc thêm dòng.
+                                      </p>
+                                    )}
+                                    {draftLx.fixtures.map((fixture) => {
+                                      const knownType = LIGHTING_FIXTURE_TYPES.includes(
+                                        fixture.subType as never
+                                      )
+                                        ? fixture.subType
+                                        : 'Other';
+                                      return (
+                                        <div
+                                          key={fixture.id}
+                                          className="grid grid-cols-[1fr_48px_1fr_22px] items-center gap-1 px-1.5 py-1"
+                                        >
+                                          <select
+                                            value={knownType}
+                                            onChange={(e) => {
+                                              const subType = e.target.value;
+                                              setDraftLx((prev) => {
+                                                const fixtures = prev.fixtures.map((f) =>
+                                                  f.id === fixture.id
+                                                    ? {
+                                                        ...f,
+                                                        subType,
+                                                        name:
+                                                          subType === 'Other'
+                                                            ? UNCLASSIFIED_LABEL
+                                                            : subType,
+                                                      }
+                                                    : f
+                                                );
+                                                return {
+                                                  ...prev,
+                                                  fixtures,
+                                                  fixtureSummary: formatFixtureSummary(fixtures),
+                                                };
+                                              });
+                                            }}
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            title="Loại đèn"
+                                          >
+                                            {LIGHTING_FIXTURE_TYPES.map((type) => (
+                                              <option key={type} value={type}>
+                                                {type === 'Other' ? UNCLASSIFIED_LABEL : type}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            value={fixture.count}
+                                            onChange={(e) => {
+                                              const count = Number(e.target.value);
+                                              setDraftLx((prev) => {
+                                                const fixtures = prev.fixtures.map((f) =>
+                                                  f.id === fixture.id ? { ...f, count } : f
+                                                );
+                                                return {
+                                                  ...prev,
+                                                  fixtures,
+                                                  fixtureSummary: formatFixtureSummary(fixtures),
+                                                };
+                                              });
+                                            }}
+                                            onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-center font-mono text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            title="Số lượng"
+                                          />
+                                          <input
+                                            type="text"
+                                            list="lx-position-options"
+                                            value={fixture.position || ''}
+                                            onChange={(e) => {
+                                              const position = e.target.value.trim() || undefined;
+                                              setDraftLx((prev) => {
+                                                const fixtures = prev.fixtures.map((f) =>
+                                                  f.id === fixture.id ? { ...f, position } : f
+                                                );
+                                                return {
+                                                  ...prev,
+                                                  fixtures,
+                                                  fixtureSummary: formatFixtureSummary(fixtures),
+                                                };
+                                              });
+                                            }}
+                                            onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            placeholder="Vị trí"
+                                            title="Vị trí (FOH, Back, Mid, Floor…)"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setDraftLx((prev) => {
+                                                const fixtures = prev.fixtures.filter(
+                                                  (f) => f.id !== fixture.id
+                                                );
+                                                return {
+                                                  ...prev,
+                                                  fixtures,
+                                                  fixtureSummary: formatFixtureSummary(fixtures),
+                                                };
+                                              })
+                                            }
+                                            className="rounded p-0.5 text-content-3 hover:bg-surface-2 hover:text-status-hold"
+                                            title="Xoá đèn"
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <div className="flex items-center justify-between border-t border-border-subtle px-1.5 py-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setDraftLx((prev) => {
+                                          const fixtures = [
+                                            ...prev.fixtures,
+                                            createDeviceSpec({
+                                              name: 'Wash',
+                                              subType: 'Wash',
+                                              count: 1,
+                                            }),
+                                          ];
+                                          return {
+                                            ...prev,
+                                            fixtures,
+                                            fixtureSummary: formatFixtureSummary(fixtures),
+                                          };
+                                        })
+                                      }
+                                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-lx hover:bg-surface-2"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                      <span>Thêm đèn</span>
+                                    </button>
+                                    {hasUnclassifiedFixtures(draftLx.fixtures) && (
+                                      <span
+                                        className="inline-flex items-center gap-1 text-[10px] text-amber-400"
+                                        title="Loại đèn chưa nhận diện — sẽ được vẽ ở vị trí mặc định"
+                                      >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>{UNCLASSIFIED_LABEL}</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
+
+                              <datalist id="lx-position-options">
+                                {[
+                                  'FOH',
+                                  'Truss',
+                                  'Back',
+                                  'Back-L',
+                                  'Back-R',
+                                  'Mid',
+                                  'Floor',
+                                  'SideBoom',
+                                  'Ladder',
+                                  'BoxBoom',
+                                ].map((position) => (
+                                  <option key={position} value={position} />
+                                ))}
+                              </datalist>
 
                               {/* Intensity Slider */}
                               <div>
@@ -796,7 +992,7 @@ export const RundownTable: React.FC = () => {
                               </span>
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="inline-flex items-center rounded bg-dept-lx/10 px-1.5 py-0.2 text-[10px] font-mono text-dept-lx border border-dept-lx/30">
-                                  {cue.totalLightingFixtures} fix
+                                  {getCueLightingCount(cue)} fix
                                 </span>
                                 {cue.departments.lx && (
                                   <div className="inline-flex items-center gap-1 rounded bg-surface-2 border border-border-default px-1.5 py-0.5 text-[10px] font-mono group-hover:border-dept-lx transition-colors">

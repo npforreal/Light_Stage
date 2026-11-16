@@ -10,6 +10,7 @@ import {
   createCue,
   calculateCueDeviceCounts,
 } from '../types/stage';
+import { normalizeCue, normalizeShow } from '../services/fixtureModel';
 
 export interface DeviceStats {
   totalLightingFixtures: number;
@@ -153,12 +154,13 @@ export const useShowStore = create<ShowState>((set, get) => {
     },
 
     loadShow: (show: Show) => {
-      const allCues = show.acts.flatMap((a) => a.cues);
+      const normalizedShow = normalizeShow(show);
+      const allCues = normalizedShow.acts.flatMap((a) => a.cues);
       const standby = allCues.find((c) => c.status === 'Standby')?.id || (allCues[0]?.id ?? null);
       const active = allCues.find((c) => c.status === 'Go')?.id ?? null;
 
       set({
-        show,
+        show: normalizedShow,
         isDirty: false,
         activeCueId: active,
         standbyCueId: standby,
@@ -176,6 +178,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         const normalized = newActs.map((act, index) => ({
           ...act,
           order: existingCount + index + 1,
+          cues: act.cues.map(normalizeCue),
         }));
         return {
           ...history,
@@ -332,12 +335,12 @@ export const useShowStore = create<ShowState>((set, get) => {
         cueData?.durationMs ?? 60000,
         cueData?.departments ?? {}
       );
-      const cueToInsert: Cue = {
+      const cueToInsert: Cue = normalizeCue({
         ...created,
         ...cueData,
         cueNumber: computedNumber,
         id: created.id,
-      };
+      });
 
       set((state) => {
         const history = pushHistory(state);
@@ -378,10 +381,11 @@ export const useShowStore = create<ShowState>((set, get) => {
             if (cue.id !== cueId) return cue;
             const updated = { ...cue, ...patch };
             if (patch.departments) {
-              const counts = calculateCueDeviceCounts(patch.departments);
-              updated.totalLightingFixtures = counts.lightingCount;
-              updated.totalScreens = counts.screenCount;
+              return normalizeCue(updated);
             }
+            const counts = calculateCueDeviceCounts(updated.departments);
+            updated.totalLightingFixtures = counts.lightingCount;
+            updated.totalScreens = counts.screenCount;
             return updated;
           }),
         }));
@@ -704,13 +708,14 @@ export const useShowStore = create<ShowState>((set, get) => {
       let peakScreens = 0;
 
       for (const cue of cues) {
-        totalLighting += cue.totalLightingFixtures;
-        totalScreens += cue.totalScreens;
-        if (cue.totalLightingFixtures > peakLighting) {
-          peakLighting = cue.totalLightingFixtures;
+        const counts = calculateCueDeviceCounts(cue.departments);
+        totalLighting += counts.lightingCount;
+        totalScreens += counts.screenCount;
+        if (counts.lightingCount > peakLighting) {
+          peakLighting = counts.lightingCount;
         }
-        if (cue.totalScreens > peakScreens) {
-          peakScreens = cue.totalScreens;
+        if (counts.screenCount > peakScreens) {
+          peakScreens = counts.screenCount;
         }
       }
 

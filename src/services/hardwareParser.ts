@@ -106,10 +106,59 @@ function containsHardwareKeyword(text: string, defaultCategory: 'Lighting' | 'Vi
 }
 
 /**
+ * Extracts an optional rig position from a clause: `@FOH`, `@Back-L`, `(FOH)`, `[Mid]`.
+ * Returns the clause with the position marker removed plus a normalized position label.
+ */
+export function extractPosition(clause: string): { text: string; position?: string } {
+  let text = clause;
+  let position: string | undefined;
+
+  const atMatch = text.match(/@\s*([\w-]+)/);
+  if (atMatch) {
+    position = normalizePositionToken(atMatch[1]) ?? atMatch[1];
+    text = text.replace(atMatch[0], ' ');
+  }
+
+  if (!position) {
+    const bracketMatch = text.match(/[\(\[]([^\)\]]+)[\)\]]/);
+    if (bracketMatch) {
+      const candidate = normalizePositionToken(bracketMatch[1]);
+      if (candidate) {
+        position = candidate;
+        text = text.replace(bracketMatch[0], ' ');
+      }
+    }
+  }
+
+  return { text: text.replace(/\s+/g, ' ').trim(), position };
+}
+
+function normalizePositionToken(raw: string): string | undefined {
+  const token = raw.trim();
+  if (!token || token.length > 24) return undefined;
+  if (!/^[A-Za-zÀ-ỹ0-9][\w\- ]*$/.test(token)) return undefined;
+  if (!/(?:foh|front|trước|back|sau|mid|giữa|floor|sàn|side|boom|cánh|ladder|box|truss|house|khán)/i.test(token)) {
+    return undefined;
+  }
+  const lower = token.toLowerCase();
+  if (/(?:foh|front|trước)/.test(lower)) return 'FOH';
+  if (/back\s*[- ]?l/.test(lower)) return 'Back-L';
+  if (/back\s*[- ]?r/.test(lower)) return 'Back-R';
+  if (/(?:back|sau)/.test(lower)) return 'Back';
+  if (/(?:mid|giữa)/.test(lower)) return 'Mid';
+  if (/(?:floor|sàn)/.test(lower)) return 'Floor';
+  if (/(?:side|boom|cánh)/.test(lower)) return 'SideBoom';
+  if (/ladder/.test(lower)) return 'Ladder';
+  if (/box/.test(lower)) return 'BoxBoom';
+  if (/truss/.test(lower)) return 'Truss';
+  return token;
+}
+
+/**
  * Extracts individual device specifications and quantities from freeform text.
  * Examples:
  * - "4 Beam 350W + 2 Follow" -> Beam 350W (4), Follow (2)
- * - "Beam x 4 (FOH)" -> Beam (FOH) (4)
+ * - "Beam x 4 (FOH)" -> Beam (4) @FOH
  * - "Màn LED cánh x 2" -> Màn LED cánh (2)
  * - "Spot 1000W x 4, 12 Par LED" -> Spot 1000W (4), Par LED (12)
  * - "2 cây Follow, 8 cái Beam" -> Follow (2), Beam (8)
@@ -128,9 +177,11 @@ export function parseHardwareFromText(
 
   const results: DeviceSpecification[] = [];
 
-  for (const clause of clauses) {
+  for (const rawClause of clauses) {
+    const { text: clause, position } = extractPosition(rawClause);
+
     // Skip clauses that are false-positive noise
-    if (!containsHardwareKeyword(clause, defaultCategory)) {
+    if (!containsHardwareKeyword(clause || rawClause, defaultCategory)) {
       continue;
     }
 
@@ -227,6 +278,7 @@ export function parseHardwareFromText(
       category,
       subType,
       count,
+      position,
       color: detectedColor,
     });
   }
@@ -252,7 +304,8 @@ export function calculateShowHardwareInventory(acts: Act[]): ShowHardwareInvento
       // Collect from LX department
       const lxDevices = cue.departments.lx?.fixtures ?? [];
       const lxCount = cue.departments.lx?.fixtureCount ?? 0;
-      cueLighting += Math.max(lxCount, lxDevices.reduce((sum, d) => sum + d.count, 0));
+      cueLighting +=
+        lxDevices.length > 0 ? lxDevices.reduce((sum, d) => sum + d.count, 0) : lxCount;
 
       for (const dev of lxDevices) {
         const key = dev.name.toLowerCase().trim();
@@ -274,7 +327,8 @@ export function calculateShowHardwareInventory(acts: Act[]): ShowHardwareInvento
       // Collect from VX department
       const vxDevices = cue.departments.vx?.screens ?? [];
       const vxCount = cue.departments.vx?.screenCount ?? 0;
-      cueScreens += Math.max(vxCount, vxDevices.reduce((sum, d) => sum + d.count, 0));
+      cueScreens +=
+        vxDevices.length > 0 ? vxDevices.reduce((sum, d) => sum + d.count, 0) : vxCount;
 
       for (const dev of vxDevices) {
         const key = dev.name.toLowerCase().trim();

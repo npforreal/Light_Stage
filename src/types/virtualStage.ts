@@ -31,7 +31,8 @@ export type FixtureType =
   | 'Blinder'
   | 'Strobe'
   | 'Par'
-  | 'Laser';
+  | 'Laser'
+  | 'Smoke';
 
 export type FixtureRole =
   | 'front'
@@ -77,6 +78,7 @@ export const DEFAULT_BEAM_ANGLES: Record<FixtureType, number> = {
   Strobe: 70,
   Par: 25,
   Laser: 1.5,
+  Smoke: 120,
 };
 
 export const DEFAULT_FIXTURE_WATTS: Record<FixtureType, number> = {
@@ -88,6 +90,7 @@ export const DEFAULT_FIXTURE_WATTS: Record<FixtureType, number> = {
   Strobe: 1200,
   Par: 300,
   Laser: 150,
+  Smoke: 1500,
 };
 
 export const DEFAULT_FIXTURE_ROLES: Record<FixtureType, FixtureRole> = {
@@ -99,6 +102,7 @@ export const DEFAULT_FIXTURE_ROLES: Record<FixtureType, FixtureRole> = {
   Strobe: 'effect',
   Par: 'wash',
   Laser: 'effect',
+  Smoke: 'effect',
 };
 
 export interface VirtualScreen {

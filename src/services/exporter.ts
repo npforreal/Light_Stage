@@ -1,5 +1,6 @@
 import { Show, Act } from '../types/stage';
 import { calculateShowHardwareInventory } from './hardwareParser';
+import { getCueLightingCount, getCueScreenCount } from './fixtureModel';
 import { formatDuration } from '../store/useClockStore';
 
 /**
@@ -68,10 +69,10 @@ export function generateCueSheetCsv(show: Show, role: 'ALL' | 'LX' | 'VX' | 'SQ'
       ];
 
       if (role === 'ALL' || role === 'LX') {
-        row.push(cue.departments.lx?.sceneName || '', String(cue.totalLightingFixtures));
+        row.push(cue.departments.lx?.sceneName || '', String(getCueLightingCount(cue)));
       }
       if (role === 'ALL' || role === 'VX') {
-        row.push(cue.departments.vx?.contentName || '', String(cue.totalScreens));
+        row.push(cue.departments.vx?.contentName || '', String(getCueScreenCount(cue)));
       }
       if (role === 'ALL' || role === 'SQ') {
         row.push(cue.departments.sq?.trackName || '');
@@ -161,7 +162,7 @@ export function generatePrintableCueSheetHtml(show: Show, role: 'ALL' | 'LX' | '
     for (const cue of act.cues) {
       let deptCells = '';
       if (role === 'ALL' || role === 'LX') {
-        deptCells += `<td>${cue.departments.lx ? `${escapeHtml(cue.departments.lx.sceneName || 'Preset')} (${cue.totalLightingFixtures} fix)` : '—'}</td>`;
+        deptCells += `<td>${cue.departments.lx ? `${escapeHtml(cue.departments.lx.sceneName || 'Preset')} (${getCueLightingCount(cue)} fix)` : '—'}</td>`;
       }
       if (role === 'ALL' || role === 'VX') {
         deptCells += `<td>${cue.departments.vx ? `${escapeHtml(cue.departments.vx.contentName || 'Loop')} (${cue.totalScreens} scr)` : '—'}</td>`;

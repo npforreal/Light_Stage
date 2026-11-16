@@ -290,4 +290,76 @@ describe('useShowStore', () => {
       expect(stats.peakScreens).toBe(5);
     });
   });
+
+  describe('Fixture list as single source of truth (Đợt 10.1)', () => {
+    it('derives cue totals from the device list, ignoring a stale fixtureCount', () => {
+      const actId = useShowStore.getState().show.acts[0].id;
+      const cueId = useShowStore.getState().addCue(actId, {
+        cueNumber: '9.0',
+        title: 'Thirty Fixtures',
+        departments: {
+          lx: {
+            sceneName: 'Full Rig',
+            fixtureCount: 12, // stale value from the old separate input
+            fixtures: [
+              { id: 'a', name: 'Beam', category: 'Lighting', subType: 'Beam', count: 8 },
+              { id: 'b', name: 'Spot', category: 'Lighting', subType: 'Spot', count: 4, position: 'FOH' },
+              { id: 'c', name: 'Wash', category: 'Lighting', subType: 'Wash', count: 12 },
+              { id: 'd', name: 'Follow', category: 'Lighting', subType: 'Follow', count: 2 },
+              { id: 'e', name: 'Blinder', category: 'Lighting', subType: 'Blinder', count: 4 },
+            ],
+          },
+        },
+      });
+
+      const cue = useShowStore.getState().getCueById(cueId);
+      expect(cue?.departments.lx?.fixtureCount).toBe(30);
+      expect(cue?.totalLightingFixtures).toBe(30);
+    });
+
+    it('updates every consumer when a fixture row count changes', () => {
+      const actId = useShowStore.getState().show.acts[0].id;
+      const cueId = useShowStore.getState().addCue(actId, {
+        cueNumber: '9.1',
+        departments: {
+          lx: {
+            fixtures: [
+              { id: 'a', name: 'Wash', category: 'Lighting', subType: 'Wash', count: 12 },
+            ],
+          },
+        },
+      });
+
+      const cue = useShowStore.getState().getCueById(cueId)!;
+      useShowStore.getState().updateCue(cueId, {
+        departments: {
+          ...cue.departments,
+          lx: {
+            ...cue.departments.lx,
+            fixtures: [
+              { id: 'a', name: 'Wash', category: 'Lighting', subType: 'Wash', count: 20 },
+            ],
+          },
+        },
+      });
+
+      const updated = useShowStore.getState().getCueById(cueId)!;
+      expect(updated.departments.lx?.fixtureCount).toBe(20);
+      expect(updated.totalLightingFixtures).toBe(20);
+      expect(
+        useShowStore.getState().getDeviceStats().totalLightingFixtures
+      ).toBe(12 + 20);
+    });
+
+    it('migrates legacy shows on loadShow without losing counts', () => {
+      const show = createDefaultShow('Legacy');
+      show.acts[0].cues[0].departments.lx = { sceneName: 'Legacy', fixtureCount: 12 };
+      show.acts[0].cues[0].totalLightingFixtures = 12;
+
+      useShowStore.getState().loadShow(show);
+      const lx = useShowStore.getState().getAllCues()[0].departments.lx;
+      expect(lx?.fixtures?.[0].name).toBe('Chưa phân loại');
+      expect(lx?.fixtureCount).toBe(12);
+    });
+  });
 });

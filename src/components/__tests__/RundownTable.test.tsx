@@ -156,4 +156,45 @@ describe('RundownTable Component', () => {
 
     expect(useShowStore.getState().show.acts[0].cues.length).toBe(initialCueCount + 1);
   });
+
+  it('keeps the Rundown count in sync with the 30-fixture quick entry (Đợt 10.1)', () => {
+    render(<RundownTable />);
+
+    fireEvent.doubleClick(screen.getByText('Walk-in Ambience'));
+
+    const quickInput = screen.getByPlaceholderText('Beam x8, Spot x4 @FOH, Wash x12');
+    fireEvent.change(quickInput, {
+      target: {
+        value: 'Beam x8, Spot x4 @FOH, Wash x12, Follow x2, Blinder x4',
+      },
+    });
+
+    expect(screen.getByText(/Tổng: 30 đèn/)).toBeInTheDocument();
+
+    fireEvent.keyDown(quickInput, { key: 'Enter', code: 'Enter' });
+
+    const cue = useShowStore.getState().getAllCues()[0];
+    expect(cue.totalLightingFixtures).toBe(30);
+    expect(cue.departments.lx?.fixtureCount).toBe(30);
+    expect(cue.departments.lx?.fixtures).toHaveLength(5);
+    expect(screen.getByText('30 fix')).toBeInTheDocument();
+  });
+
+  it('reflects structured row edits in the summary and totals', () => {
+    render(<RundownTable />);
+
+    fireEvent.doubleClick(screen.getByText('Walk-in Ambience'));
+
+    const countInputs = screen.getAllByTitle('Số lượng');
+    expect(countInputs.length).toBe(2); // default cue: 8 Wash + 4 Spot
+
+    fireEvent.change(countInputs[0], { target: { value: '10' } });
+    expect(screen.getByText(/Tổng: 14 đèn/)).toBeInTheDocument();
+
+    fireEvent.keyDown(countInputs[0], { key: 'Enter', code: 'Enter' });
+
+    const cue = useShowStore.getState().getAllCues()[0];
+    expect(cue.totalLightingFixtures).toBe(14);
+    expect(cue.departments.lx?.fixtureCount).toBe(14);
+  });
 });
