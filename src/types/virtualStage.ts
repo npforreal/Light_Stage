@@ -9,7 +9,7 @@
 
 export type StagePreset = 'EndStage' | 'Festival' | 'Thrust';
 
-export type CameraView = 'front' | 'topDown';
+export type CameraView = 'front' | 'topDown' | 'foh' | 'backstage';
 
 export type ScreenPositionType = 'Main' | 'LeftWing' | 'RightWing' | 'Floor' | 'Banner' | 'Other';
 

@@ -36,7 +36,7 @@ describe("Real-World User Journey & Usability Simulation", () => {
     expect(screen.getByTitle("Cue Rundown List")).toBeInTheDocument();
     expect(screen.getByTitle("Split Dual View")).toBeInTheDocument();
     expect(screen.getByTitle("Timeline Tracks")).toBeInTheDocument();
-    expect(screen.getByTitle("Stage 2D Preview")).toBeInTheDocument();
+    expect(screen.getByTitle("Stage 3D Preview")).toBeInTheDocument();
   });
 
   it("Hành trình 2: Cơ chế Phục hồi Khẩn cấp khi Sự cố Sập nguồn (Crash Recovery)", () => {
@@ -201,20 +201,18 @@ describe("Real-World User Journey & Usability Simulation", () => {
 
     render(<App />);
 
-    // Chuyển sang tab Stage 2D
-    const stageBtn = screen.getByTitle("Stage 2D Preview");
+    // Chuyển sang tab Stage 3D
+    const stageBtn = screen.getByTitle("Stage 3D Preview");
     fireEvent.click(stageBtn);
 
-    // Người dùng thấy gì trên sân khấu 2D:
-    // - Camera Front View
-    expect(screen.getByText("Front View")).toBeInTheDocument();
-    expect(screen.getByText("Top-Down Plan")).toBeInTheDocument();
+    // Người dùng thấy gì trên sân khấu 3D:
+    // - Camera 3D Presets
+    expect(screen.getByTestId("preset-foh")).toBeInTheDocument();
+    expect(screen.getByTestId("preset-topdown")).toBeInTheDocument();
+    expect(screen.getByTestId("preset-backstage")).toBeInTheDocument();
 
     // - Thông tin quang học: Nhãn màu 3200K
     expect(screen.getByText("3200K")).toBeInTheDocument();
-
-    // - Trạng thái 3 màn hình LED (Main, Cánh Trái, Cánh Phải) đang đồng bộ nội dung "Fire Visual Loop"
-    expect(screen.getAllByText("Fire Visual Loop").length).toBe(3);
   });
 
   it("Hành trình 5: Bóc tách Kịch bản Thực tế & Đếm Thiết bị Tự động (Parser Usability)", () => {

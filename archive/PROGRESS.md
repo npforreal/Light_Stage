@@ -1,5 +1,45 @@
 # Lưu trữ PROGRESS.md (nguyên văn, không chỉnh sửa)
 
+## 2026-11-16 — Đợt 10.2 & 10.3: Ký hiệu Stage, Rig Editor, Light Plot, Popover
+
+### Thay đổi
+- **Ký hiệu USITT-lite** (`src/services/stageSymbols.ts`, `src/components/stage/FixtureSymbol.tsx`): mỗi loại đèn có hình riêng (kể cả Laser chevron, Smoke), đánh số downstage→upstage, SL trước, boom trên→dưới; thước mét + đọc khoảng cách khi rê chuột.
+- **Stage 2D**: legend LX Color/loại đèn/dimmer/haze/power + chip cảnh báo chuyển xuống **footer dưới canvas** (không còn `absolute` đè sân khấu); cảnh báo lệch SL/SR, thiếu front/back, vượt tải truss, cue > rig.
+- **Rig Editor** (`src/components/stage/StageRigEditor.tsx`): sửa kích thước sân khấu, thêm/xoá/sửa màn LED, truss (vị trí, trim, tải), từng đèn (loại, vị trí, toạ độ, trim, góc chùm, bật/tắt); hiển thị “Rig N đèn · Cue cần M” và cảnh báo khi cue vượt rig.
+- **Parser** (`fixtureModel.parseFixtureText`): clause lạ có số lượng rõ ràng (“Foo x4”, “4 Foo”, “Bar 2 cây”) thành dòng `Other` + chip “Chưa phân loại”; vẫn loại noise spare/party/cable/ghế/bàn/quạt.
+- **Light Plot** (`exporter.generateLightPlotHtml`): sơ đồ top-down có màn LED/truss/ký hiệu đánh số, legend, bảng số–loại–vị trí–X/Y/trim–góc–công suất; nút in trong ExportModal.
+- **Popover** (`src/components/common/ClampedPopover.tsx`): portal + `position: fixed`, kẹp trong viewport và cuộn trong popover; áp cho 4 editor LX/VX/SQ/ST (nút Lưu/Huỷ luôn thấy ở 960×640).
+- **Dọn dẹp**: xoá 4 stub re-export `src/components/{ExportModal,ImportModal,RundownTable,VirtualStagePreview}.tsx`; bỏ chữ “Excel” ở Welcome/Import/Export (dùng CSV/TSV đúng định dạng hỗ trợ).
+
+### Quyết định kỹ thuật
+- Cảnh báo stage là **không chặn**: chỉ hiện chip + tooltip, không đổi dữ liệu cue.
+- Light plot dùng HTML/SVG thuần (không thêm thư viện) để in qua iframe như cue sheet hiện có.
+- Popover dùng portal thay vì `absolute` để không bị `overflow-hidden` của bảng/cell cắt mất.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: pass.
+- `npx vitest run`: 26 suites / 217 tests pass (thêm `stageSymbols.test.ts`, `ClampedPopover.test.tsx`, test rig CRUD, light plot, footer/cảnh báo).
+- `bash scripts/check.sh --fast`: pass; audit 0 failure (warning PLAN.md 256 dòng), guard 0 vi phạm.
+- **Chưa tick** 10.2.7 (ảnh front + top-down 3 preset) và 10.3.4 (`elementFromPoint` header 4 độ rộng) vì cần browser thật ở 10.4.
+
+## 2026-11-16 — Đợt 10.1: Một nguồn sự thật cho số lượng đèn
+
+### Thay đổi
+- **Mô hình dữ liệu**: `DeviceSpecification.position` (FOH/Back/Mid/Floor…) và `LightingCue.fixtureCount` chuyển thành cache suy ra; `calculateCueDeviceCounts` ưu tiên tổng `fixtures[]`.
+- **Service mới `src/services/fixtureModel.ts`**: parse/format danh sách đèn, chuẩn hoá cue/show, migrate dữ liệu cũ (`fixtureCount` → một dòng "Chưa phân loại × N"), đếm theo loại.
+- **Store/persistence**: `addCue`, `updateCue`, `appendActs`, `loadShow`, `parseLightStageFile` đều chuẩn hoá qua `normalizeCue`/`normalizeShow`; `getDeviceStats` tính trực tiếp từ `departments`.
+- **`hardwareParser`**: tách vị trí khỏi tên (`@FOH`, `(FOH)`, `[Mid]`), không còn nhét vị trí vào tên thiết bị.
+- **RundownTable**: bỏ ô "Số lượng Đèn" tách rời; thay bằng ô nhập nhanh + danh sách có cấu trúc (loại · số lượng · vị trí · thêm/xoá), tổng chỉ đọc, chip cảnh báo "Chưa phân loại".
+- **Stage 2D / Timeline / Export**: dùng chung số suy ra; `placeFixtures` nhận vị trí từ danh sách và cảnh báo đèn chưa phân loại.
+
+### Quyết định kỹ thuật
+- Giữ `fixtureCount` trong schema (optional) để tương thích file cũ, nhưng mọi ghi mới đều bị chuẩn hoá lại từ danh sách — không còn hai nguồn sự thật.
+- Migration ưu tiên `fixtureSummary` trước `fixtureCount` để cue cũ có mô tả vẫn giữ đúng loại đèn.
+
+### Kiểm chứng & Kết quả
+- `bash scripts/check.sh --fast`: 24/24 test suites, 188/188 unit tests passed; audit workflow 0 failure (1 warning: PLAN.md 256 dòng, sẽ archive ở 10.5.4); guard check 0 vi phạm.
+- Test mới: `fixtureModel.test.ts` (8 ca, gồm property test format→parse), store (3 ca), RundownTable (2 ca), VirtualStagePreview "Nhập 30 · Hiển thị 30", persistence migrate.
+
 ## 2026-11-16 — Hoàn thành Toàn diện Đợt 8 & Đợt 9 qua Native Swarm
 
 ### Thay đổi

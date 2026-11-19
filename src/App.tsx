@@ -16,7 +16,7 @@ import { broadcastStageClock } from './services/stageClockSync';
 import { Header, ViewMode } from './components/Header';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
-import { VirtualStagePreview } from './components/stage/VirtualStagePreview';
+import { Stage3DView } from './components/stage/Stage3DView';
 import { ImportModal } from './components/importer/ImportModal';
 import { ExportModal } from './components/export/ExportModal';
 import { HelpModal } from './components/HelpModal';
@@ -369,7 +369,7 @@ export const App: React.FC = () => {
 
         {viewMode === 'stage' && (
           <div className="flex-1 overflow-hidden">
-            <VirtualStagePreview />
+            <Stage3DView />
           </div>
         )}
 

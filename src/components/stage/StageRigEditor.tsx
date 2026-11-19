@@ -89,6 +89,11 @@ export const StageRigEditor: React.FC = () => {
   const updateFixture = useStageStore((s) => s.updateFixture);
   const removeFixture = useStageStore((s) => s.removeFixture);
 
+  const selectedFixtureId = useStageStore((s) => s.selectedFixtureId);
+  const selectedScreenId = useStageStore((s) => s.selectedScreenId);
+  const selectFixture = useStageStore((s) => s.selectFixture);
+  const selectScreen = useStageStore((s) => s.selectScreen);
+
   const activeCue = useShowStore((s) => s.getActiveCue());
   const standbyCue = useShowStore((s) => s.getStandbyCue());
   const referenceCue = activeCue ?? standbyCue;
@@ -243,8 +248,18 @@ export const StageRigEditor: React.FC = () => {
         {config.screens.length === 0 && (
           <p className="text-[10px] italic text-content-3">Chưa có màn LED.</p>
         )}
-        {config.screens.map((screen) => (
-          <div key={screen.id} className="space-y-1 rounded border border-border-default bg-surface-0/60 p-1.5">
+        {config.screens.map((screen) => {
+          const isSelected = selectedScreenId === screen.id;
+          return (
+            <div
+              key={screen.id}
+              onClick={() => selectScreen(screen.id)}
+              className={`space-y-1 rounded border p-1.5 transition-colors cursor-pointer ${
+                isSelected
+                  ? 'border-accent ring-1 ring-accent bg-accent/10'
+                  : 'border-border-default bg-surface-0/60 hover:border-border-default/80'
+              }`}
+            >
             <div className="flex items-center gap-1">
               <input
                 type="checkbox"
@@ -298,7 +313,8 @@ export const StageRigEditor: React.FC = () => {
               />
             </div>
           </div>
-        ))}
+        );
+      })}
       </section>
 
       {/* Trusses */}
@@ -415,8 +431,18 @@ export const StageRigEditor: React.FC = () => {
             Rig chưa khai báo đèn — Stage 2D sẽ dựng slot ảo theo cue.
           </p>
         )}
-        {fixtures.map((fixture) => (
-          <div key={fixture.id} className="space-y-1 rounded border border-border-default bg-surface-0/60 p-1.5">
+        {fixtures.map((fixture) => {
+          const isSelected = selectedFixtureId === fixture.id;
+          return (
+            <div
+              key={fixture.id}
+              onClick={() => selectFixture(fixture.id)}
+              className={`space-y-1 rounded border p-1.5 transition-colors cursor-pointer ${
+                isSelected
+                  ? 'border-accent ring-1 ring-accent bg-accent/10'
+                  : 'border-border-default bg-surface-0/60 hover:border-border-default/80'
+              }`}
+            >
             <div className="flex items-center gap-1">
               <span className="w-6 flex-shrink-0 font-mono text-[10px] font-bold text-content-3">
                 #{fixture.slot}
@@ -499,7 +525,8 @@ export const StageRigEditor: React.FC = () => {
               />
             </div>
           </div>
-        ))}
+        );
+      })}
       </section>
     </div>
   );

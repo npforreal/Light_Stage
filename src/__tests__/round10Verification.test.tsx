@@ -86,7 +86,7 @@ describe('Round 10 Comprehensive Verification Suite', () => {
         expect(screen.getByTitle('Cue Rundown List')).toBeInTheDocument();
         expect(screen.getByTitle('Split Dual View')).toBeInTheDocument();
         expect(screen.getByTitle('Timeline Tracks')).toBeInTheDocument();
-        expect(screen.getByTitle('Stage 2D Preview')).toBeInTheDocument();
+        expect(screen.getByTitle('Stage 3D Preview')).toBeInTheDocument();
 
         // Lock button
         const lockBtn = screen.getByTitle(/Unlocked: Hotkeys active/);

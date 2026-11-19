@@ -35,7 +35,7 @@ describe('Header Component', () => {
     expect(screen.getByTitle('Cue Rundown List')).toBeInTheDocument();
     expect(screen.getByTitle('Split Dual View')).toBeInTheDocument();
     expect(screen.getByTitle('Timeline Tracks')).toBeInTheDocument();
-    expect(screen.getByTitle('Stage 2D Preview')).toBeInTheDocument();
+    expect(screen.getByTitle('Stage 3D Preview')).toBeInTheDocument();
     expect(screen.getByTitle('Unlocked: Hotkeys active')).toBeInTheDocument();
   });
 

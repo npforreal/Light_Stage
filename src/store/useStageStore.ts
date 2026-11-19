@@ -22,6 +22,8 @@ const DEFAULT_POSITION: RigPosition = 'Truss';
 export interface StageState {
   cameraView: CameraView;
   config: StageConfig;
+  selectedFixtureId: string | null;
+  selectedScreenId: string | null;
 
   // Actions
   setCameraView: (view: CameraView) => void;
@@ -30,6 +32,8 @@ export interface StageState {
   toggleScreen: (screenId: string) => void;
   toggleTruss: (trussId: string) => void;
   updateDimensions: (widthMeters: number, depthMeters: number) => void;
+  selectFixture: (fixtureId: string | null) => void;
+  selectScreen: (screenId: string | null) => void;
 
   // Editable rig (Đợt 10.2.3)
   addScreen: (partial?: Partial<VirtualScreen>) => string;
@@ -53,8 +57,12 @@ function withFixtures(config: StageConfig, fixtures: Fixture[]): StageConfig {
 export const useStageStore = create<StageState>((set) => ({
   cameraView: 'front',
   config: STAGE_PRESETS.EndStage,
+  selectedFixtureId: null,
+  selectedScreenId: null,
 
   setCameraView: (view: CameraView) => set({ cameraView: view }),
+  selectFixture: (id: string | null) => set({ selectedFixtureId: id, selectedScreenId: null }),
+  selectScreen: (id: string | null) => set({ selectedScreenId: id, selectedFixtureId: null }),
 
   applyPreset: (preset: StagePreset) => {
     const template = STAGE_PRESETS[preset];

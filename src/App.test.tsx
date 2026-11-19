@@ -13,7 +13,7 @@ describe("App Dual View Integration", () => {
     expect(screen.getByTitle("Cue Rundown List")).toBeInTheDocument();
     expect(screen.getByTitle("Split Dual View")).toBeInTheDocument();
     expect(screen.getByTitle("Timeline Tracks")).toBeInTheDocument();
-    expect(screen.getByTitle("Stage 2D Preview")).toBeInTheDocument();
+    expect(screen.getByTitle("Stage 3D Preview")).toBeInTheDocument();
   });
 
   it("switches view modes on button click", () => {
@@ -29,10 +29,10 @@ describe("App Dual View Integration", () => {
 
     expect(screen.getByText("Timeline Tracks")).toBeInTheDocument();
 
-    const stageBtn = screen.getByTitle("Stage 2D Preview");
+    const stageBtn = screen.getByTitle("Stage 3D Preview");
     fireEvent.click(stageBtn);
 
-    expect(screen.getByText("Front View")).toBeInTheDocument();
+    expect(screen.getByTestId("stage-3d-view")).toBeInTheDocument();
   });
 
   it("toggles Operator Lock mode", () => {

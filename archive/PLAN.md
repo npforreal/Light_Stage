@@ -388,3 +388,75 @@ Người lạ mở app lần đầu phải tự: tạo show, nhập nội dung c
 - [x] 10.5.3 `bash scripts/check.sh --fast`, `npm run build`, `python3 scripts/audit_workflow.py`, `python3 scripts/guard_check.py`.
 - [x] 10.5.4 `python3 scripts/archive_logs.py`, commit từng giai đoạn (Conventional Commits, không push).
 
+
+
+<!-- Dọn thủ công 2026-11-18: vỏ đợt 5, 7, 10 và đợt 11 -->
+## Đợt 5: Hệ thống Điều phối Thời gian, Phím tắt Sân khấu & Xuất Báo cáo
+
+> Đã xong và lưu trữ (xem `archive/PLAN.md`): Giai đoạn 5.1: Bộ điều khiển Thời gian & Phím tắt Sân khấu, Giai đoạn 5.2: Xuất Báo cáo (PDF & Excel) & Đóng gói Production
+
+
+### Mục tiêu đợt
+Hoàn thiện hệ thống điều khiển vận hành show (phím tắt, đồng hồ delta time), tính năng xuất báo cáo chuyên nghiệp và đóng gói bản phát hành.
+
+## Đợt 7: Thiết kế lại Màu UI & Mô phỏng Ánh sáng Chính xác (Color System)
+
+> Đã xong và lưu trữ (xem `archive/PLAN.md`): Giai đoạn 7.1: Lõi khoa học màu (`src/services/color.ts`), Giai đoạn 7.2: Mô hình dữ liệu màu đèn (tương thích ngược), Giai đoạn 7.3: Hệ token màu & refactor UI, Giai đoạn 7.4: Stage 2D hiển thị đèn chính xác, Giai đoạn 7.5: Tài liệu & đóng đợt
+
+## Đợt 10: Hoàn thiện Đợt 8–9 sau Review (Số lượng đèn, Ký hiệu Stage, Xác minh Browser)
+
+> Đã xong và lưu trữ (xem `archive/PLAN.md`): Giai đoạn 10.1: Một nguồn sự thật cho số lượng đèn (Critical), Giai đoạn 10.2: Hoàn thành các mục 9.4 còn dở, Giai đoạn 10.3: Sửa lỗi UI nhỏ, Giai đoạn 10.4: Test như người dùng thật bằng browser (thay thế 9.7 và 8.6 chưa chạy), Giai đoạn 10.5: Đóng đợt & làm sạch nhật ký
+
+
+> Nguồn: review bản Antigravity ngày 2026-11-16 (commit `1ec5b4d`): check.sh 23/23 suite, 174/174 test, build OK, audit/guard OK; test thủ công trên browser ở 960 và 1280px. Đã xác minh chạy được: header 2 tầng (không nút bị che), sửa ô LX bằng popover, Welcome/Help, Undo, top-down có centerline/plaster line/SL-SR/FOH ngoài sân khấu, auto-patch đối xứng, bộ đếm đối chiếu.
+> Không tuyên bố "hoàn thành Đợt 8–9" cho tới khi đóng đợt này. Mức: **[C]** nghiêm trọng, **[H]** cao, **[M]** trung bình, **[L]** thấp.
+
+### Mục tiêu đợt
+(1) Nhập đèn trong cue ⇒ bảng Rundown, Stage 2D, kiểm kê, báo cáo cùng một con số. (2) Hoàn thành các mục 9.4 còn dở. (3) Chạy thật kịch bản người dùng trên browser và sửa hết Critical/High. (4) Làm cho nhật ký tiến độ khớp thực tế.
+
+### Phát hiện từ review
+- [C] **Nhập đèn cho số lượng sai.** Ô "Mô tả Fixture" nhập `Beam x8, Spot x4 @FOH, Wash x12, Follow x2, Blinder x4` (30 đèn) nhưng ô "Số lượng Đèn" vẫn 12 và được ưu tiên khi lưu: Rundown hiện "12 fix", Stage 2D vẽ 30, bộ đếm đỏ "Nhập 12 · Hiển thị 30". Hai nguồn sự thật cho cùng một số.
+- [H] **Nhật ký không khớp thực tế.** `PROGRESS.md` ghi "hoàn thành toàn diện Đợt 8 & 9" và "hỗ trợ gán tay `@position`", trong khi PLAN còn 13 mục `[ ]` (9.4.5, 9.4.10, 9.4.11, 9.4.13, 9.4.14, 9.4.20, 9.7.x, 9.8.x). `realUserJourney.test.tsx` chạy trên jsdom, không phải browser, nên chưa thoả 9.7.
+- [H] **Stage 2D không phân biệt loại đèn**: mọi đèn là chấm giống nhau (chưa có ký hiệu theo loại, thước mét, đánh số USITT).
+- [M] **Popover sửa LX bị cắt ở 960×640**: phần Intensity/Kelvin/hex và nút lưu bị panel Timeline che.
+- [M] Welcome/nút Import còn ghi "Excel/CSV" trong khi chỉ nhận `.csv/.tsv/.txt`.
+- [L] 4 file `src/components/{ExportModal,ImportModal,RundownTable,VirtualStagePreview}.tsx` chỉ là một dòng re-export, làm lẫn cấu trúc thư mục.
+- Chưa kiểm được: Stage Clock Window đa cửa sổ, âm thanh thật (autoplay), 1920px, Export/Print trong Tauri, cargo.
+
+### Rủi ro & quyết định cần chốt
+- 10.1 đổi nguồn sự thật của số lượng đèn: cần migrate cue cũ và file `.lightstage` đã lưu (có test round-trip), tránh đổi số đã nhập.
+- Quy trình: giao việc cho agent bên ngoài phải kèm kiểm chứng bằng browser, không chỉ test jsdom; người duyệt đối chiếu PLAN với PROGRESS trước khi đóng đợt.
+- Chưa có cargo nên chưa kiểm được build Tauri, in PDF trong Tauri, cửa sổ phụ Tauri (nên cài cargo trước 10.4.3).
+
+### Đợt 11: Học từ FreeShow cho Visual LED (VX) & Stage Confidence
+> Nguồn: `docs/FREESHOW_NOTES.md`. Đã hoàn tất và kiểm chứng toàn diện.
+- [x] 11.0 Đã đối chiếu 13 ảnh FreeShow (notes mục 4–4d: màn chính, Import, Edit, Stage, Outputs, Styles, Templates, Overlays, Functions, đang chiếu) để thiết kế kiến trúc VX.
+- [x] 11.0e Output style dùng chung cho màn LED (nền, media fit Contain/Cover, tỉ lệ, lớp bật sẵn); menu "+" nổi theo nhóm để thêm đèn/màn/truss vào Rig Editor và mục vào Stage Clock layout; mẫu VX có biến `{cue_title}` (liên kết 11.1, 11.4, 11.5).
+- [x] 11.0d Chỉ báo LIVE rõ ràng: nút "Clear VX" đổi màu khi có visual đang chiếu, icon từng lớp sáng riêng, một chỉ báo LIVE duy nhất ở header; thẻ cue có huy hiệu transition; nút điều khiển không đè lên preview.
+- [x] 11.0c Khung 3 cột thống nhất (danh sách – canvas – inspector gập/mở) cho Rig Editor/Stage 2D; hộp thoại Import dạng lưới theo nhóm có "Dán từ clipboard"; kiểm tra mọi tooltip nút có chip phím tắt; trạng thái rỗng luôn có nút hành động.
+- [x] 11.0b Đơn giản hoá UI theo FreeShow: 1 màu nhấn + bộ màu trạng thái tối thiểu, tab icon + nhãn ngắn, nút phụ hiện khi hover/chọn, đồng hồ thực luôn hiện (liên hệ Đợt 7/9.5).
+- [x] 11.1 Output cho từng màn LED: tên, màu, trạng thái (chấm xanh/đỏ/vàng), tỉ lệ + độ phân giải; cảnh báo video khác tỉ lệ màn.
+- [x] 11.2 Lớp VX (Nền loop / Overlay) bật-xoá riêng; phím panic: Blackout, Clear lớp, **Freeze VX** (khoá output); ghi vào Trợ giúp + test chống trùng phím.
+- [x] 11.3 Thời gian vào/ra của cue VX: mặc định toàn show, ghi đè từng cue.
+- [x] 11.4 Stage Clock layout cho MC/nhạc công (cue hiện tại + kế tiếp + ghi chú ST); timer "đếm tới giờ" + overrun rõ.
+- [x] 11.5 Ý tưởng dài hạn, chỉ ghi nhận: trang điều khiển từ xa LAN, trigger HTTP/OSC/MIDI, biến cue `{cue_title}`, `{cue_no}`, `{speaker}`, thư viện media dạng drawer.
+- [x] 11.6 Test như người dùng thật bằng browser cho 11.1–11.4 (theo quy tắc chung).
+## Đợt 12: Stage 3D khối đơn giản (thay Stage 2D)
+
+> Quyết định (2026-11-18):
+> - Công nghệ & Kiến trúc: three.js thuần (không R3F: giữ bundle nhỏ và chủ động kiểm soát vòng render); tách thành `Stage3DScene.ts` (Three.js engine thuần) và `Stage3DView.tsx` (React wrapper mỏng).
+> - Mô hình & Dựng hình: Khối hộp low-poly/InstancedMesh cho truss, màn LED (chuẩn tỉ lệ `useVisualStore`), thân đèn (chuẩn số lượng `fixtureModel`); chùm tia sáng nón mờ (Simple Cone Beam, additive blend) theo màu cue active, gộp bằng `InstancedMesh` và tự tắt chùm (chỉ giữ thân đèn) khi số đèn vượt ngưỡng (mặc định 150, chỉnh được).
+> - Hiệu năng & Năng lượng: Render theo nhu cầu (`on-demand / render on dirty`) khi camera đổi hoặc cue/rig update, dừng loop tĩnh để bảo vệ CPU/pin laptop live show.
+> - Điều khiển & Tương tác: Camera OrbitControls giới hạn góc + 3 nút preset (Khán giả FOH / Trên xuống Top-down / Cánh gà Backstage); Raycasting click chọn fixture/screen đồng bộ với Rig Editor.
+> - Trực quan 2D & Phòng vệ: Lớp 2D HUD phủ hiển thị màu/độ sáng cue, footer giữ chip cảnh báo rig; fallback an toàn khi GPU thiếu WebGL.
+> - Dọn dẹp & Kế thừa: Gỡ bỏ `VirtualStagePreview.tsx` (977 dòng) và `FixtureSymbol.tsx`; giữ nguyên 100% `generateLightPlotHtml` (bản vẽ kỹ thuật 2D in ấn USITT).
+
+- [x] 12.0 Chốt phạm vi: liệt kê dữ liệu Rig (stage, truss, LED, fixtures) mà 3D phải đọc; đo bundle trước khi thêm `three`.
+- [x] 12.1 Thêm `three` & `@types/three` (import theo module, tree-shake); xây dựng `Stage3DScene.ts` với on-demand rendering, dispose lifecycle sạch sẽ; tạo helper mock WebGL cho Vitest (JSDOM).
+- [x] 12.2 Dựng khối 3D: sàn sân khấu, giàn truss, màn LED (tỉ lệ từ `useVisualStore`), đèn theo loại bằng `InstancedMesh` (chuẩn số lượng từ `fixtureModel`) + chùm sáng nón bán trong suốt theo cue active (cũng `InstancedMesh`; ngưỡng tắt chùm khi >150 đèn, có test).
+- [x] 12.3 Camera & Tương tác: OrbitControls giới hạn góc va chạm sàn + 3 nút preset (FOH / Top-down / Backstage); Raycasting click chọn fixture/screen đồng bộ với Rig Editor.
+- [x] 12.4 Lớp 2D HUD & Fallback: hiển thị thông tin cue active, nhãn loại đèn, giữ chip cảnh báo rig ở footer; phát hiện `isWebGLAvailable` để hiện fallback an toàn nếu thiếu WebGL.
+- [x] 12.5 Dọn dẹp & Kế thừa: Gỡ bỏ `VirtualStagePreview.tsx` và `FixtureSymbol.tsx`; cập nhật Help, Welcome, tests; bảo toàn `generateLightPlotHtml` cho in ấn 2D.
+- [x] 12.6 Test như người dùng thật trên browser (960/1280/1920px) + kiểm tra `cargo check` & build tauri trên mac, **kiểm CSP trong `tauri.conf.json`** (`script-src`/`img-src`/`worker-src`) khi chạy bản Tauri thật; nới tối thiểu nếu three.js cần, ghi lại lý do; chụp ảnh 3 preset camera. *(Hoàn tất trong 13.5: 9 ảnh 3 preset × 3 viewport, tauri build + mở app OK, CSP 0 violation; ảnh cửa sổ native bị TCC chặn — xem caveat PROGRESS.)*
+- [x] 12.7 Đóng đợt: `bash scripts/check.sh --fast`, ghi log `PROGRESS.md`, chạy `archive_logs.py`.
+

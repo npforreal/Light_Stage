@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useShowStore } from '../store/useShowStore';
 import { useClockStore, formatDuration } from '../store/useClockStore';
+import { getCueLightingCount, getCueScreenCount } from '../services/fixtureModel';
 import { isMuted, toggleMute } from '../services/audioAlerts';
 import { openStageClockWindow } from '../services/stageClockSync';
 import {
@@ -56,7 +57,6 @@ export const Header: React.FC<HeaderProps> = ({
   wallClock,
 }) => {
   const show = useShowStore((s) => s.show);
-  const getDeviceStats = useShowStore((s) => s.getDeviceStats);
   const isDirty = useShowStore((s) => s.isDirty);
   const updateMetadata = useShowStore((s) => s.updateMetadata);
   const newShow = useShowStore((s) => s.newShow);
@@ -80,7 +80,10 @@ export const Header: React.FC<HeaderProps> = ({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  const stats = getDeviceStats();
+  // Header badges show the LIVE cue (Go). Nothing on stage => 0, matching the
+  // Stage 3D view and the cue counter instead of show-wide totals.
+  const liveLxCount = activeCue ? getCueLightingCount(activeCue) : 0;
+  const liveVxCount = activeCue ? getCueScreenCount(activeCue) : 0;
 
   useEffect(() => {
     setTitleDraft(show.metadata.title);
@@ -436,22 +439,38 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-accent text-surface-0 font-bold shadow'
                   : 'text-content-2 hover:text-content-1'
               }`}
-              title="Stage 2D Preview"
+              title="Stage 3D Preview"
             >
               <Eye className="h-3.5 w-3.5" />
-              <span>Stage 2D</span>
+              <span>Stage 3D</span>
             </button>
           </div>
 
           {/* Hardware Stats Badges */}
           <div className="hidden lg:flex items-center gap-2.5 font-mono text-[11px] ml-2">
-            <div className="flex items-center gap-1 text-dept-lx" title="Tổng số thiết bị đèn LX">
+            <div
+              className="flex items-center gap-1 text-dept-lx"
+              title={
+                activeCue
+                  ? `Đèn LX của cue đang chạy (${activeCue.cueNumber})`
+                  : 'Chưa gọi cue (Go) — sân khấu trống'
+              }
+              data-testid="header-lx-count"
+            >
               <Lightbulb className="h-3.5 w-3.5" />
-              <span>LX: {stats.totalLightingFixtures}</span>
+              <span>LX: {liveLxCount}</span>
             </div>
-            <div className="flex items-center gap-1 text-dept-vx" title="Tổng số màn hình LED VX">
+            <div
+              className="flex items-center gap-1 text-dept-vx"
+              title={
+                activeCue
+                  ? `Màn LED của cue đang chạy (${activeCue.cueNumber})`
+                  : 'Chưa gọi cue (Go) — chưa có màn LED live'
+              }
+              data-testid="header-vx-count"
+            >
               <Tv className="h-3.5 w-3.5" />
-              <span>VX: {stats.totalScreens}</span>
+              <span>VX: {liveVxCount}</span>
             </div>
           </div>
         </div>

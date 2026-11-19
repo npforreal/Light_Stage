@@ -48,11 +48,11 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
     },
     {
       step: 3,
-      title: '3. Giám Sát Chế Độ Kép (Dual View & Stage 2D)',
-      subtitle: 'Xem cùng lúc bảng Rundown, Timeline Tracks và Sân Khấu Ảo',
+      title: '3. Giám Sát Chế Độ Kép (Dual View & Stage 3D)',
+      subtitle: 'Xem cùng lúc bảng Rundown, Timeline Tracks và Sân Khấu Ảo 3D',
       icon: <Tv className="h-6 w-6 text-dept-vx" />,
       description:
-        'Chuyển đổi linh hoạt giữa chế độ Master Rundown, Timeline Tracks thời gian thực hoặc Sân khấu ảo 2D (Front View & Top-down) mô phỏng chính xác vị trí giàn đèn, chùm sáng (beam cones) và màn hình LED.',
+        'Chuyển đổi linh hoạt giữa chế độ Master Rundown, Timeline Tracks thời gian thực hoặc Sân khấu ảo 3D (FOH, Top-down, Backstage) mô phỏng chính xác khối sân khấu, giàn truss, chùm sáng (beam cones) và màn hình LED.',
     },
     {
       step: 4,
