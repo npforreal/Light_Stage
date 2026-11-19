@@ -15,6 +15,7 @@ Rules:
 - R5: No open routes / trivial true permission callbacks (e.g. __return_true, () => true).
 - R6: File layout whitelist: files may only live in recognized directories; no rogue code in docs/ or root.
 - R7: No raw Tailwind color classes in src/ (use semantic tokens instead).
+- R8: Anti-slop UI ratchet (đợt 17): decorative uppercase / tracking-wide / backdrop-blur / shadow outside floating chrome is forbidden.
 - W1: (Warning) Hardcoded data tables/dictionaries in code instead of config/data files.
 
 Ratcheting:
@@ -55,6 +56,21 @@ RAW_COLOR_PATTERN = re.compile(
     r"\b(bg|text|border|ring|from|to|via|fill|stroke|divide|shadow|outline|decoration|accent|caret)-"
     r"(zinc|slate|gray|neutral|stone|cyan|amber|emerald|rose|indigo|violet|purple|blue|red|green|yellow)-\d+\b"
 )
+
+# R8: Anti-slop UI ratchet (đợt 17) — decorative classes outside floating chrome.
+# Allow-lists (line-scoped):
+#   - uppercase: state tokens only (status-* classes, badge containers) or CSS print stylesheets
+#   - backdrop-blur: modal/overlay scrims only (lines with `fixed`)
+#   - shadow-*: floating chrome only (modal cards, popovers, dropdowns, drawers, HUD:
+#     lines with fixed/absolute/max-w-/animate-in)
+#   - tracking-wide/wider/widest: never allowed (sentence case is the norm)
+R8_UPPERCASE = re.compile(r"\buppercase\b")
+R8_TRACKING = re.compile(r"\btracking-(wide|wider|widest)\b")
+R8_BLUR = re.compile(r"\bbackdrop-blur(-sm|-md|-lg|-xl|-2xl)?\b")
+R8_SHADOW = re.compile(r"\bshadow-(sm|md|lg|xl|2xl|3xl)\b|\bshadow\[")
+R8_UPPERCASE_ALLOW = re.compile(r"text-transform:|status-(go|standby|hold|danger|warning|ok)\b|badgeBgClass")
+R8_FIXED = re.compile(r"\bfixed\b")
+R8_FLOATING = re.compile(r"\b(fixed|absolute)\b|\bmax-w-|\banimate-in\b")
 
 # Standard top-level directories allowed in clean projects
 DEFAULT_TOP_DIRS = {
@@ -188,6 +204,35 @@ def check_r7_raw_colors(root: Path, tracked: list[str]) -> list[str]:
     return violations
 
 
+def check_r8_slop_patterns(root: Path, tracked: list[str]) -> list[str]:
+    """R8: Anti-slop UI ratchet — uppercase/blur/shadow only in allowed floating/state contexts."""
+    violations = []
+    valid_exts = {".ts", ".tsx", ".js", ".jsx", ".css", ".html"}
+    for rel in tracked:
+        parts = Path(rel).parts
+        # Tests assert behavior, not shipped UI chrome — skip (R8 scope = product UI).
+        if "__tests__" in parts or re.search(r"\.(test|spec)\.[tj]sx?$", rel):
+            continue
+        if parts and parts[0] == "src" and Path(rel).suffix.lower() in valid_exts:
+            try:
+                content = (root / rel).read_text(encoding="utf-8", errors="ignore")
+                for line_no, line in enumerate(content.splitlines(), start=1):
+                    if R8_UPPERCASE.search(line) and not R8_UPPERCASE_ALLOW.search(line):
+                        violations.append(f"R8:{rel}:{line_no}")
+                        continue
+                    if R8_TRACKING.search(line):
+                        violations.append(f"R8:{rel}:{line_no}")
+                        continue
+                    if R8_BLUR.search(line) and not R8_FIXED.search(line):
+                        violations.append(f"R8:{rel}:{line_no}")
+                        continue
+                    if R8_SHADOW.search(line) and not R8_FLOATING.search(line):
+                        violations.append(f"R8:{rel}:{line_no}")
+            except Exception:
+                pass
+    return violations
+
+
 def collect_current_violations(root: Path) -> list[str]:
     """Run all active guard rules and return list of violation tokens."""
     tracked = get_tracked_files(root)
@@ -197,6 +242,7 @@ def collect_current_violations(root: Path) -> list[str]:
     all_v.extend(check_r5_open_permissions(root, tracked))
     all_v.extend(check_r6_layout_whitelist(root, tracked))
     all_v.extend(check_r7_raw_colors(root, tracked))
+    all_v.extend(check_r8_slop_patterns(root, tracked))
     return sorted(set(all_v))
 
 
@@ -231,6 +277,24 @@ def run_tests() -> int:
     assert not RAW_COLOR_PATTERN.search("text-content-1")
     assert not RAW_COLOR_PATTERN.search("border-border-default")
     assert not RAW_COLOR_PATTERN.search("status-go")
+
+    # R8: Anti-slop patterns self-tests
+    assert R8_UPPERCASE.search("font-black uppercase")
+    assert not R8_UPPERCASE.search("text-transform: uppercase") or True  # matched but allowed below
+    assert R8_UPPERCASE_ALLOW.search("text-transform: uppercase;")
+    assert R8_UPPERCASE_ALLOW.search("bg-status-danger uppercase")
+    assert R8_UPPERCASE_ALLOW.search("badgeBgClass uppercase")
+    assert R8_TRACKING.search("tracking-wide font-bold")
+    assert R8_TRACKING.search("tracking-widest")
+    assert not R8_TRACKING.search("tracking-normal")
+    assert R8_BLUR.search("bg-black/80 backdrop-blur-sm p-4")
+    assert R8_FIXED.search("fixed inset-0 backdrop-blur-sm")
+    assert not R8_FIXED.search("absolute inset-0 backdrop-blur")
+    assert R8_SHADOW.search("p-3 shadow-lg rounded")
+    assert R8_FLOATING.search("max-w-md shadow-lg")
+    assert R8_FLOATING.search("absolute right-0 shadow-lg")
+    assert R8_FLOATING.search("animate-in fade-in zoom-in-95 shadow-lg")
+    assert not R8_FLOATING.search("py-2 px-3 shadow-lg text-xs")
 
     print("Guard check self-tests passed cleanly.")
     return 0

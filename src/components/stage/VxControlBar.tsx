@@ -24,7 +24,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
       data-testid="vx-floating-dock"
       className={
         className ??
-        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/85 border border-white/10 px-4 py-2 shadow-lg backdrop-blur-md select-none text-xs'
+        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/92 border border-white/10 px-4 py-2 shadow-lg select-none text-xs'
       }
     >
       <div data-testid="vx-control-bar" className="contents">

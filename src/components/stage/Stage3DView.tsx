@@ -200,7 +200,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
       <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
         {/* Floating Pill: Glassmorphism Technical Pill centered over 3D Canvas */}
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/80 border border-white/10 px-4 py-2 shadow-lg backdrop-blur-md select-none text-xs"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/90 border border-white/10 px-4 py-2 shadow-lg select-none text-xs"
           data-testid="stage-3d-floating-pill"
         >
           {/* Camera Presets Segmented Control */}
@@ -349,7 +349,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
         {!webglAvailable ? (
           <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center" data-testid="webgl-fallback">
-            <div className="rounded border border-border-default bg-surface-1/90 p-8 max-w-md shadow-lg backdrop-blur">
+            <div className="rounded border border-border-default bg-surface-1 p-8 max-w-md shadow-lg">
               <Box className="mx-auto h-12 w-12 text-status-standby mb-3 opacity-80"  aria-hidden="true"/>
               <h3 className="text-sm font-bold text-content-1">Chế độ Fallback Sân Khấu 3D</h3>
               <p className="mt-2 text-xs text-content-3 leading-relaxed">
@@ -393,7 +393,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               {/* Top HUD: Active Cue Card & Cue Counter Badges */}
               <div className="pointer-events-auto flex items-start gap-2">
                 {activeCue ? (
-                  <div className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-xs backdrop-blur">
+                  <div className="rounded border border-border-default/70 bg-surface-1/90 p-2 text-xs">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-accent font-mono">Cue #{activeCue.cueNumber}</span>
                       <span className="text-content-1 font-medium">{activeCue.title}</span>
@@ -414,7 +414,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   </div>
                 ) : (
                   <div
-                    className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3 backdrop-blur"
+                    className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3"
                     data-testid="no-cue-hint"
                   >
                     <span className="font-semibold text-content-2">Chưa gọi cue</span>
@@ -430,7 +430,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   className={`flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-mono font-medium ${
                     isCountMismatch
                       ? 'bg-status-danger/20 text-status-danger border-status-danger/60 animate-pulse'
-                      : 'bg-surface-1/80 text-content-2 border-border-default/70 backdrop-blur'
+                      : 'bg-surface-1/90 text-content-2 border-border-default/70'
                   }`}
                   title={
                     isCountMismatch
@@ -457,7 +457,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
                 {/* Base rig counter */}
                 <div
-                  className="flex items-center gap-1 rounded bg-surface-1/80 border border-border-default/70 px-2.5 py-1 text-xs text-content-3 font-mono backdrop-blur"
+                  className="flex items-center gap-1 rounded bg-surface-1/80 border border-border-default/70 px-2.5 py-1 text-xs text-content-3 font-mono"
                   title="Số đèn trong rig mặc định của sân khấu (cấu hình). Đây không phải số đèn đang chiếu."
                   data-testid="rig-count-badge"
                 >
@@ -468,7 +468,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
               {/* Bottom Instructions Prompt (spaced above VxControlBar) */}
               <div className="pointer-events-none flex justify-center mb-14">
-                <span className="rounded bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 backdrop-blur border border-border-default/40">
+                <span className="rounded bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 border border-border-default/40">
                   Kéo để xoay, cuộn để phóng to; chọn đèn/màn để chỉnh
                 </span>
               </div>
@@ -549,7 +549,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
         {/* Floating Configuration Sidebar / Drawer */}
         {isConfigOpen && (
-          <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded border border-border-default bg-surface-1/95 p-4 text-xs shadow-lg backdrop-blur">
+          <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded border border-border-default bg-surface-1/95 p-4 text-xs shadow-lg">
             <div className="flex items-center justify-between border-b border-border-default pb-2">
               <span className="text-[11px] font-semibold text-content-1">
                 Stage Rig Configuration
