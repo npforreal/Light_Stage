@@ -98,11 +98,11 @@ describe('Round 11 FreeShow Integration Verification Suite', () => {
       fireEvent.click(mcModeBtn);
 
       // Verify MC specific layout elements
-      expect(screen.getByText('ĐANG DIỄN / NOW LIVE')).toBeInTheDocument();
-      expect(screen.getByText('TIẾP THEO / NEXT UP')).toBeInTheDocument();
+      expect(screen.getByText('Đang diễn / Now live')).toBeInTheDocument();
+      expect(screen.getByText('Tiếp theo / Next up')).toBeInTheDocument();
       expect(screen.getByText('MC Giới Thiệu Khách Mời')).toBeInTheDocument();
       expect(screen.getByText(/12 vũ công di chuyển từ cánh gà trái/)).toBeInTheDocument();
-      expect(screen.getByText(/ĐÃ VƯỢT QUÁ GIỜ \(OVERRUN\)/)).toBeInTheDocument();
+      expect(screen.getByText(/Đã vượt quá giờ \(overrun\)/)).toBeInTheDocument();
     });
   });
 
