@@ -3,6 +3,24 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 16.4: chốt phạm vi sản phẩm trong UI & docs
+
+### Thay đổi
+- `src/components/HelpModal.tsx`: thêm mục **"Phạm vi sử dụng (Scope)"** — Light Stage là rundown + show-calling + preview, GO/Standby/Hold không gửi lệnh tới thiết bị thật; chưa có DMX/sACN/Art-Net/OSC/MIDI.
+- `src/components/HelpModal.tsx`: sửa mục Operator Lock đang **mâu thuẫn với 16.1** ("chỉ có thể gọi cue bằng nhấp chuột") → nói đúng 5 lệnh cue bị chặn ở mọi đường, liệt kê việc vẫn chạy khi khóa.
+- `src/components/WelcomeModal.tsx`: bước 4 ghi rõ GO/Standby chỉ đổi trạng thái trong app; thêm footnote phạm vi (DMX/OSC/MIDI + `.xlsx`) ngay trên footer.
+- `src/components/importer/ImportModal.tsx`: phụ đề đổi thành "CSV / TSV / TXT, hoặc dán bảng từ Excel / Google Sheets"; card file ghi "Chưa đọc trực tiếp .xlsx — hãy lưu sang CSV/TSV".
+- `README.md`: thêm blockquote **Phạm vi của bản hiện tại** ở mục 1.
+- `AGENTS.md`: thêm mục **Phạm vi bản hiện tại (Scope — không suy rộng)** làm ràng buộc cho mọi thay đổi UI/help/docs sau này.
+
+### Quyết định kỹ thuật
+- Không hạ cấp tính năng nào; chỉ sửa câu chữ để không hàm ý điều khiển thiết bị thật.
+- Sửa luôn câu Help về Operator Lock vì 16.1 đã đổi hành vi nút Header (đây là lỗi logic tài liệu phát sinh trong đợt).
+
+### Kiểm chứng
+- `npx tsc --noEmit` sạch; `npx vitest run` → **37 files / 353 tests pass** (không có test nào phụ thuộc câu chữ cũ).
+- `grep -n "DMX\|sACN\|Art-Net\|OSC\|MIDI"` trong Help/Welcome/README/AGENTS đều nằm trong câu phủ định ("chưa hỗ trợ").
+
 ## 2026-11-19 — Đợt 16.3: parser `.lightstage` an toàn tại biên
 
 ### Thay đổi

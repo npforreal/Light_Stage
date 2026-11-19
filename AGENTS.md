@@ -17,6 +17,11 @@
     - *Timeline Tracks*: Thanh ngang tuyến tính theo thời gian trực quan cho từng kênh LX, VX, SQ.
   - **Sân khấu ảo 2D (Virtual Stage Preview)**: Hiển thị sơ đồ 2D (mặt trước & top-down) mô phỏng vị trí màn hình LED và giàn đèn, tự động highlight sáng/đổi màu theo cue active.
   - **Lưu trữ & Xuất file**: File dự án độc lập `.lightstage` (JSON format) + Xuất báo cáo Cue Sheet ra Excel & PDF.
+- **Phạm vi bản hiện tại (Scope — không suy rộng)**:
+  - Light Stage là công cụ **rundown + show-calling + preview**. GO / Standby / Hold chỉ đổi trạng thái cue và đồng hồ trong app, **không truyền lệnh tới thiết bị thật**.
+  - **Chưa** xuất điều khiển `DMX` / `sACN` / `Art-Net` / `OSC` / `MIDI`. Không mô tả các tính năng này như đã có trong UI/README/Help.
+  - Import nhận `CSV` / `TSV` / `TXT` hoặc dán bảng từ Excel/Sheets; **không đọc trực tiếp `.xlsx`**. UI phải nói đúng như vậy.
+  - Mọi thay đổi UI/help/docs phải giữ đúng ranh giới trên (kiểm ở 16.4, nhắc lại khi thêm tính năng).
 
 ## 2. Kỷ luật Ngữ cảnh & Token (Token Discipline)
 - **Đọc có chọn lọc (Selective Reading)**:

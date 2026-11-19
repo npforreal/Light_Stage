@@ -46,6 +46,11 @@ Trong một buổi biểu diễn trực tiếp hoặc sự kiện quy mô lớn,
 - **Mô phỏng 2D trực quan**: Xem sơ đồ sân khấu phát sáng và đổi màu tức thì khi gọi lệnh GO, giúp đạo diễn quan sát trước hiệu ứng thị giác.
 - **An toàn tuyệt đối**: Chạy 100% Offline (không sợ mất mạng), tính năng tự động sao lưu chống mất nguồn và chế độ khóa an toàn chống bấm nhầm phím trong phòng tối.
 
+> **Phạm vi của bản hiện tại (Scope)**
+> Light Stage là công cụ **rundown + show-calling + preview**: quản lý kịch bản, gọi cue (GO / Standby / Hold), đếm thời gian và mô phỏng sân khấu. Lệnh GO **không** truyền tới thiết bị thật.
+> Chưa hỗ trợ xuất điều khiển **DMX / sACN / Art-Net / OSC / MIDI**.
+> Import nhận **CSV / TSV / TXT** hoặc dán bảng sao chép từ Excel / Google Sheets; **chưa đọc trực tiếp file `.xlsx`** (hãy lưu sang CSV/TSV trước).
+
 ---
 
 ### 2. Tải về & Cài đặt

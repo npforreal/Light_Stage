@@ -148,7 +148,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               <h3 id="import-modal-title" className="font-bold text-content-1 text-base">
                 Import Rundown / Cue Sheet
               </h3>
-              <p className="text-xs text-content-3">Support CSV, TSV & auto-hardware counter</p>
+              <p className="text-xs text-content-3">CSV / TSV / TXT, hoặc dán bảng từ Excel / Google Sheets</p>
             </div>
           </div>
           <button
@@ -181,7 +181,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                       <Upload className="h-6 w-6 text-accent flex-shrink-0" />
                       <div>
                         <p className="text-xs font-semibold text-content-1">Kéo thả tệp hoặc bấm chọn</p>
-                        <p className="text-[10px] text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab</p>
+                        <p className="text-[10px] text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab. Chưa đọc trực tiếp .xlsx — hãy lưu sang CSV/TSV.</p>
                       </div>
                     </div>
                   </div>

@@ -64,6 +64,22 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
         {/* Content body */}
         <div className="flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
+          {/* Scope statement */}
+          <section>
+            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
+              <HelpCircle className="h-4 w-4" />
+              <span>Phạm vi sử dụng (Scope)</span>
+            </div>
+            <div className="rounded-lg border border-border-default bg-surface-0 p-3 text-content-2 space-y-1.5 text-[11px] leading-relaxed">
+              <p>
+                Light Stage là công cụ <span className="font-semibold text-content-1">rundown + show-calling + preview</span> cho người điều phối sân khấu. GO / Standby / Hold chỉ đổi trạng thái cue trong app và đồng hồ đếm ngược — <span className="font-semibold text-content-1">không gửi lệnh tới thiết bị thật</span>.
+              </p>
+              <p>
+                Chưa hỗ trợ xuất điều khiển <span className="font-mono">DMX</span> / <span className="font-mono">sACN</span> / <span className="font-mono">Art-Net</span> / <span className="font-mono">OSC</span> / <span className="font-mono">MIDI</span>. Đây là kế hoạch tương lai, chưa có trong bản hiện tại.
+              </p>
+            </div>
+          </section>
+
           {/* Hotkey Table */}
           <section>
             <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
@@ -223,7 +239,10 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 Bảo vệ tối đa chống cấn phím ngoài ý muốn:
               </p>
               <p className="text-[11px] leading-relaxed text-content-2">
-                Khi kích hoạt <span className="font-semibold text-content-1">Operator Lock</span>, toàn bộ phím tắt điều khiển (Space, Enter, B, Esc, Arrows) sẽ bị khóa tức thì. Chỉ có thể gọi cue bằng thao tác nhấp chuột trực tiếp vào nút gọi trên màn hình hoặc mở khóa lại.
+                Khi kích hoạt <span className="font-semibold text-content-1">Operator Lock</span>, 5 lệnh gọi cue bị vô hiệu hóa ở mọi đường: phím tắt (Space, Enter, B, Esc, Arrows), nút GO / STBY / Hold trên Header, Stage Clock và Inspector. Muốn gọi cue phải mở khóa lại.
+              </p>
+              <p className="text-[11px] leading-relaxed text-content-2">
+                Vẫn hoạt động khi khóa: xem/cuộn rundown, Help (<span className="font-mono">?</span>), Inspector (<span className="font-mono">i</span>), Undo/Redo, lưu <span className="font-mono">Ctrl/Cmd+S</span>, và VX panic (<span className="font-mono">F1</span>–<span className="font-mono">F4</span>, <span className="font-mono">Alt+F</span>).
               </p>
             </div>
           </section>

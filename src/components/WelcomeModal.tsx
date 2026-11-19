@@ -60,7 +60,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
       subtitle: 'Bộ đếm thời gian chuyên nghiệp, phím tắt nhanh và Stage Confidence',
       icon: <Clock className="h-6 w-6 text-status-go" />,
       description:
-        'Gọi cue bằng phím Space (GO), B (Standby) hoặc mở đồng hồ màn hình lớn Stage Confidence Monitor cho MC / ca sĩ phía sau cánh gà. Bật Operator Lock để tuyệt đối an toàn trong các khoảnh khắc nhạy cảm.',
+        'Gọi cue bằng phím Space (GO), B (Standby) hoặc mở đồng hồ màn hình lớn Stage Confidence Monitor cho MC / ca sĩ phía sau cánh gà. Bật Operator Lock để tuyệt đối an toàn trong các khoảnh khắc nhạy cảm. GO/Standby chỉ đổi trạng thái cue trong app, không gửi lệnh tới thiết bị thật.',
     },
   ];
 
@@ -148,6 +148,12 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Scope footnote */}
+        <p className="mb-3 text-[10px] leading-relaxed text-content-3">
+          Light Stage là công cụ rundown, gọi cue và preview. Chưa xuất DMX / sACN / Art-Net / OSC / MIDI và
+          chưa đọc trực tiếp file .xlsx (hãy xuất CSV/TSV hoặc dán bảng từ Excel/Sheets).
+        </p>
 
         {/* Footer Controls */}
         <div className="flex items-center justify-between pt-2 border-t border-border-default">
