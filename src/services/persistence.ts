@@ -21,6 +21,113 @@ export interface ParseResult {
   error?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Boundary validation: every failure names the exact JSON path (PLAN 16.3)
+// ---------------------------------------------------------------------------
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+const DEPARTMENT_KEYS = ['lx', 'vx', 'sq', 'st'] as const;
+
+function validateCueShape(cue: unknown, path: string): string | null {
+  if (!isPlainObject(cue)) return `${path} must be an object`;
+
+  if (!isNonEmptyString(cue.id)) return `${path}.id is missing or not a string`;
+  if (cue.actId !== undefined && typeof cue.actId !== 'string') {
+    return `${path}.actId must be a string`;
+  }
+  if (cue.cueNumber !== undefined && typeof cue.cueNumber !== 'string') {
+    return `${path}.cueNumber must be a string`;
+  }
+  if (cue.title !== undefined && typeof cue.title !== 'string') {
+    return `${path}.title must be a string`;
+  }
+  if (cue.durationMs !== undefined && !isFiniteNumber(cue.durationMs)) {
+    return `${path}.durationMs must be a number`;
+  }
+  if (cue.status !== undefined && typeof cue.status !== 'string') {
+    return `${path}.status must be a string`;
+  }
+
+  if (cue.departments !== undefined && cue.departments !== null) {
+    if (!isPlainObject(cue.departments)) return `${path}.departments must be an object`;
+    for (const key of DEPARTMENT_KEYS) {
+      const deptPath = `${path}.departments.${key}`;
+      const dept = cue.departments[key];
+      if (dept === undefined || dept === null) continue;
+      if (!isPlainObject(dept)) return `${deptPath} must be an object`;
+
+      if (dept.fixtureCount !== undefined && !isFiniteNumber(dept.fixtureCount)) {
+        return `${deptPath}.fixtureCount must be a number`;
+      }
+      if (dept.screenCount !== undefined && !isFiniteNumber(dept.screenCount)) {
+        return `${deptPath}.screenCount must be a number`;
+      }
+      if (dept.fixtures !== undefined) {
+        if (!Array.isArray(dept.fixtures)) return `${deptPath}.fixtures must be an array`;
+        for (let i = 0; i < dept.fixtures.length; i++) {
+          if (!isPlainObject(dept.fixtures[i])) {
+            return `${deptPath}.fixtures[${i}] must be an object`;
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+function validateShowShape(show: Record<string, unknown>): string | null {
+  if (!Array.isArray(show.acts)) return 'Show must contain an array of acts';
+
+  for (let i = 0; i < show.acts.length; i++) {
+    const actPath = `acts[${i}]`;
+    const act = show.acts[i];
+    if (!isPlainObject(act)) return `${actPath} must be an object`;
+    if (!isNonEmptyString(act.id)) return `${actPath}.id is missing or not a string`;
+    if (act.title !== undefined && typeof act.title !== 'string') {
+      return `${actPath}.title must be a string`;
+    }
+    if (act.order !== undefined && !isFiniteNumber(act.order)) {
+      return `${actPath}.order must be a number`;
+    }
+    if (act.cues !== undefined && !Array.isArray(act.cues)) {
+      return `${actPath}.cues must be an array`;
+    }
+    const cues = Array.isArray(act.cues) ? act.cues : [];
+    for (let j = 0; j < cues.length; j++) {
+      const cueError = validateCueShape(cues[j], `${actPath}.cues[${j}]`);
+      if (cueError) return cueError;
+    }
+  }
+
+  return null;
+}
+
+function validateStageShape(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (!isPlainObject(raw)) return 'stage must be an object';
+  for (const key of ['screens', 'trusses'] as const) {
+    const list = raw[key];
+    if (list === undefined || list === null) continue;
+    if (!Array.isArray(list)) return `stage.${key} must be an array`;
+    for (let i = 0; i < list.length; i++) {
+      if (!isPlainObject(list[i])) return `stage.${key}[${i}] must be an object`;
+    }
+  }
+  return null;
+}
+
 export interface AutoSaveProject {
   show: Show;
   stage?: StageConfig;
@@ -45,6 +152,55 @@ export function serializeShow(show: Show, pretty = true, stage?: StageConfig): s
   };
 
   return pretty ? JSON.stringify(file, null, 2) : JSON.stringify(file);
+}
+
+/**
+ * Reads a `.lightstage` file from disk and parses it. FileReader errors and
+ * empty files are reported as a failed ParseResult instead of throwing, so the
+ * UI always has something to show the operator (PLAN 16.3).
+ */
+export function readLightStageFile(file: File): Promise<ParseResult> {
+  return new Promise((resolve) => {
+    if (!file || typeof file.size !== 'number') {
+      resolve({ success: false, error: 'No file selected' });
+      return;
+    }
+    if (file.size === 0) {
+      resolve({ success: false, error: 'File is empty' });
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onerror = () => {
+      resolve({
+        success: false,
+        error: `Could not read file: ${reader.error?.message || 'unknown read error'}`,
+      });
+    };
+
+    reader.onabort = () => {
+      resolve({ success: false, error: 'File read was cancelled' });
+    };
+
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content !== 'string') {
+        resolve({ success: false, error: 'File content is not readable text' });
+        return;
+      }
+      resolve(parseLightStageFile(content));
+    };
+
+    try {
+      reader.readAsText(file);
+    } catch (err) {
+      resolve({
+        success: false,
+        error: `Could not read file: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+  });
 }
 
 /**
@@ -101,8 +257,19 @@ export function parseLightStageFile(jsonString: string): ParseResult {
     return { success: false, error: 'Show must contain an array of acts' };
   }
 
+  const shapeError = validateShowShape(showObj as Record<string, unknown>);
+  if (shapeError) {
+    return { success: false, error: `Invalid project data: ${shapeError}` };
+  }
+
+  const stageError = validateStageShape(rawStage);
+  if (stageError) {
+    return { success: false, error: `Invalid project data: ${stageError}` };
+  }
+
   // Normalize defaults if optional sections are missing
-  const normalizedShow: Show = {
+  try {
+    const normalizedShow: Show = {
     id: showObj.id,
     schemaVersion: showObj.schemaVersion || CURRENT_SCHEMA_VERSION,
     metadata: {
@@ -163,7 +330,13 @@ export function parseLightStageFile(jsonString: string): ParseResult {
     })),
   };
 
-  return { success: true, data: normalizeShow(normalizedShow), stage: parseStageConfig(rawStage) };
+    return { success: true, data: normalizeShow(normalizedShow), stage: parseStageConfig(rawStage) };
+  } catch (err) {
+    return {
+      success: false,
+      error: `Invalid project data: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 }
 
 /**

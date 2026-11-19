@@ -3,6 +3,27 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 16.3: parser `.lightstage` an toàn tại biên
+
+### Thay đổi
+- `src/services/persistence.ts`:
+  - Thêm tầng validate trước khi normalize: `validateShowShape` (show → act → cue), `validateCueShape` (id/actId/cueNumber/title/durationMs/status/departments), `validateStageShape` (`stage.screens[]`, `stage.trusses[]`).
+  - Mọi lỗi trả `ParseResult.error` kèm **đường dẫn cụ thể**: `acts[0].cues[0].id`, `acts[0].cues[0].departments.lx.fixtureCount`, `stage.screens[0]`…
+  - Bọc phần normalize trong `try/catch` cuối cùng: dữ liệu lạ không thể làm ném ra khỏi `parseLightStageFile`.
+  - Thêm `readLightStageFile(file): Promise<ParseResult>` — lọc file rỗng, bắt `FileReader.onerror`/`onabort`/`readAsText` throw; không bao giờ reject.
+- `src/App.tsx`: `handleFileSelected` chuyển sang `async` + `readLightStageFile`, bỏ `alert()`; lỗi import mở **modal** "Không mở được dự án" (role `dialog`, `aria-modal`, `data-testid="import-error-modal"`) hiện nguyên nhân + gợi ý "Chọn lại file hoặc mở bản autosave" + nút "Chọn file khác". Dự án đang mở không bị chạm tới.
+- Test mới `src/__tests__/round16ParserSafety.test.tsx` (13 test, viết trước): `acts:[null]`, `cues:[null]`, id sai/thiếu, departments sai, số sai kiểu, stage sai, JSON hỏng/rỗng, file rỗng/hỏng qua `readLightStageFile`, import lỗi giữ nguyên show, import hợp lệ vẫn chạy.
+
+### Quyết định kỹ thuật
+- Validate **trước** normalize để không "tự bịa id" che mất dữ liệu hỏng; id thiếu là lỗi cứng thay vì đoán.
+- Không dùng schema library mới: hàm thuần TypeScript để giữ bundle nhỏ và không thêm dependency.
+- Modal thay `alert()` vì `alert` chặn main thread (đúng lúc live show) và không copy được đường dẫn lỗi.
+- `e.target.value = ''` đặt **trước** khi đọc file, để chọn lại cùng file vẫn kích hoạt `change`.
+
+### Kiểm chứng
+- TDD: 13 test mới đỏ trước khi implement (11 fail), sau implement **13/13 xanh**.
+- `npx tsc --noEmit` sạch; `npx vitest run` → **37 files / 353 tests pass**.
+
 ## 2026-11-19 — Đợt 16.2: autosave trung thực + báo lỗi có hành động
 
 ### Thay đổi

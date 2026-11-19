@@ -7,7 +7,7 @@ import {
   hasAutoSave,
   getAutoSaveMeta,
   clearAutoSave,
-  parseLightStageFile,
+  readLightStageFile,
   downloadLightStageFile,
   AUTOSAVE_FAILURE_MESSAGE as AUTOSAVE_ERROR_MESSAGE,
   AutoSaveMeta,
@@ -71,6 +71,7 @@ export const App: React.FC = () => {
   const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
   const [recoveryMeta, setRecoveryMeta] = useState<AutoSaveMeta | null>(null);
   const [isAutosaveBannerOpen, setIsAutosaveBannerOpen] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
   const previousAutosaveError = useRef<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -313,26 +314,25 @@ export const App: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-      const result = parseLightStageFile(content);
-      if (result.success && result.data) {
-        loadShow(result.data);
-        if (result.stage) {
-          useStageStore.getState().setConfig(result.stage);
-        }
-      } else {
-        alert(`Lỗi mở file .lightstage:\n${result.error || 'Dữ liệu file không hợp lệ'}`);
-      }
-    };
-    reader.readAsText(file);
+    // Always clear the input so picking the same file again re-triggers change.
     e.target.value = '';
+
+    const result = await readLightStageFile(file);
+    if (result.success && result.data) {
+      loadShow(result.data);
+      if (result.stage) {
+        useStageStore.getState().setConfig(result.stage);
+      }
+      setImportError(null);
+    } else {
+      // Reading never throws; surface the exact path to the operator and keep
+      // the currently open project untouched.
+      setImportError(result.error || 'Dữ liệu file không hợp lệ');
+    }
   };
 
   return (
@@ -484,6 +484,51 @@ export const App: React.FC = () => {
         {/* Right Inspector Drawer */}
         <CueInspector />
       </div>
+
+      {/* Import Failure Modal — exact reason + recovery path, project untouched */}
+      {importError && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-surface-0/80 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="import-error-title"
+          data-testid="import-error-modal"
+        >
+          <div className="w-full max-w-md rounded-xl border border-status-danger/40 bg-surface-1 p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-status-danger" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h2 id="import-error-title" className="text-sm font-bold text-content-1">
+                  Không mở được dự án
+                </h2>
+                <p className="mt-1 break-words text-xs text-content-2">{importError}</p>
+                <p className="mt-2 text-xs text-content-3">
+                  Chọn lại file hoặc mở bản autosave. Dự án đang mở vẫn giữ nguyên.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setImportError(null);
+                  fileInputRef.current?.click();
+                }}
+                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-surface-0 hover:opacity-90"
+              >
+                Chọn file khác
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportError(null)}
+                className="rounded-lg bg-surface-2 px-3 py-1.5 text-xs font-bold text-content-2 hover:bg-surface-3"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />
