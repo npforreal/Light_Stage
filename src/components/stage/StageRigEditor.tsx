@@ -109,16 +109,16 @@ export const StageRigEditor: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Grouped Quick-Add Menu (FreeShow Feature) */}
-      <section className="rounded-lg border border-border-default bg-surface-2/80 p-2 text-xs space-y-1.5">
+      <section className="rounded border border-border-default bg-surface-2/80 p-2 text-xs space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="font-bold text-[11px] uppercase tracking-wider text-accent flex items-center gap-1">
-            <Plus className="h-3.5 w-3.5" /> Thêm nhanh vào Rig (Grouped Add)
+          <span className="font-semibold text-[11px] text-accent flex items-center gap-1">
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Thêm nhanh vào Rig (Grouped Add)
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1">
           {/* Group 1: Fixtures */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-bold text-dept-lx uppercase">Đèn (Fixtures)</span>
+            <span className="text-[9px] font-semibold text-dept-lx">Đèn (Fixtures)</span>
             <div className="flex flex-wrap gap-1">
               {(['Beam', 'Spot', 'Wash'] as FixtureType[]).map((t) => (
                 <button
@@ -136,7 +136,7 @@ export const StageRigEditor: React.FC = () => {
 
           {/* Group 2: Screens */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-bold text-dept-vx uppercase">Màn LED</span>
+            <span className="text-[9px] font-semibold text-dept-vx">Màn LED</span>
             <div className="flex flex-wrap gap-1">
               <button
                 type="button"
@@ -151,7 +151,7 @@ export const StageRigEditor: React.FC = () => {
 
           {/* Group 3: Truss */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-bold text-content-3 uppercase">Truss</span>
+            <span className="text-[9px] font-semibold text-content-3">Truss</span>
             <div className="flex flex-wrap gap-1">
               <button
                 type="button"
@@ -167,10 +167,10 @@ export const StageRigEditor: React.FC = () => {
       </section>
 
       {/* Stage dimensions & preset */}
-      <section className="space-y-1.5 rounded-lg bg-surface-2 p-2.5">
+      <section className="space-y-1.5 rounded bg-surface-2 p-2.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-semibold text-content-1">
-            <Ruler className="h-3.5 w-3.5 text-accent" />
+            <Ruler className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             Sân khấu
           </span>
           <select
@@ -206,7 +206,7 @@ export const StageRigEditor: React.FC = () => {
 
       {/* Inventory cross-check */}
       <section
-        className="rounded-lg border border-border-default bg-surface-2 p-2.5 text-[11px]"
+        className="rounded border border-border-default bg-surface-2 p-2.5 text-[11px]"
         data-testid="rig-inventory"
       >
         <div className="flex items-center justify-between font-mono">
@@ -220,7 +220,7 @@ export const StageRigEditor: React.FC = () => {
         </div>
         {cueCount > rigCount && (
           <div className="mt-1.5 flex items-start gap-1.5 rounded border border-status-standby/50 bg-status-standby/10 px-1.5 py-1 text-[10px] text-status-standby">
-            <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" />
+            <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" aria-hidden="true" />
             <span>
               Cue {referenceCue?.cueNumber} cần {cueCount} đèn nhưng rig chỉ khai báo {rigCount}.
               Stage 2D sẽ mở rộng slot ảo — nên bổ sung đèn vào rig.
@@ -233,7 +233,7 @@ export const StageRigEditor: React.FC = () => {
       <section className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-semibold text-dept-vx">
-            <Tv className="h-3.5 w-3.5" />
+            <Tv className="h-3.5 w-3.5" aria-hidden="true" />
             LED Screens
           </span>
           <button
@@ -242,7 +242,7 @@ export const StageRigEditor: React.FC = () => {
             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-vx hover:bg-surface-2"
             title="Thêm màn LED"
           >
-            <Plus className="h-3 w-3" /> Thêm
+            <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {config.screens.length === 0 && (
@@ -281,7 +281,7 @@ export const StageRigEditor: React.FC = () => {
                 className="rounded p-0.5 text-content-3 hover:bg-surface-2 hover:text-status-hold"
                 title="Xoá màn LED"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-1">
@@ -321,7 +321,7 @@ export const StageRigEditor: React.FC = () => {
       <section className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-semibold text-dept-lx">
-            <Lightbulb className="h-3.5 w-3.5" />
+            <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
             Trusses
           </span>
           <button
@@ -330,7 +330,7 @@ export const StageRigEditor: React.FC = () => {
             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-lx hover:bg-surface-2"
             title="Thêm truss"
           >
-            <Plus className="h-3 w-3" /> Thêm
+            <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {config.trusses.length === 0 && (
@@ -373,7 +373,7 @@ export const StageRigEditor: React.FC = () => {
                 className="rounded p-0.5 text-content-3 hover:bg-surface-2 hover:text-status-hold"
                 title="Xoá truss"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-1">
@@ -414,7 +414,7 @@ export const StageRigEditor: React.FC = () => {
       <section className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 font-semibold text-content-1">
-            <Lightbulb className="h-3.5 w-3.5 text-status-go" />
+            <Lightbulb className="h-3.5 w-3.5 text-status-go" aria-hidden="true" />
             Đèn trong rig
           </span>
           <button
@@ -423,7 +423,7 @@ export const StageRigEditor: React.FC = () => {
             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-status-go hover:bg-surface-2"
             title="Thêm đèn vào rig"
           >
-            <Plus className="h-3 w-3" /> Thêm
+            <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {fixtures.length === 0 && (
@@ -493,7 +493,7 @@ export const StageRigEditor: React.FC = () => {
                 className="rounded p-0.5 text-content-3 hover:bg-surface-2 hover:text-status-hold"
                 title="Xoá đèn khỏi rig"
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-1">
