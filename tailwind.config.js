@@ -47,6 +47,9 @@ export default {
           danger: colorToken("--color-status-danger"),
         },
       },
+      fontFamily: {
+        sans: ["'Barlow Semi Condensed'", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+      },
       borderColor: {
         subtle: colorToken("--color-border-subtle"),
         default: colorToken("--color-border-default"),
