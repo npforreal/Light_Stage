@@ -200,16 +200,16 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
       <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
         {/* Floating Pill: Glassmorphism Technical Pill centered over 3D Canvas */}
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl bg-[#0d121a]/80 border border-white/10 px-4 py-2 shadow-2xl backdrop-blur-md select-none text-xs"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/80 border border-white/10 px-4 py-2 shadow-lg backdrop-blur-md select-none text-xs"
           data-testid="stage-3d-floating-pill"
         >
           {/* Camera Presets Segmented Control */}
-          <div className="inline-flex rounded-lg bg-surface-2/80 p-0.5 border border-border-subtle text-xs">
+          <div className="inline-flex rounded bg-surface-2/80 p-0.5 border border-border-subtle text-xs">
             <button
               onClick={() => handleCameraPreset('foh')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
                 cameraPreset === 'foh'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  ? 'bg-accent text-surface-0 font-bold'
                   : 'text-content-3 hover:text-content-1'
               }`}
               title="Góc nhìn khán giả FOH (Front of House)"
@@ -221,7 +221,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               onClick={() => handleCameraPreset('topDown')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
                 cameraPreset === 'topDown'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  ? 'bg-accent text-surface-0 font-bold'
                   : 'text-content-3 hover:text-content-1'
               }`}
               title="Góc nhìn từ trên xuống (Top-down Plan)"
@@ -233,7 +233,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               onClick={() => handleCameraPreset('backstage')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
                 cameraPreset === 'backstage'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
+                  ? 'bg-accent text-surface-0 font-bold'
                   : 'text-content-3 hover:text-content-1'
               }`}
               title="Góc nhìn cánh gà / hậu trường (Backstage Wing)"
@@ -286,7 +286,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               title="Công tắc khói sân khấu (Haze/Fog) tăng giảm độ rõ chùm sáng"
               data-testid="haze-toggle"
             >
-              <Wind className="h-3.5 w-3.5" />
+              <Wind className="h-3.5 w-3.5"  aria-hidden="true"/>
               <span>Haze: {haze ? 'ON' : 'OFF'}</span>
             </button>
 
@@ -316,7 +316,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               title="Chế độ hiển thị chùm sáng: Tất cả đèn trong cue hoặc chỉ đèn đang chọn"
               data-testid="beam-show-all"
             >
-              <Layers className="h-3.5 w-3.5" />
+              <Layers className="h-3.5 w-3.5"  aria-hidden="true"/>
               <span>{showAllBeams ? 'All Beams' : 'Selected'}</span>
             </button>
 
@@ -335,22 +335,22 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
           {/* Rig Config Toggle */}
           <button
             onClick={() => setIsConfigOpen(!isConfigOpen)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors border border-border-default ${
+            className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-semibold transition-colors border border-border-default ${
               isConfigOpen
                 ? 'bg-accent text-surface-0 font-bold'
                 : 'bg-surface-2 text-content-2 hover:bg-surface-3 hover:text-content-1'
             }`}
             title="Mở bảng cấu hình Rig sân khấu (Stage Rig Config)"
           >
-            <Sliders className="h-3.5 w-3.5" />
+            <Sliders className="h-3.5 w-3.5"  aria-hidden="true"/>
             <span>Config</span>
           </button>
         </div>
 
         {!webglAvailable ? (
           <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center" data-testid="webgl-fallback">
-            <div className="rounded-2xl border border-border-default bg-surface-1/90 p-8 max-w-md shadow-2xl backdrop-blur">
-              <Box className="mx-auto h-12 w-12 text-status-standby mb-3 opacity-80" />
+            <div className="rounded border border-border-default bg-surface-1/90 p-8 max-w-md shadow-lg backdrop-blur">
+              <Box className="mx-auto h-12 w-12 text-status-standby mb-3 opacity-80"  aria-hidden="true"/>
               <h3 className="text-sm font-bold text-content-1">Chế độ Fallback Sân Khấu 3D</h3>
               <p className="mt-2 text-xs text-content-3 leading-relaxed">
                 Thiết bị hoặc môi trường hiện tại không hỗ trợ tăng tốc phần cứng WebGL.
@@ -384,7 +384,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
             <VxControlBar />
           </div>
         ) : (
-          <div className="relative flex min-h-0 w-full flex-1 items-center justify-center rounded-lg overflow-hidden border border-border-default/40">
+          <div className="relative flex min-h-0 w-full flex-1 items-center justify-center rounded overflow-hidden border border-border-default/40">
             {/* 3D Canvas Mount Point */}
             <div ref={containerRef} className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing" data-testid="stage-3d-canvas" />
 
@@ -393,7 +393,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               {/* Top HUD: Active Cue Card & Cue Counter Badges */}
               <div className="pointer-events-auto flex items-start gap-2">
                 {activeCue ? (
-                  <div className="rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-xs backdrop-blur shadow-lg">
+                  <div className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-xs backdrop-blur">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-accent font-mono">Cue #{activeCue.cueNumber}</span>
                       <span className="text-content-1 font-medium">{activeCue.title}</span>
@@ -405,7 +405,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                         <span>{lxCue.intensity ?? 80}%</span>
                         <span>·</span>
                         <span
-                          className="inline-block h-2.5 w-2.5 rounded-full border border-black/40 shadow-sm"
+                          className="inline-block h-2.5 w-2.5 rounded-full border border-black/40"
                           style={{ backgroundColor: fixtureColor }}
                         />
                         <span className="text-content-2">{colorLabel}</span>
@@ -414,7 +414,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   </div>
                 ) : (
                   <div
-                    className="rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3 backdrop-blur shadow-lg"
+                    className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3 backdrop-blur"
                     data-testid="no-cue-hint"
                   >
                     <span className="font-semibold text-content-2">Chưa gọi cue</span>
@@ -427,10 +427,10 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
                 {/* Cue fixture counter badge */}
                 <div
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono font-medium ${
+                  className={`flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-mono font-medium ${
                     isCountMismatch
                       ? 'bg-status-danger/20 text-status-danger border-status-danger/60 animate-pulse'
-                      : 'bg-surface-1/80 text-content-2 border-border-default/70 backdrop-blur shadow-lg'
+                      : 'bg-surface-1/80 text-content-2 border-border-default/70 backdrop-blur'
                   }`}
                   title={
                     isCountMismatch
@@ -444,16 +444,16 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                       ? `Cue ${activeCue.cueNumber}: Nhập ${requestedCount} · Hiển thị ${activeCount}`
                       : 'Cue: chưa gọi · 0 đèn'}
                   </span>
-                  {isCountMismatch && <AlertTriangle className="h-3.5 w-3.5 text-status-danger" />}
+                  {isCountMismatch && <AlertTriangle className="h-3.5 w-3.5 text-status-danger"  aria-hidden="true"/>}
                 </div>
 
                 {/* Base rig counter */}
                 <div
-                  className="flex items-center gap-1 rounded-lg bg-surface-1/80 border border-border-default/70 px-2.5 py-1 text-xs text-content-3 font-mono backdrop-blur shadow-lg"
+                  className="flex items-center gap-1 rounded bg-surface-1/80 border border-border-default/70 px-2.5 py-1 text-xs text-content-3 font-mono backdrop-blur"
                   title="Số đèn trong rig mặc định của sân khấu (cấu hình). Đây không phải số đèn đang chiếu."
                   data-testid="rig-count-badge"
                 >
-                  <Box className="h-3.5 w-3.5 text-content-3" />
+                  <Box className="h-3.5 w-3.5 text-content-3"  aria-hidden="true"/>
                   <span>Rig mặc định {rigCount}</span>
                 </div>
               </div>
@@ -473,13 +473,13 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
         {/* Footer: colour, legend, warnings and specs */}
         <div
-          className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border-default bg-surface-1/90 px-3 py-1.5 text-[11px] backdrop-blur"
+          className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded border border-border-default bg-surface-1 px-3 py-1.5 text-[11px]"
           data-testid="stage-footer"
         >
           <div className="flex items-center gap-2">
             <span className="font-semibold text-content-2">LX Color:</span>
             <span
-              className="h-3.5 w-3.5 flex-shrink-0 rounded-full border border-black/50 shadow-sm"
+              className="h-3.5 w-3.5 flex-shrink-0 rounded-full border border-black/50"
               style={{ backgroundColor: fixtureColor }}
             />
             <span className="font-mono font-bold text-content-1">{colorLabel}</span>
@@ -510,7 +510,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
           {stageWarnings.length > 0 && (
             <div className="flex w-full flex-wrap items-center gap-1.5 border-t border-border-default/60 pt-1.5" data-testid="stage-warning-chips">
-              <Info className="h-3 w-3 flex-shrink-0 text-content-3" />
+              <Info className="h-3 w-3 flex-shrink-0 text-content-3"  aria-hidden="true"/>
               {stageWarnings.map((warning) => (
                 <span
                   key={warning.code}
@@ -521,7 +521,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                       : 'border-border-default bg-surface-2 text-content-3'
                   }`}
                 >
-                  <AlertTriangle className="h-2.5 w-2.5" />
+                  <AlertTriangle className="h-2.5 w-2.5"  aria-hidden="true"/>
                   {STAGE_WARNING_LABELS[warning.code]}
                 </span>
               ))}
@@ -530,28 +530,25 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
           {isOutOfGamut && (
             <div className="flex w-full items-center gap-1.5 border-t border-border-default/60 pt-1.5 text-[10px] font-medium text-status-standby">
-              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              <AlertTriangle className="h-3 w-3 flex-shrink-0"  aria-hidden="true"/>
               <span>Màu vượt gam sRGB (thực tế rực rỡ hơn trên sân khấu)</span>
             </div>
           )}
 
-          <div className="flex w-full items-center gap-1 border-t border-border-default/60 pt-1 text-[9px] italic text-content-3">
-            <Info className="h-2.5 w-2.5 flex-shrink-0" />
-            <span>Mô hình khối 3D low-poly on-demand cho live show. Click chọn fixture/màn để chỉnh trên Rig Editor.</span>
-          </div>
         </div>
 
         {/* Floating Configuration Sidebar / Drawer */}
         {isConfigOpen && (
-          <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded-xl border border-border-default bg-surface-1/95 p-4 text-xs shadow-2xl backdrop-blur">
+          <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded border border-border-default bg-surface-1/95 p-4 text-xs shadow-lg backdrop-blur">
             <div className="flex items-center justify-between border-b border-border-default pb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-content-1">
+              <span className="text-[11px] font-semibold text-content-1">
                 Stage Rig Configuration
               </span>
               <button
                 onClick={() => setIsConfigOpen(false)}
-                className="text-content-3 hover:text-content-1"
+                className="p-1 text-content-3 hover:text-content-1"
                 title="Đóng bảng cấu hình"
+                aria-label="Đóng bảng cấu hình"
               >
                 ✕
               </button>

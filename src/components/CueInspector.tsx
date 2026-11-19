@@ -121,7 +121,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     if (isActive || status === 'Go') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-1 ring-status-go/40">
-          <Play className="h-2.5 w-2.5 fill-current" />
+          <Play className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
           <span>GO</span>
         </span>
       );
@@ -129,7 +129,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     if (isStandby || status === 'Standby') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60">
-          <AlertCircle className="h-2.5 w-2.5" />
+          <AlertCircle className="h-2.5 w-2.5" aria-hidden="true" />
           <span>STANDBY</span>
         </span>
       );
@@ -137,7 +137,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     if (status === 'Hold') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
-          <Pause className="h-2.5 w-2.5" />
+          <Pause className="h-2.5 w-2.5" aria-hidden="true" />
           <span>HOLD</span>
         </span>
       );
@@ -145,7 +145,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     if (status === 'Skip') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
-          <FastForward className="h-2.5 w-2.5" />
+          <FastForward className="h-2.5 w-2.5" aria-hidden="true" />
           <span>SKIP</span>
         </span>
       );
@@ -153,7 +153,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     if (status === 'Completed') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
-          <CheckCircle2 className="h-2.5 w-2.5 text-status-go/70" />
+          <CheckCircle2 className="h-2.5 w-2.5 text-status-go/70" aria-hidden="true" />
           <span>COMPLETED</span>
         </span>
       );
@@ -179,13 +179,13 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
         <aside
           data-testid="cue-inspector-drawer"
           aria-label="Cue Inspector"
-          className="fixed top-0 right-0 bottom-0 z-40 w-88 sm:w-96 min-[1200px]:relative min-[1200px]:z-10 flex flex-col flex-shrink-0 border-l border-border-default bg-surface-1 text-content-1 shadow-2xl min-[1200px]:shadow-none select-none h-full overflow-hidden"
+          className="fixed top-0 right-0 bottom-0 z-40 w-88 sm:w-96 min-[1200px]:relative min-[1200px]:z-10 flex flex-col flex-shrink-0 border-l border-border-default bg-surface-1 text-content-1 shadow-lg min-[1200px]:shadow-none select-none h-full overflow-hidden"
         >
           {/* Header */}
           <div className="flex h-12 items-center justify-between px-4 border-b border-border-default bg-surface-1/95 flex-shrink-0">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-accent" />
-              <span className="font-bold text-sm tracking-wide text-content-1">Inspector</span>
+              <SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden="true" />
+              <span className="font-bold text-sm text-content-1">Inspector</span>
             </div>
             <button
               type="button"
@@ -194,14 +194,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               aria-label="Đóng Inspector"
               className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
           {/* Empty Placeholder */}
           <div className="flex flex-1 flex-col items-center justify-center p-6 text-center text-content-3 gap-3">
-            <div className="rounded-full bg-surface-2 p-3 text-content-2">
-              <Info className="h-6 w-6" />
+            <div className="rounded bg-surface-2 p-3 text-content-2">
+              <Info className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="font-semibold text-content-1 text-sm">Chưa chọn Cue nào</div>
             <p className="text-xs max-w-[240px] leading-relaxed">
@@ -371,7 +371,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
       <aside
         data-testid="cue-inspector-drawer"
         aria-label="Cue Inspector"
-        className="fixed top-0 right-0 bottom-0 z-40 w-88 sm:w-96 min-[1200px]:relative min-[1200px]:z-10 flex flex-col flex-shrink-0 border-l border-border-default bg-surface-1 text-content-1 shadow-2xl min-[1200px]:shadow-none select-none h-full overflow-hidden"
+        className="fixed top-0 right-0 bottom-0 z-40 w-88 sm:w-96 min-[1200px]:relative min-[1200px]:z-10 flex flex-col flex-shrink-0 border-l border-border-default bg-surface-1 text-content-1 shadow-lg min-[1200px]:shadow-none select-none h-full overflow-hidden"
       >
         {/* Drawer Header */}
         <div className="flex h-12 items-center justify-between px-3 border-b border-border-default bg-surface-1/95 flex-shrink-0 gap-2">
@@ -394,7 +394,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
             aria-label="Đóng Inspector"
             className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors flex-shrink-0"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -409,7 +409,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 : 'bg-status-standby/15 hover:bg-status-standby/25 text-status-standby border border-status-standby/40'
             }`}
           >
-            <AlertCircle className="h-3 w-3" />
+            <AlertCircle className="h-3 w-3" aria-hidden="true" />
             <span>Set Standby</span>
           </button>
 
@@ -418,7 +418,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
             onClick={() => holdCue(cue.id)}
             className="flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold bg-status-hold/15 hover:bg-status-hold/25 text-status-hold border border-status-hold/40 transition-all"
           >
-            <Pause className="h-3 w-3" />
+            <Pause className="h-3 w-3" aria-hidden="true" />
             <span>Hold</span>
           </button>
 
@@ -427,7 +427,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
             onClick={() => skipCue(cue.id)}
             className="flex items-center justify-center gap-1 rounded py-1 px-2 font-medium bg-surface-2 hover:bg-surface-3 text-content-2 border border-border-default transition-all"
           >
-            <FastForward className="h-3 w-3" />
+            <FastForward className="h-3 w-3" aria-hidden="true" />
             <span>Skip</span>
           </button>
         </div>
@@ -437,14 +437,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           {/* ============================================================== */}
           {/* ACCORDION 1: GENERAL & TIMING */}
           {/* ============================================================== */}
-          <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+          <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('general')}
               className="flex w-full items-center justify-between px-3 py-2 bg-surface-1/70 hover:bg-surface-2/60 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5 text-accent" />
+                <Clock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                 <span className="text-xs font-bold text-content-1">General & Timing</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -452,9 +452,9 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                   {formatDurationDisplay(cue.durationMs)}
                 </span>
                 {openSections.general ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronDown className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronRight className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 )}
               </div>
             </button>
@@ -560,14 +560,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           {/* ============================================================== */}
           {/* ACCORDION 2: LIGHTING (LX) */}
           {/* ============================================================== */}
-          <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+          <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('lx')}
               className="flex w-full items-center justify-between px-3 py-2 bg-surface-1/70 hover:bg-surface-2/60 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
-                <Lightbulb className="h-3.5 w-3.5 text-dept-lx" />
+                <Lightbulb className="h-3.5 w-3.5 text-dept-lx" aria-hidden="true" />
                 <span className="text-xs font-bold text-dept-lx">Lighting (LX)</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -575,9 +575,9 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                   {cue.totalLightingFixtures} fixtures
                 </span>
                 {openSections.lx ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronDown className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronRight className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 )}
               </div>
             </button>
@@ -705,7 +705,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Gamut Warning Banner */}
                 {isGamutWarning && (
                   <div className="flex items-center gap-1.5 rounded bg-status-standby/15 border border-status-standby/40 p-2 text-[11px] text-status-standby">
-                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                    <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                     <span>Màu bão hòa cao: Có thể vượt dải hiển thị chuẩn của fixture.</span>
                   </div>
                 )}
@@ -748,7 +748,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                               title="Xóa loại đèn"
                               aria-label={`Xóa loại đèn ${f.subType}`}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
@@ -782,14 +782,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           {/* ============================================================== */}
           {/* ACCORDION 3: VISUAL LED (VX) */}
           {/* ============================================================== */}
-          <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+          <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('vx')}
               className="flex w-full items-center justify-between px-3 py-2 bg-surface-1/70 hover:bg-surface-2/60 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
-                <Tv className="h-3.5 w-3.5 text-dept-vx" />
+                <Tv className="h-3.5 w-3.5 text-dept-vx" aria-hidden="true" />
                 <span className="text-xs font-bold text-dept-vx">Visual LED (VX)</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -797,9 +797,9 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                   {cue.totalScreens} màn hình
                 </span>
                 {openSections.vx ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronDown className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronRight className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 )}
               </div>
             </button>
@@ -868,7 +868,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                       onChange={(e) => handleUpdateVx({ loop: e.target.checked })}
                       className="rounded border-border-default text-dept-vx focus:ring-dept-vx"
                     />
-                    <Repeat className="h-3.5 w-3.5 text-dept-vx" />
+                    <Repeat className="h-3.5 w-3.5 text-dept-vx" aria-hidden="true" />
                     <span>Lặp lại video liên tục (Loop Video)</span>
                   </label>
                 </div>
@@ -876,7 +876,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Active Layer Mapping */}
                 <div className="pt-1">
                   <span className="block text-[11px] font-semibold text-content-3 mb-1.5 flex items-center gap-1">
-                    <Layers className="h-3 w-3 text-dept-vx" />
+                    <Layers className="h-3 w-3 text-dept-vx" aria-hidden="true" />
                     <span>Lớp Phát (Layer Mapping)</span>
                   </span>
                   <div className="grid grid-cols-3 gap-1.5">
@@ -892,7 +892,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                           }}
                           className={`rounded py-1 px-1.5 text-center text-xs font-semibold border transition-all ${
                             isCurrentLayer
-                              ? 'bg-dept-vx text-surface-0 border-dept-vx shadow-sm'
+                              ? 'bg-dept-vx text-surface-0 border-dept-vx'
                               : 'bg-surface-1 hover:bg-surface-2 text-content-2 border-border-default'
                           }`}
                         >
@@ -909,14 +909,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           {/* ============================================================== */}
           {/* ACCORDION 4: SOUND (SQ) */}
           {/* ============================================================== */}
-          <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+          <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('sq')}
               className="flex w-full items-center justify-between px-3 py-2 bg-surface-1/70 hover:bg-surface-2/60 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
-                <Volume2 className="h-3.5 w-3.5 text-dept-sq" />
+                <Volume2 className="h-3.5 w-3.5 text-dept-sq" aria-hidden="true" />
                 <span className="text-xs font-bold text-dept-sq">Sound (SQ)</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -924,9 +924,9 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                   {sq?.volume ?? 80}%
                 </span>
                 {openSections.sq ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronDown className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronRight className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 )}
               </div>
             </button>
@@ -1023,21 +1023,21 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           {/* ============================================================== */}
           {/* ACCORDION 5: STAGE ACTION (ST) */}
           {/* ============================================================== */}
-          <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+          <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
             <button
               type="button"
               onClick={() => toggleSection('st')}
               className="flex w-full items-center justify-between px-3 py-2 bg-surface-1/70 hover:bg-surface-2/60 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 text-dept-st" />
+                <Users className="h-3.5 w-3.5 text-dept-st" aria-hidden="true" />
                 <span className="text-xs font-bold text-dept-st">Stage Action (ST)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 {openSections.st ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronDown className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-content-3" />
+                  <ChevronRight className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />
                 )}
               </div>
             </button>

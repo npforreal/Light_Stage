@@ -74,7 +74,7 @@ export const TimelineTracks: React.FC = () => {
   return (
     <div className="flex h-full w-full flex-col bg-surface-0 text-content-1 select-none">
       {/* Timeline Controls Header */}
-      <div className="flex items-center justify-between border-b border-border-default bg-surface-1/90 px-4 py-2 backdrop-blur">
+      <div className="flex items-center justify-between border-b border-border-default bg-surface-1 px-4 py-2">
         <div className="flex items-center gap-4 text-xs">
           <span className="font-semibold text-content-1">Timeline Tracks</span>
           <span className="font-mono text-content-2">
@@ -92,15 +92,17 @@ export const TimelineTracks: React.FC = () => {
             onClick={() => handleZoom(-3)}
             className="rounded bg-surface-2 p-1 text-content-2 hover:bg-surface-3 hover:text-content-1 transition-colors border border-border-default"
             title="Zoom Out"
+            aria-label="Thu nhỏ (Zoom Out)"
           >
-            <ZoomOut className="h-3.5 w-3.5" />
+            <ZoomOut className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             onClick={() => handleZoom(3)}
             className="rounded bg-surface-2 p-1 text-content-2 hover:bg-surface-3 hover:text-content-1 transition-colors border border-border-default"
             title="Zoom In"
+            aria-label="Phóng to (Zoom In)"
           >
-            <ZoomIn className="h-3.5 w-3.5" />
+            <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -110,27 +112,27 @@ export const TimelineTracks: React.FC = () => {
         {/* Track Labels (Fixed Left Column) */}
         <div className="w-36 flex-shrink-0 border-r border-border-default bg-surface-1 z-20 flex flex-col font-mono text-xs">
           {/* Header spacer */}
-          <div className="h-8 border-b border-border-default px-3 flex items-center text-content-3 font-bold uppercase text-[10px]">
+          <div className="h-8 border-b border-border-default px-3 flex items-center text-content-3 font-semibold text-[10px]">
             Lanes
           </div>
           {/* Master Lane */}
           <div className="h-16 border-b border-border-default px-3 flex items-center gap-2 text-content-1">
-            <Flag className="h-3.5 w-3.5 text-accent" />
+            <Flag className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             <span className="font-semibold">Master Cue</span>
           </div>
           {/* LX Lane */}
           <div className="h-14 border-b border-border-default px-3 flex items-center gap-2 text-dept-lx">
-            <Lightbulb className="h-3.5 w-3.5" />
+            <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
             <span>LX Lighting</span>
           </div>
           {/* VX Lane */}
           <div className="h-14 border-b border-border-default px-3 flex items-center gap-2 text-dept-vx">
-            <Tv className="h-3.5 w-3.5" />
+            <Tv className="h-3.5 w-3.5" aria-hidden="true" />
             <span>VX Visuals</span>
           </div>
           {/* SQ Lane */}
           <div className="h-14 border-b border-border-default px-3 flex items-center gap-2 text-dept-sq">
-            <Volume2 className="h-3.5 w-3.5" />
+            <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
             <span>SQ Sound</span>
           </div>
         </div>
@@ -164,7 +166,7 @@ export const TimelineTracks: React.FC = () => {
             {/* Red / Emerald Realtime Playhead */}
             <div
               style={{ left: `${playheadX}px` }}
-              className="absolute top-0 bottom-0 w-0.5 bg-status-danger z-30 pointer-events-none transition-all duration-150 shadow-[0_0_8px_rgba(244,63,94,0.8)]"
+              className="absolute top-0 bottom-0 w-0.5 bg-status-danger z-30 pointer-events-none transition-all duration-150"
             >
               <div className="h-0 w-0 border-x-4 border-x-transparent border-t-6 border-t-status-danger -ml-[3.5px]" />
             </div>
@@ -179,9 +181,9 @@ export const TimelineTracks: React.FC = () => {
 
                 let blockColor = 'bg-surface-2 border-border-default text-content-1';
                 if (isActive) {
-                  blockColor = 'bg-status-go text-surface-0 border-status-go shadow-lg ring-2 ring-status-go/50';
+                  blockColor = 'bg-status-go text-surface-0 border-status-go';
                 } else if (isStandby) {
-                  blockColor = 'bg-status-standby text-surface-0 border-status-standby shadow-md ring-2 ring-status-standby/50';
+                  blockColor = 'bg-status-standby text-surface-0 border-status-standby';
                 } else if (cue.status === 'Completed') {
                   blockColor = 'bg-surface-1 border-border-default/60 text-content-3';
                 }
@@ -192,7 +194,7 @@ export const TimelineTracks: React.FC = () => {
                     onClick={() => handleBlockClick(cue)}
                     onDoubleClick={() => handleBlockDoubleClick(cue)}
                     style={{ left: `${left}px`, width: `${width}px` }}
-                    className={`absolute top-2 bottom-2 rounded-md border p-1.5 text-xs cursor-pointer overflow-hidden transition-all flex flex-col justify-between ${blockColor}`}
+                    className={`absolute top-2 bottom-2 rounded border p-1.5 text-xs cursor-pointer overflow-hidden transition-all flex flex-col justify-between ${blockColor}`}
                     title={`${cue.cueNumber}: ${cue.title} (${formatDuration(durationMs)})`}
                   >
                     <div className="flex items-center justify-between font-mono font-bold text-[10px]">
