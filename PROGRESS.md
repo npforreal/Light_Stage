@@ -3,6 +3,25 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 16.6: hardening CSP (bỏ `script-src 'unsafe-inline'`)
+
+### Thay đổi
+- `src-tauri/tauri.conf.json` CSP:
+  - Trước: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline';`
+  - Sau: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost`
+- Giữ `style-src 'unsafe-inline'` (Tailwind/React ghi style inline, không thể bỏ nếu không refactor toàn bộ).
+- Thêm `font-src 'self' data:` để sẵn cho font self-host ở 17.2.
+- Thêm `connect-src 'self' ipc: http://ipc.localhost` cho IPC của Tauri v2.
+
+### Quyết định kỹ thuật
+- `index.html` không có `<script>` inline; Vite build phát module script ngoài → `script-src 'self'` đủ cho bản production.
+- Không đánh `[x]` chỉ dựa vào lý thuyết: đã kiểm bằng bản build thật + CSP meta trên server tĩnh trước khi chốt.
+
+### Kiểm chứng
+- `npm run build` OK; inject đúng chuỗi CSP vào `dist/index.html`, phục vụ `python3 -m http.server 1431`.
+- Browser thật mở `http://localhost:1431`: `document.title` đúng, `#root` có 1 con, header "Light Stage" render, **0 console error** (không có vi phạm CSP).
+- `tauri build --debug` được kiểm ở 16.7 để chắc chắn webview Tauri không khác trình duyệt.
+
 ## 2026-11-19 — Đợt 16.5: lazy-load Stage 3D, chunk khởi động < 500 kB
 
 ### Thay đổi
