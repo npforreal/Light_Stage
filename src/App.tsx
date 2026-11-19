@@ -9,6 +9,7 @@ import {
   clearAutoSave,
   parseLightStageFile,
   downloadLightStageFile,
+  AUTOSAVE_FAILURE_MESSAGE as AUTOSAVE_ERROR_MESSAGE,
   AutoSaveMeta,
 } from './services/persistence';
 import { useStageStore } from './store/useStageStore';
@@ -26,10 +27,6 @@ import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
 import { StageClockWindow } from './components/StageClockWindow';
 import { CueInspector } from './components/CueInspector';
 import { Lock, AlertTriangle } from 'lucide-react';
-
-/** Shown whenever autosave could not write to storage. */
-export const AUTOSAVE_ERROR_MESSAGE =
-  'Chưa lưu — lỗi lưu tự động: không ghi được bộ nhớ cục bộ (đầy hoặc bị chặn).';
 
 export const App: React.FC = () => {
   // Check if this window was opened as a dedicated Stage Confidence Clock

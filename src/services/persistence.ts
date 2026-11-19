@@ -9,6 +9,10 @@ export const CURRENT_SCHEMA_VERSION = 1;
 export const AUTOSAVE_STORAGE_KEY = 'lightstage_autosave_v1';
 export const AUTOSAVE_META_KEY = 'lightstage_autosave_meta_v1';
 
+/** Single source of truth for the autosave failure message shown in the UI. */
+export const AUTOSAVE_FAILURE_MESSAGE =
+  'Chưa lưu — lỗi lưu tự động: không ghi được bộ nhớ cục bộ (đầy hoặc bị chặn).';
+
 export interface ParseResult {
   success: boolean;
   data?: Show;
@@ -324,7 +328,11 @@ export function setupAutoSaveSubscription(debounceMs = 200): () => void {
   const schedule = (show: Show) => {
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
     autoSaveTimer = setTimeout(() => {
-      saveAutoSave(show, useStageStore.getState().config);
+      const ok = saveAutoSave(show, useStageStore.getState().config);
+      if (!ok) {
+        // Surface the failure in the UI instead of swallowing it (PLAN 16.2).
+        useShowStore.getState().setAutosaveError(AUTOSAVE_FAILURE_MESSAGE);
+      }
     }, debounceMs);
   };
 
