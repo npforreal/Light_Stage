@@ -24,20 +24,20 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
       data-testid="vx-floating-dock"
       className={
         className ??
-        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl bg-[#0d121a]/85 border border-white/10 px-4 py-2 shadow-2xl backdrop-blur-md select-none text-xs'
+        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/85 border border-white/10 px-4 py-2 shadow-lg backdrop-blur-md select-none text-xs'
       }
     >
       <div data-testid="vx-control-bar" className="contents">
         {/* Output status chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-          <span className="flex items-center gap-1 text-[11px] font-semibold text-content-3 uppercase tracking-wider mr-1">
-            <Monitor className="h-3.5 w-3.5 text-dept-vx" />
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-content-3 mr-1">
+            <Monitor className="h-3.5 w-3.5 text-dept-vx" aria-hidden="true" />
             <span>Outputs:</span>
           </span>
           {outputs.map((out) => (
             <div
               key={out.id}
-              className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-mono transition-colors ${
+              className={`flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-mono transition-colors ${
                 out.enabled
                   ? 'border-border-subtle bg-surface-2 text-content-1'
                   : 'border-transparent bg-surface-0/60 text-content-3 line-through opacity-60'
@@ -54,7 +54,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
         <div className="h-4 w-px bg-white/10" />
 
         {/* Layer switches */}
-        <div className="flex items-center rounded-lg bg-surface-2/80 border border-border-subtle p-0.5 gap-0.5">
+        <div className="flex items-center rounded bg-surface-2/80 border border-border-subtle p-0.5 gap-0.5">
           <button
             type="button"
             onClick={() => toggleLayer('background')}
@@ -105,7 +105,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
             type="button"
             onClick={clearAllVx}
             disabled={!anyLayerActive}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all shadow-sm ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-all ${
               anyLayerActive
                 ? 'bg-status-standby hover:opacity-90 active:scale-[0.98] text-surface-0 animate-pulse'
                 : 'bg-surface-2 text-content-3 cursor-not-allowed opacity-50'
@@ -113,7 +113,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
             title="Xoá tất cả các lớp VX trên màn hình (F4)"
             data-testid="vx-panic-clear"
           >
-            <EyeOff className="h-3.5 w-3.5" />
+            <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Clear VX (F4)</span>
           </button>
 
@@ -121,15 +121,15 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
           <button
             type="button"
             onClick={toggleFreezeVx}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold transition-colors ${
               isFrozen
-                ? 'bg-status-standby text-surface-0 shadow-md ring-2 ring-status-standby active:scale-[0.98]'
+                ? 'bg-status-standby text-surface-0 active:scale-[0.98]'
                 : 'bg-surface-2 hover:bg-surface-3 text-content-2'
             }`}
             title="Freeze VX: Đóng băng hình ảnh trên màn hình, không đổi khi chuyển cue (Alt+F)"
             data-testid="vx-panic-freeze"
           >
-            {isFrozen ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5 text-content-3" />}
+            {isFrozen ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <Unlock className="h-3.5 w-3.5 text-content-3" aria-hidden="true" />}
             <span>{isFrozen ? 'ĐÃ KHÓA VX' : 'Freeze VX (Alt+F)'}</span>
           </button>
 
@@ -137,15 +137,15 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
           <button
             type="button"
             onClick={toggleBlackoutVx}
-            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
               isBlackout
-                ? 'bg-status-danger text-surface-0 ring-2 ring-status-danger active:scale-[0.98]'
+                ? 'bg-status-danger text-surface-0 active:scale-[0.98]'
                 : 'bg-surface-2 hover:bg-surface-3 text-content-2'
             }`}
             title="Blackout VX: Tắt toàn bộ tín hiệu ra màn hình LED"
             data-testid="vx-panic-blackout"
           >
-            <Power className="h-3.5 w-3.5 text-status-danger" />
+            <Power className="h-3.5 w-3.5 text-status-danger" aria-hidden="true" />
             <span>Blackout</span>
           </button>
         </div>
