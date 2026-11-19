@@ -339,7 +339,7 @@ export const RundownTable: React.FC = () => {
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
     if (isActive || status === 'Go') {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 animate-pulse">
+        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 animate-pulse">
           <Play className="h-3 w-3 fill-current" aria-hidden="true" />
           <span>GO</span>
           <span className="relative flex h-2 w-2 ml-0.5">
@@ -351,7 +351,7 @@ export const RundownTable: React.FC = () => {
     }
     if (isStandby || status === 'Standby') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
           <AlertCircle className="h-3 w-3" aria-hidden="true" />
           <span>STANDBY</span>
         </span>
@@ -359,7 +359,7 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Hold') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
           <Pause className="h-3 w-3" aria-hidden="true" />
           <span>HOLD</span>
         </span>
@@ -367,7 +367,7 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Skip') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default line-through">
           <FastForward className="h-3 w-3" aria-hidden="true" />
           <span>SKIP</span>
         </span>
@@ -375,7 +375,7 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Completed') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default/60">
           <CheckCircle2 className="h-3 w-3 text-status-go/70" aria-hidden="true" />
           <span>COMPLETED</span>
         </span>
@@ -383,7 +383,7 @@ export const RundownTable: React.FC = () => {
     }
     // Pending
     return (
-      <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
+      <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
         <Clock className="h-3 w-3 text-content-3" aria-hidden="true" />
         <span>PENDING</span>
       </span>
@@ -503,7 +503,7 @@ export const RundownTable: React.FC = () => {
                 <tr className="bg-surface-1 font-semibold text-content-2">
                   <td colSpan={10} className="py-2 px-4 text-xs">
                     <span className="text-content-1 mr-2 font-mono">{act.title}</span>
-                    <span className="text-[11px] font-normal text-content-3">
+                    <span className="text-xs font-normal text-content-3">
                       ({act.cues.length} cues)
                     </span>
                   </td>
@@ -558,7 +558,7 @@ export const RundownTable: React.FC = () => {
                               aria-label="Lưu (Save)"
                               type="button"
                               onClick={commitCurrentEdit}
-                              className="rounded bg-accent/20 px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/30"
+                              className="rounded bg-accent/20 px-2 py-1 text-xs font-medium text-accent hover:bg-accent/30"
                             >
                               <Check className="h-3 w-3" aria-hidden="true" />
                             </button>
@@ -573,7 +573,7 @@ export const RundownTable: React.FC = () => {
                               {cue.title}
                             </span>
                             {cue.notes && (
-                              <span className="text-[11px] text-content-3 italic">
+                              <span className="text-xs text-content-3 italic">
                                 {cue.notes}
                               </span>
                             )}
@@ -660,7 +660,7 @@ export const RundownTable: React.FC = () => {
 
                               {/* Title / Scene Name */}
                               <div>
-                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                   Tên Cảnh Sáng (Scene Name)
                                 </label>
                                 <input
@@ -677,7 +677,7 @@ export const RundownTable: React.FC = () => {
                               {/* Fixtures: quick entry + structured rows (single source of truth) */}
                               <div className="space-y-1.5">
                                 <div>
-                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                     Nhập nhanh (loại × số lượng @vị trí)
                                   </label>
                                   <input
@@ -705,17 +705,17 @@ export const RundownTable: React.FC = () => {
 
                                 <div className="rounded border border-border-default bg-surface-0/60">
                                   <div className="flex items-center justify-between border-b border-border-subtle px-2 py-1">
-                                    <span className="text-[10px] font-semibold text-content-3">
+                                    <span className="text-xs font-semibold text-content-3">
                                       Danh sách đèn
                                     </span>
-                                    <span className="font-mono text-[10px] font-bold text-dept-lx">
+                                    <span className="font-mono text-xs font-bold text-dept-lx">
                                       Tổng: {sumDeviceCounts(draftLx.fixtures)} đèn
                                     </span>
                                   </div>
 
                                   <div className="max-h-40 divide-y divide-border-subtle overflow-y-auto">
                                     {draftLx.fixtures.length === 0 && (
-                                      <p className="px-2 py-2 text-[10px] text-content-3">
+                                      <p className="px-2 py-2 text-xs text-content-3">
                                         Chưa có đèn. Gõ nhanh ở trên hoặc thêm dòng.
                                       </p>
                                     )}
@@ -754,7 +754,7 @@ export const RundownTable: React.FC = () => {
                                                 };
                                               });
                                             }}
-                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
                                             title="Loại đèn"
                                           >
                                             {LIGHTING_FIXTURE_TYPES.map((type) => (
@@ -781,7 +781,7 @@ export const RundownTable: React.FC = () => {
                                               });
                                             }}
                                             onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
-                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-center font-mono text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-center font-mono text-xs text-content-1 focus:border-dept-lx focus:outline-none"
                                             title="Số lượng"
                                           />
                                           <input
@@ -802,7 +802,7 @@ export const RundownTable: React.FC = () => {
                                               });
                                             }}
                                             onKeyDown={(e) => handleInputKeyDown(e, 'vx')}
-                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-1 focus:border-dept-lx focus:outline-none"
+                                            className="w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-1 focus:border-dept-lx focus:outline-none"
                                             placeholder="Vị trí"
                                             title="Vị trí (FOH, Back, Mid, Floor…)"
                                           />
@@ -850,14 +850,14 @@ export const RundownTable: React.FC = () => {
                                           };
                                         })
                                       }
-                                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-lx hover:bg-surface-2"
+                                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold text-dept-lx hover:bg-surface-2"
                                     >
                                       <Plus className="h-3 w-3" aria-hidden="true" />
                                       <span>Thêm đèn</span>
                                     </button>
                                     {hasUnclassifiedFixtures(draftLx.fixtures) && (
                                       <span
-                                        className="inline-flex items-center gap-1 text-[10px] text-status-standby"
+                                        className="inline-flex items-center gap-1 text-xs text-status-standby"
                                         title="Loại đèn chưa nhận diện — sẽ được vẽ ở vị trí mặc định"
                                       >
                                         <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -888,10 +888,10 @@ export const RundownTable: React.FC = () => {
                               {/* Intensity Slider */}
                               <div>
                                 <div className="flex justify-between items-center mb-0.5">
-                                  <label className="text-[10px] font-semibold text-content-3">
+                                  <label className="text-xs font-semibold text-content-3">
                                     Cường độ Sáng (Intensity)
                                   </label>
-                                  <span className="font-mono text-[11px] text-dept-lx font-bold">
+                                  <span className="font-mono text-xs text-dept-lx font-bold">
                                     {draftLx.intensity}%
                                   </span>
                                 </div>
@@ -908,7 +908,7 @@ export const RundownTable: React.FC = () => {
                               {/* Color Picker & Gamut */}
                               <div className="border-t border-border-subtle pt-2">
                                 <div className="flex justify-between items-center mb-1.5">
-                                  <label className="text-[10px] font-semibold text-content-3 flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-content-3 flex items-center gap-1">
                                     <Palette className="h-3 w-3" aria-hidden="true" />
                                     <span>Màu Đèn / Kelvin / Gel</span>
                                   </label>
@@ -920,7 +920,7 @@ export const RundownTable: React.FC = () => {
                                       className="h-3 w-3 rounded-full border border-black/50"
                                       style={{ backgroundColor: draftLx.hex }}
                                     />
-                                    <span className="font-mono text-[10px] text-content-2">
+                                    <span className="font-mono text-xs text-content-2">
                                       {getLightingColorLabel(draftLx.color)}
                                     </span>
                                   </div>
@@ -960,7 +960,7 @@ export const RundownTable: React.FC = () => {
                                         className="h-3 w-3 rounded-full border border-black/40"
                                         style={{ backgroundColor: p.hex }}
                                       />
-                                      <span className="text-[8px] font-mono truncate w-full text-center">
+                                      <span className="text-xs font-mono truncate w-full text-center">
                                         {p.label}
                                       </span>
                                     </button>
@@ -969,7 +969,7 @@ export const RundownTable: React.FC = () => {
 
                                 {/* Kelvin Slider */}
                                 <div>
-                                  <div className="flex justify-between items-center text-[10px] text-content-3 mb-0.5">
+                                  <div className="flex justify-between items-center text-xs text-content-3 mb-0.5">
                                     <span>Kelvin Slider (1800K - 8000K):</span>
                                     <span className="font-mono font-bold text-dept-lx">{kelvinSliderVal}K</span>
                                   </div>
@@ -997,7 +997,7 @@ export const RundownTable: React.FC = () => {
                                 {/* Hex Input & Gamut Warning */}
                                 <div className="flex items-center gap-2 mt-2">
                                   <div className="flex items-center gap-1 w-full">
-                                    <span className="text-[10px] text-content-3">Hex:</span>
+                                    <span className="text-xs text-content-3">Hex:</span>
                                     <input
                                       type="text"
                                       value={draftLx.hex}
@@ -1014,7 +1014,7 @@ export const RundownTable: React.FC = () => {
                                   </div>
                                   {isOutOfGamut(draftLx.hex) && (
                                     <div
-                                      className="flex items-center gap-1 text-[9px] text-status-standby bg-status-standby/15 border border-status-standby/40 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                      className="flex items-center gap-1 text-xs text-status-standby bg-status-standby/15 border border-status-standby/40 rounded px-1.5 py-0.5 whitespace-nowrap"
                                       title="Màu này nằm ngoài không gian màu tiêu chuẩn sRGB"
                                     >
                                       <AlertTriangle className="h-3 w-3 text-status-standby flex-shrink-0" aria-hidden="true" />
@@ -1034,11 +1034,11 @@ export const RundownTable: React.FC = () => {
                                 {cue.departments.lx?.sceneName || 'Preset'}
                               </span>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center rounded bg-dept-lx/10 px-1.5 py-0.2 text-[10px] font-mono text-dept-lx border border-dept-lx/30">
+                                <span className="inline-flex items-center rounded bg-dept-lx/10 px-1.5 py-0.2 text-xs font-mono text-dept-lx border border-dept-lx/30">
                                   {getCueLightingCount(cue)} fix
                                 </span>
                                 {cue.departments.lx && (
-                                  <div className="inline-flex items-center gap-1 rounded bg-surface-2 border border-border-default px-1.5 py-0.5 text-[10px] font-mono group-hover:border-dept-lx transition-colors">
+                                  <div className="inline-flex items-center gap-1 rounded bg-surface-2 border border-border-default px-1.5 py-0.5 text-xs font-mono group-hover:border-dept-lx transition-colors">
                                     <span
                                       className="h-2 w-2 rounded-full border border-black/40 flex-shrink-0"
                                       style={{
@@ -1099,7 +1099,7 @@ export const RundownTable: React.FC = () => {
                               </div>
 
                               <div>
-                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                   Nội dung Visual (Content)
                                 </label>
                                 <input
@@ -1115,7 +1115,7 @@ export const RundownTable: React.FC = () => {
 
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                     Số màn hình
                                   </label>
                                   <input
@@ -1128,7 +1128,7 @@ export const RundownTable: React.FC = () => {
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                  <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                     Mục tiêu màn hình
                                   </label>
                                   <input
@@ -1151,7 +1151,7 @@ export const RundownTable: React.FC = () => {
                               <span className="text-content-1 group-hover:text-dept-vx">
                                 {cue.departments.vx?.contentName || 'Visual loop'}
                               </span>
-                              <span className="inline-flex w-fit items-center rounded bg-dept-vx/10 px-1.5 py-0.2 text-[10px] font-mono text-dept-vx border border-dept-vx/30">
+                              <span className="inline-flex w-fit items-center rounded bg-dept-vx/10 px-1.5 py-0.2 text-xs font-mono text-dept-vx border border-dept-vx/30">
                                 {cue.totalScreens} screens
                               </span>
                             </div>
@@ -1198,7 +1198,7 @@ export const RundownTable: React.FC = () => {
                               </div>
 
                               <div>
-                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                   Tên bài nhạc / Track Name
                                 </label>
                                 <input
@@ -1214,10 +1214,10 @@ export const RundownTable: React.FC = () => {
 
                               <div>
                                 <div className="flex justify-between items-center mb-0.5">
-                                  <label className="text-[10px] font-semibold text-content-3">
+                                  <label className="text-xs font-semibold text-content-3">
                                     Âm lượng (Volume)
                                   </label>
-                                  <span className="font-mono text-[10px] text-dept-sq font-bold">
+                                  <span className="font-mono text-xs text-dept-sq font-bold">
                                     {draftSq.volume}%
                                   </span>
                                 </div>
@@ -1284,7 +1284,7 @@ export const RundownTable: React.FC = () => {
                               </div>
 
                               <div>
-                                <label className="text-[10px] font-semibold text-content-3 block mb-0.5">
+                                <label className="text-xs font-semibold text-content-3 block mb-0.5">
                                   Chỉ dẫn Diễn viên / Đạo cụ
                                 </label>
                                 <textarea
@@ -1322,7 +1322,7 @@ export const RundownTable: React.FC = () => {
                               e.stopPropagation();
                               standbyCue(cue.id);
                             }}
-                            className={`rounded px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                            className={`rounded px-2.5 py-1 text-xs font-bold transition-colors ${
                               isStandby
                                 ? 'bg-status-standby text-surface-0 ring-2 ring-status-standby'
                                 : 'bg-status-standby/20 text-status-standby hover:bg-status-standby/30 border border-status-standby/40'

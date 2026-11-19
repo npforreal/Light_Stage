@@ -80,7 +80,7 @@ export const TimelineTracks: React.FC = () => {
           <span className="font-mono text-content-2">
             Total: {formatDuration(totalDurationMs, { includeHours: true })}
           </span>
-          <span className="text-[11px] text-content-3">
+          <span className="text-xs text-content-3">
             (Click block to Standby, Double click to GO)
           </span>
         </div>
@@ -112,7 +112,7 @@ export const TimelineTracks: React.FC = () => {
         {/* Track Labels (Fixed Left Column) */}
         <div className="w-36 flex-shrink-0 border-r border-border-default bg-surface-1 z-20 flex flex-col font-mono text-xs">
           {/* Header spacer */}
-          <div className="h-8 border-b border-border-default px-3 flex items-center text-content-3 font-semibold text-[10px]">
+          <div className="h-8 border-b border-border-default px-3 flex items-center text-content-3 font-semibold text-xs">
             Lanes
           </div>
           {/* Master Lane */}
@@ -146,7 +146,7 @@ export const TimelineTracks: React.FC = () => {
             {/* Time Ruler Bar */}
             <div
               onClick={handleRulerClick}
-              className="sticky top-0 h-8 border-b border-border-default bg-surface-1 text-[10px] font-mono text-content-3 cursor-pointer z-10"
+              className="sticky top-0 h-8 border-b border-border-default bg-surface-1 text-xs font-mono text-content-3 cursor-pointer z-10"
             >
               {Array.from({ length: numTicks }).map((_, i) => {
                 const sec = i * tickIntervalSec;
@@ -197,11 +197,11 @@ export const TimelineTracks: React.FC = () => {
                     className={`absolute top-2 bottom-2 rounded border p-1.5 text-xs cursor-pointer overflow-hidden transition-all flex flex-col justify-between ${blockColor}`}
                     title={`${cue.cueNumber}: ${cue.title} (${formatDuration(durationMs)})`}
                   >
-                    <div className="flex items-center justify-between font-mono font-bold text-[10px]">
+                    <div className="flex items-center justify-between font-mono font-bold text-xs">
                       <span>{cue.cueNumber}</span>
                       <span>{formatDuration(durationMs)}</span>
                     </div>
-                    <div className="truncate font-medium text-[11px] leading-tight">
+                    <div className="truncate font-medium text-xs leading-tight">
                       {cue.title}
                     </div>
                   </div>
@@ -219,13 +219,13 @@ export const TimelineTracks: React.FC = () => {
                   <div
                     key={cue.id}
                     style={{ left: `${left}px`, width: `${width}px` }}
-                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-lx/40 bg-dept-lx/20 px-1.5 py-0.5 text-[10px] text-dept-lx overflow-hidden truncate flex flex-col justify-center"
+                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-lx/40 bg-dept-lx/20 px-1.5 py-0.5 text-xs text-dept-lx overflow-hidden truncate flex flex-col justify-center"
                     title={`LX: ${cue.departments.lx.sceneName || 'Preset'} (${getCueLightingCount(cue)} fixtures)`}
                   >
                     <span className="font-semibold truncate">
                       {cue.departments.lx.sceneName || 'Preset'}
                     </span>
-                    <span className="font-mono text-[9px] text-dept-lx">
+                    <span className="font-mono text-xs text-dept-lx">
                       {getCueLightingCount(cue)} fix
                     </span>
                   </div>
@@ -243,13 +243,13 @@ export const TimelineTracks: React.FC = () => {
                   <div
                     key={cue.id}
                     style={{ left: `${left}px`, width: `${width}px` }}
-                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-vx/40 bg-dept-vx/20 px-1.5 py-0.5 text-[10px] text-dept-vx overflow-hidden truncate flex flex-col justify-center"
+                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-vx/40 bg-dept-vx/20 px-1.5 py-0.5 text-xs text-dept-vx overflow-hidden truncate flex flex-col justify-center"
                     title={`VX: ${cue.departments.vx.contentName || 'Loop'} (${cue.totalScreens} screens)`}
                   >
                     <span className="font-semibold truncate">
                       {cue.departments.vx.contentName || 'Visual loop'}
                     </span>
-                    <span className="font-mono text-[9px] text-dept-vx">
+                    <span className="font-mono text-xs text-dept-vx">
                       {cue.totalScreens} scr
                     </span>
                   </div>
@@ -267,7 +267,7 @@ export const TimelineTracks: React.FC = () => {
                   <div
                     key={cue.id}
                     style={{ left: `${left}px`, width: `${width}px` }}
-                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-sq/40 bg-dept-sq/20 px-1.5 py-0.5 text-[10px] text-dept-sq overflow-hidden truncate flex flex-col justify-center"
+                    className="absolute top-1.5 bottom-1.5 rounded border border-dept-sq/40 bg-dept-sq/20 px-1.5 py-0.5 text-xs text-dept-sq overflow-hidden truncate flex flex-col justify-center"
                     title={`SQ: ${cue.departments.sq.trackName || 'Audio'}`}
                   >
                     <span className="font-semibold truncate">

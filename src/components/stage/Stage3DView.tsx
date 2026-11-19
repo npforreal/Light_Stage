@@ -200,7 +200,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
       <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
         {/* Floating Pill: Glassmorphism Technical Pill centered over 3D Canvas */}
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/90 border border-white/10 px-4 py-2 shadow-lg select-none text-xs"
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-surface-1/95 border border-white/10 px-4 py-2 shadow-lg select-none text-xs"
           data-testid="stage-3d-floating-pill"
         >
           {/* Camera Presets Segmented Control */}
@@ -245,7 +245,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
           {cameraPreset === 'free' && (
             <span
-              className="rounded border border-status-standby/60 bg-status-standby/15 px-2 py-0.5 text-[11px] font-semibold text-status-standby"
+              className="rounded border border-status-standby/60 bg-status-standby/15 px-2 py-0.5 text-xs font-semibold text-status-standby"
               title="Camera đã xoay tay khỏi preset. Bấm FOH / Top-Down / Backstage để trở lại."
               data-testid="camera-free-indicator"
             >
@@ -261,7 +261,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               <button
                 key={preset}
                 onClick={() => applyPreset(preset)}
-                className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
                   config.preset === preset
                     ? 'bg-surface-3 text-content-1 border border-border-default'
                     : 'bg-surface-2 text-content-3 hover:text-content-1'
@@ -278,7 +278,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setHaze(!haze)}
-              className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-semibold border transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold border transition-colors ${
                 haze
                   ? 'bg-accent/20 border-accent text-accent'
                   : 'bg-surface-2 border-border-default text-content-3 hover:text-content-1'
@@ -293,7 +293,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
             <select
               value={dimmerCurve}
               onChange={(e) => setDimmerCurve(e.target.value as any)}
-              className="rounded bg-surface-2 border border-border-default px-2 py-0.5 text-[11px] text-content-2 font-mono"
+              className="rounded bg-surface-2 border border-border-default px-2 py-0.5 text-xs text-content-2 font-mono"
               title="Đường cong dimmer quang học"
             >
               <option value="square">Curve: I² (Square)</option>
@@ -308,7 +308,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setShowAllBeams((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-semibold border transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-xs font-semibold border transition-colors ${
                 showAllBeams
                   ? 'bg-accent/20 border-accent text-accent'
                   : 'bg-surface-2 border-border-default text-content-3 hover:text-content-1'
@@ -322,7 +322,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
             <button
               onClick={() => setBeamThresholdState((prev) => (prev > 50 ? 50 : 150))}
-              className="font-mono text-[11px] font-bold text-accent hover:underline rounded bg-surface-2 px-1.5 py-0.5 border border-border-subtle"
+              className="font-mono text-xs font-bold text-accent hover:underline rounded bg-surface-2 px-1.5 py-0.5 border border-border-subtle"
               title="Ngưỡng tự động ngắt chùm tia để tiết kiệm GPU/CPU khi số lượng đèn vượt ngưỡng"
               data-testid="beam-threshold-toggle"
             >
@@ -399,7 +399,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                       <span className="text-content-1 font-medium">{activeCue.title}</span>
                     </div>
                     {lxCue && (
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-content-3 font-mono">
+                      <div className="mt-1 flex items-center gap-2 text-xs text-content-3 font-mono">
                         <span>LX: {lxCue.sceneName || 'Standard'}</span>
                         <span>·</span>
                         <span>{lxCue.intensity ?? 80}%</span>
@@ -414,7 +414,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   </div>
                 ) : (
                   <div
-                    className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3"
+                    className="rounded border border-border-default/70 bg-surface-1/80 p-2 text-xs text-content-3"
                     data-testid="no-cue-hint"
                   >
                     <span className="font-semibold text-content-2">Chưa gọi cue</span>
@@ -468,7 +468,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
               {/* Bottom Instructions Prompt (spaced above VxControlBar) */}
               <div className="pointer-events-none flex justify-center mb-14">
-                <span className="rounded bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 border border-border-default/40">
+                <span className="rounded bg-surface-1/60 px-3 py-0.5 text-xs text-content-3 border border-border-default/40">
                   Kéo để xoay, cuộn để phóng to; chọn đèn/màn để chỉnh
                 </span>
               </div>
@@ -481,7 +481,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
         {/* Footer: colour, legend, warnings and specs */}
         <div
-          className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded border border-border-default bg-surface-1 px-3 py-1.5 text-[11px]"
+          className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded border border-border-default bg-surface-1 px-3 py-1.5 text-xs"
           data-testid="stage-footer"
         >
           <div className="flex items-center gap-2">
@@ -507,7 +507,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-3 border-l border-border-default/60 pl-4 font-mono text-[10px] text-content-3">
+          <div className="flex items-center gap-3 border-l border-border-default/60 pl-4 font-mono text-xs text-content-3">
             <span data-testid="footer-fixture-counts" className="inline-flex items-center gap-2">
               <span>Cue: {activeCount}/{requestedCount} đèn</span>
               <span aria-hidden="true">|</span>
@@ -525,7 +525,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                 <span
                   key={warning.code}
                   title={warning.message}
-                  className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] ${
+                  className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs ${
                     warning.severity === 'warn'
                       ? 'border-status-standby/50 bg-status-standby/10 text-status-standby'
                       : 'border-border-default bg-surface-2 text-content-3'
@@ -539,7 +539,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
           )}
 
           {isOutOfGamut && (
-            <div className="flex w-full items-center gap-1.5 border-t border-border-default/60 pt-1.5 text-[10px] font-medium text-status-standby">
+            <div className="flex w-full items-center gap-1.5 border-t border-border-default/60 pt-1.5 text-xs font-medium text-status-standby">
               <AlertTriangle className="h-3 w-3 flex-shrink-0"  aria-hidden="true"/>
               <span>Màu vượt gam sRGB (thực tế rực rỡ hơn trên sân khấu)</span>
             </div>
@@ -551,7 +551,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
         {isConfigOpen && (
           <div className="absolute right-4 top-4 bottom-4 z-30 w-80 space-y-3 overflow-y-auto rounded border border-border-default bg-surface-1/95 p-4 text-xs shadow-lg">
             <div className="flex items-center justify-between border-b border-border-default pb-2">
-              <span className="text-[11px] font-semibold text-content-1">
+              <span className="text-xs font-semibold text-content-1">
                 Stage Rig Configuration
               </span>
               <button

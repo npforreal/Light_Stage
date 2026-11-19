@@ -3,6 +3,22 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 17.8: xác minh & đóng đợt 17 (UI vá "AI slop")
+
+### Thay đổi (vá nốt phần rà soát phát hiện)
+- Thay 187 `text-[8..11px]` → `text-xs` (12px) ở 12 file (đúng 17.2 "không dưới 12px"); đo DOM: 0 phần tử chữ < 12px.
+- `Stage3DView`/`VxControlBar`: bỏ hex navy cũ `#0d121a` → token `bg-surface-1/95`.
+- `index.css`: thêm `:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px }` (trước đó là ring mặc định 1px).
+
+### Số liệu cuối (src/**/*.tsx, không test)
+`uppercase` 2 (mã trạng thái), `tracking-w*` 0, ` · ` 0, `backdrop-blur` 7 (chỉ overlay modal/Inspector), `rounded-full` 13 (chấm trạng thái + swatch màu), `shadow-*` 19 (chỉ modal/popover/HUD nổi).
+
+### Kiểm chứng
+- `npx tsc` sạch; `vitest` 39 file / 363 pass; `bash scripts/check.sh` đủ → OK; `guard_check` 0 vi phạm mới (R8 bật).
+- `node scratch/capture-layout-evidence.mjs`: 960/1280/1920 PASS, header 100% clickable, 0 clipped. Ảnh trước/sau: `scratch/r17-before-*.png`, `scratch/r17-after-*.png`.
+- Tab thật: focus ring solid 2px; font Barlow Semi Condensed; có rule `prefers-reduced-motion`.
+- `tauri build --debug --bundles app` OK (29.96 MiB), mở app → tiến trình sống.
+
 ## 2026-11-19 — Đợt 16.7: xác minh đóng đợt 16
 
 ### Kiểm chứng

@@ -120,7 +120,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
     if (isActive || status === 'Go') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-1 ring-status-go/40">
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-1 ring-status-go/40">
           <Play className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
           <span>GO</span>
         </span>
@@ -128,7 +128,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     }
     if (isStandby || status === 'Standby') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60">
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-standby/20 text-status-standby border border-status-standby/60">
           <AlertCircle className="h-2.5 w-2.5" aria-hidden="true" />
           <span>STANDBY</span>
         </span>
@@ -136,7 +136,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     }
     if (status === 'Hold') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
           <Pause className="h-2.5 w-2.5" aria-hidden="true" />
           <span>HOLD</span>
         </span>
@@ -144,7 +144,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     }
     if (status === 'Skip') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-surface-2 text-content-3 border border-border-default line-through">
           <FastForward className="h-2.5 w-2.5" aria-hidden="true" />
           <span>SKIP</span>
         </span>
@@ -152,14 +152,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
     }
     if (status === 'Completed') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-surface-2 text-content-3 border border-border-default/60">
           <CheckCircle2 className="h-2.5 w-2.5 text-status-go/70" aria-hidden="true" />
           <span>COMPLETED</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-medium bg-surface-2 text-content-3 border border-border-subtle">
+      <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium bg-surface-2 text-content-3 border border-border-subtle">
         <span>PENDING</span>
       </span>
     );
@@ -448,7 +448,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 <span className="text-xs font-bold text-content-1">General & Timing</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-[11px] text-content-3">
+                <span className="font-mono text-xs text-content-3">
                   {formatDurationDisplay(cue.durationMs)}
                 </span>
                 {openSections.general ? (
@@ -463,7 +463,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               <div className="p-3 space-y-2.5 text-xs">
                 {/* Title */}
                 <div>
-                  <label htmlFor="inspector-cue-title" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-cue-title" className="block text-xs font-semibold text-content-3 mb-1">
                     Tiêu đề Cue (Title)
                   </label>
                   <input
@@ -479,7 +479,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Duration */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor="inspector-cue-duration-sec" className="block text-[11px] font-semibold text-content-3 mb-1">
+                    <label htmlFor="inspector-cue-duration-sec" className="block text-xs font-semibold text-content-3 mb-1">
                       Thời lượng (Giây)
                     </label>
                     <input
@@ -492,7 +492,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                     />
                   </div>
                   <div>
-                    <label htmlFor="inspector-cue-duration-formatted" className="block text-[11px] font-semibold text-content-3 mb-1">
+                    <label htmlFor="inspector-cue-duration-formatted" className="block text-xs font-semibold text-content-3 mb-1">
                       Định dạng MM:SS
                     </label>
                     <div
@@ -506,7 +506,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Scheduled Time */}
                 <div>
-                  <label htmlFor="inspector-cue-scheduled-time" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-cue-scheduled-time" className="block text-xs font-semibold text-content-3 mb-1">
                     Thời gian thực (Scheduled Wall Time)
                   </label>
                   <input
@@ -521,7 +521,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Notes & Description */}
                 <div>
-                  <label htmlFor="inspector-cue-notes" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-cue-notes" className="block text-xs font-semibold text-content-3 mb-1">
                     Mô tả / Ghi chú (Notes)
                   </label>
                   <textarea
@@ -571,7 +571,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 <span className="text-xs font-bold text-dept-lx">Lighting (LX)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-[11px] text-content-3">
+                <span className="font-mono text-xs text-content-3">
                   {cue.totalLightingFixtures} fixtures
                 </span>
                 {openSections.lx ? (
@@ -586,7 +586,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               <div className="p-3 space-y-3 text-xs">
                 {/* Scene Name */}
                 <div>
-                  <label htmlFor="inspector-lx-scene-name" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-lx-scene-name" className="block text-xs font-semibold text-content-3 mb-1">
                     Tên Cảnh Sáng (Scene Name)
                   </label>
                   <input
@@ -602,7 +602,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Master Intensity Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="inspector-lx-intensity-slider" className="text-[11px] font-semibold text-content-3">
+                    <label htmlFor="inspector-lx-intensity-slider" className="text-xs font-semibold text-content-3">
                       Master Intensity
                     </label>
                     <span className="font-mono font-bold text-dept-lx text-xs">
@@ -623,7 +623,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Kelvin Temperature Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="inspector-lx-kelvin-slider" className="text-[11px] font-semibold text-content-3">
+                    <label htmlFor="inspector-lx-kelvin-slider" className="text-xs font-semibold text-content-3">
                       Nhiệt Độ Màu (Kelvin)
                     </label>
                     <div className="flex items-center gap-1.5">
@@ -653,7 +653,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                     }}
                     className="w-full accent-dept-lx cursor-pointer"
                   />
-                  <div className="flex justify-between text-[10px] text-content-3 mt-0.5">
+                  <div className="flex justify-between text-xs text-content-3 mt-0.5">
                     <span>2700K (Warm)</span>
                     <span>4000K</span>
                     <span>6500K (Daylight)</span>
@@ -662,7 +662,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Optical Presets Palette */}
                 <div>
-                  <span className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <span className="block text-xs font-semibold text-content-3 mb-1">
                     Color Presets
                   </span>
                   <div className="grid grid-cols-5 gap-1.5">
@@ -685,7 +685,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                               colorPreset: p.hex,
                             });
                           }}
-                          className={`flex flex-col items-center gap-1 rounded p-1 text-[10px] border transition-all ${
+                          className={`flex flex-col items-center gap-1 rounded p-1 text-xs border transition-all ${
                             isSelected
                               ? 'border-dept-lx bg-dept-lx/15 font-bold text-dept-lx ring-1 ring-dept-lx'
                               : 'border-border-default/60 hover:border-dept-lx/60 bg-surface-1 text-content-2'
@@ -704,7 +704,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Gamut Warning Banner */}
                 {isGamutWarning && (
-                  <div className="flex items-center gap-1.5 rounded bg-status-standby/15 border border-status-standby/40 p-2 text-[11px] text-status-standby">
+                  <div className="flex items-center gap-1.5 rounded bg-status-standby/15 border border-status-standby/40 p-2 text-xs text-status-standby">
                     <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                     <span>Màu bão hòa cao: Có thể vượt dải hiển thị chuẩn của fixture.</span>
                   </div>
@@ -713,7 +713,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Fixture Types & Counts Management */}
                 <div className="pt-2 border-t border-border-subtle/60">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-semibold text-content-2">
+                    <span className="text-xs font-semibold text-content-2">
                       Danh sách Đèn ({cue.totalLightingFixtures} chiếc)
                     </span>
                   </div>
@@ -754,7 +754,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                         </div>
                       ))
                     ) : (
-                      <div className="text-[11px] text-content-3 italic text-center py-1">
+                      <div className="text-xs text-content-3 italic text-center py-1">
                         Chưa có danh sách fixture chi tiết.
                       </div>
                     )}
@@ -762,13 +762,13 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                   {/* Quick Add Fixture Pills */}
                   <div className="flex flex-wrap items-center gap-1">
-                    <span className="text-[10px] text-content-3 mr-1">+ Thêm:</span>
+                    <span className="text-xs text-content-3 mr-1">+ Thêm:</span>
                     {STANDARD_FIXTURE_TYPES.map((type) => (
                       <button
                         key={type}
                         type="button"
                         onClick={() => handleAddFixtureType(type)}
-                        className="rounded bg-surface-2 hover:bg-surface-3 border border-border-default px-1.5 py-0.5 text-[10px] text-content-2 hover:text-dept-lx transition-colors"
+                        className="rounded bg-surface-2 hover:bg-surface-3 border border-border-default px-1.5 py-0.5 text-xs text-content-2 hover:text-dept-lx transition-colors"
                       >
                         +{type}
                       </button>
@@ -793,7 +793,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 <span className="text-xs font-bold text-dept-vx">Visual LED (VX)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-[11px] text-content-3">
+                <span className="font-mono text-xs text-content-3">
                   {cue.totalScreens} màn hình
                 </span>
                 {openSections.vx ? (
@@ -808,7 +808,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               <div className="p-3 space-y-2.5 text-xs">
                 {/* Content / Media Title */}
                 <div>
-                  <label htmlFor="inspector-vx-content-name" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-vx-content-name" className="block text-xs font-semibold text-content-3 mb-1">
                     Tên Nội Dung / Media (Content Name)
                   </label>
                   <input
@@ -824,7 +824,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Screen Target & Screen Count */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor="inspector-vx-screen-target" className="block text-[11px] font-semibold text-content-3 mb-1">
+                    <label htmlFor="inspector-vx-screen-target" className="block text-xs font-semibold text-content-3 mb-1">
                       Mục Tiêu Màn Hình
                     </label>
                     <select
@@ -842,7 +842,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                   </div>
 
                   <div>
-                    <label htmlFor="inspector-vx-screen-count" className="block text-[11px] font-semibold text-content-3 mb-1">
+                    <label htmlFor="inspector-vx-screen-count" className="block text-xs font-semibold text-content-3 mb-1">
                       Số Lượng Màn Hình
                     </label>
                     <input
@@ -875,7 +875,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Active Layer Mapping */}
                 <div className="pt-1">
-                  <span className="block text-[11px] font-semibold text-content-3 mb-1.5 flex items-center gap-1">
+                  <span className="block text-xs font-semibold text-content-3 mb-1.5 flex items-center gap-1">
                     <Layers className="h-3 w-3 text-dept-vx" aria-hidden="true" />
                     <span>Lớp Phát (Layer Mapping)</span>
                   </span>
@@ -920,7 +920,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 <span className="text-xs font-bold text-dept-sq">Sound (SQ)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="font-mono text-[11px] text-content-3">
+                <span className="font-mono text-xs text-content-3">
                   {sq?.volume ?? 80}%
                 </span>
                 {openSections.sq ? (
@@ -935,7 +935,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               <div className="p-3 space-y-3 text-xs">
                 {/* Track Name */}
                 <div>
-                  <label htmlFor="inspector-sq-track-name" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-sq-track-name" className="block text-xs font-semibold text-content-3 mb-1">
                     Tên Bản Nhạc / Âm Thanh (Track Name)
                   </label>
                   <input
@@ -951,7 +951,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                 {/* Volume Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="inspector-sq-volume-slider" className="text-[11px] font-semibold text-content-3">
+                    <label htmlFor="inspector-sq-volume-slider" className="text-xs font-semibold text-content-3">
                       Âm Lượng (Volume)
                     </label>
                     <span className="font-mono font-bold text-dept-sq text-xs">
@@ -971,7 +971,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Fade Duration */}
                 <div>
-                  <label htmlFor="inspector-sq-fade-duration" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-sq-fade-duration" className="block text-xs font-semibold text-content-3 mb-1">
                     Thời gian Fade In / Fade Out (Giây)
                   </label>
                   <input
@@ -989,7 +989,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Microphone Channels Checklist */}
                 <div>
-                  <span className="block text-[11px] font-semibold text-content-3 mb-1.5">
+                  <span className="block text-xs font-semibold text-content-3 mb-1.5">
                     Kênh Micro Hoạt Động (Mic Channels)
                   </span>
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1010,7 +1010,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
                             onChange={() => handleToggleMicChannel(ch)}
                             className="rounded border-border-default text-dept-sq focus:ring-dept-sq"
                           />
-                          <span className="text-[10px] truncate">{ch}</span>
+                          <span className="text-xs truncate">{ch}</span>
                         </label>
                       );
                     })}
@@ -1046,7 +1046,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
               <div className="p-3 space-y-2.5 text-xs">
                 {/* Action / Blocking Description */}
                 <div>
-                  <label htmlFor="inspector-st-action-desc" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-st-action-desc" className="block text-xs font-semibold text-content-3 mb-1">
                     Hoạt cảnh / Di chuyển Sân Khấu (Blocking)
                   </label>
                   <textarea
@@ -1061,7 +1061,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Cast Members */}
                 <div>
-                  <label htmlFor="inspector-st-cast-members" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-st-cast-members" className="block text-xs font-semibold text-content-3 mb-1">
                     Diễn viên / Nhân sự (Cast Members)
                   </label>
                   <input
@@ -1082,7 +1082,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Props */}
                 <div>
-                  <label htmlFor="inspector-st-props" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-st-props" className="block text-xs font-semibold text-content-3 mb-1">
                     Đạo Cụ (Props)
                   </label>
                   <input
@@ -1103,7 +1103,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
 
                 {/* Director Notes */}
                 <div>
-                  <label htmlFor="inspector-st-director-notes" className="block text-[11px] font-semibold text-content-3 mb-1">
+                  <label htmlFor="inspector-st-director-notes" className="block text-xs font-semibold text-content-3 mb-1">
                     Chỉ Đạo Sân Khấu (Director Notes)
                   </label>
                   <textarea

@@ -147,14 +147,14 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
         </div>
 
         {/* Scope footnote */}
-        <p className="mb-3 text-[10px] leading-relaxed text-content-3">
+        <p className="mb-3 text-xs leading-relaxed text-content-3">
           Light Stage là công cụ rundown, gọi cue và preview. Chưa xuất DMX / sACN / Art-Net / OSC / MIDI và
           chưa đọc trực tiếp file .xlsx (hãy xuất CSV/TSV hoặc dán bảng từ Excel/Sheets).
         </p>
 
         {/* Footer Controls */}
         <div className="flex items-center justify-between pt-2 border-t border-border-default">
-          <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] text-content-3">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-content-3">
             <input
               type="checkbox"
               checked={dontShowAgain}

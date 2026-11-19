@@ -24,20 +24,20 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
       data-testid="vx-floating-dock"
       className={
         className ??
-        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-[#0d121a]/92 border border-white/10 px-4 py-2 shadow-lg select-none text-xs'
+        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-surface-1/95 border border-white/10 px-4 py-2 shadow-lg select-none text-xs'
       }
     >
       <div data-testid="vx-control-bar" className="contents">
         {/* Output status chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-          <span className="flex items-center gap-1 text-[11px] font-semibold text-content-3 mr-1">
+          <span className="flex items-center gap-1 text-xs font-semibold text-content-3 mr-1">
             <Monitor className="h-3.5 w-3.5 text-dept-vx" aria-hidden="true" />
             <span>Outputs:</span>
           </span>
           {outputs.map((out) => (
             <div
               key={out.id}
-              className={`flex items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-mono transition-colors ${
+              className={`flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-mono transition-colors ${
                 out.enabled
                   ? 'border-border-subtle bg-surface-2 text-content-1'
                   : 'border-transparent bg-surface-0/60 text-content-3 line-through opacity-60'
@@ -46,7 +46,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
             >
               <span className={`h-1.5 w-1.5 rounded-full ${getOutputStatusDotClass(out.status)}`} />
               <span className="truncate max-w-[90px]">{out.name}</span>
-              <span className="text-[9px] text-content-3">[{out.aspectRatio}]</span>
+              <span className="text-xs text-content-3">[{out.aspectRatio}]</span>
             </div>
           ))}
         </div>
@@ -58,7 +58,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
           <button
             type="button"
             onClick={() => toggleLayer('background')}
-            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors flex items-center gap-1 ${
               activeLayers.background
                 ? 'bg-dept-vx/20 text-dept-vx font-bold'
                 : 'text-content-3 hover:text-content-2 line-through'
@@ -71,7 +71,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
           <button
             type="button"
             onClick={() => toggleLayer('slide')}
-            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors flex items-center gap-1 ${
               activeLayers.slide
                 ? 'bg-dept-vx/20 text-dept-vx font-bold'
                 : 'text-content-3 hover:text-content-2 line-through'
@@ -84,7 +84,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
           <button
             type="button"
             onClick={() => toggleLayer('overlay')}
-            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors flex items-center gap-1 ${
+            className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors flex items-center gap-1 ${
               activeLayers.overlay
                 ? 'bg-dept-vx/20 text-dept-vx font-bold'
                 : 'text-content-3 hover:text-content-2 line-through'

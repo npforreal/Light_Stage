@@ -37,9 +37,9 @@ const RIG_POSITIONS: RigPosition[] = [
 const PRESETS: StagePreset[] = ['EndStage', 'Festival', 'Thrust'];
 
 const inputClass =
-  'w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-1 focus:border-accent focus:outline-none';
+  'w-full rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-1 focus:border-accent focus:outline-none';
 
-const labelClass = 'text-[10px] font-semibold text-content-3';
+const labelClass = 'text-xs font-semibold text-content-3';
 
 const NumberField: React.FC<{
   label: string;
@@ -111,21 +111,21 @@ export const StageRigEditor: React.FC = () => {
       {/* Grouped Quick-Add Menu (FreeShow Feature) */}
       <section className="rounded border border-border-default bg-surface-2/80 p-2 text-xs space-y-1.5">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-[11px] text-accent flex items-center gap-1">
+          <span className="font-semibold text-xs text-accent flex items-center gap-1">
             <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Thêm nhanh vào Rig (Grouped Add)
           </span>
         </div>
         <div className="grid grid-cols-3 gap-1">
           {/* Group 1: Fixtures */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-semibold text-dept-lx">Đèn (Fixtures)</span>
+            <span className="text-xs font-semibold text-dept-lx">Đèn (Fixtures)</span>
             <div className="flex flex-wrap gap-1">
               {(['Beam', 'Spot', 'Wash'] as FixtureType[]).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => addFixture({ type: t, beamAngle: DEFAULT_BEAM_ANGLES[t], loadWatts: DEFAULT_FIXTURE_WATTS[t] })}
-                  className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-dept-lx/20 hover:text-dept-lx"
+                  className="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-semibold text-content-1 hover:bg-dept-lx/20 hover:text-dept-lx"
                   title={`Thêm 1 đèn ${t} vào rig`}
                 >
                   +{t}
@@ -136,12 +136,12 @@ export const StageRigEditor: React.FC = () => {
 
           {/* Group 2: Screens */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-semibold text-dept-vx">Màn LED</span>
+            <span className="text-xs font-semibold text-dept-vx">Màn LED</span>
             <div className="flex flex-wrap gap-1">
               <button
                 type="button"
                 onClick={() => addScreen()}
-                className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-dept-vx/20 hover:text-dept-vx"
+                className="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-semibold text-content-1 hover:bg-dept-vx/20 hover:text-dept-vx"
                 title="Thêm màn hình LED vào rig"
               >
                 +Screen
@@ -151,12 +151,12 @@ export const StageRigEditor: React.FC = () => {
 
           {/* Group 3: Truss */}
           <div className="flex flex-col gap-1 rounded bg-surface-0/60 p-1.5 border border-border-subtle">
-            <span className="text-[9px] font-semibold text-content-3">Truss</span>
+            <span className="text-xs font-semibold text-content-3">Truss</span>
             <div className="flex flex-wrap gap-1">
               <button
                 type="button"
                 onClick={() => addTruss()}
-                className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold text-content-1 hover:bg-surface-3"
+                className="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-semibold text-content-1 hover:bg-surface-3"
                 title="Thêm giàn truss vào rig"
               >
                 +Truss
@@ -176,7 +176,7 @@ export const StageRigEditor: React.FC = () => {
           <select
             value={config.preset}
             onChange={(e) => applyPreset(e.target.value as StagePreset)}
-            className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[11px] text-content-2"
+            className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-2"
             title="Áp preset cấu trúc sân khấu"
           >
             {PRESETS.map((preset) => (
@@ -206,7 +206,7 @@ export const StageRigEditor: React.FC = () => {
 
       {/* Inventory cross-check */}
       <section
-        className="rounded border border-border-default bg-surface-2 p-2.5 text-[11px]"
+        className="rounded border border-border-default bg-surface-2 p-2.5 text-xs"
         data-testid="rig-inventory"
       >
         <div className="flex items-center justify-between font-mono">
@@ -219,7 +219,7 @@ export const StageRigEditor: React.FC = () => {
           <span className="text-content-3">{rigLoadKw.toFixed(1)} kW</span>
         </div>
         {cueCount > rigCount && (
-          <div className="mt-1.5 flex items-start gap-1.5 rounded border border-status-standby/50 bg-status-standby/10 px-1.5 py-1 text-[10px] text-status-standby">
+          <div className="mt-1.5 flex items-start gap-1.5 rounded border border-status-standby/50 bg-status-standby/10 px-1.5 py-1 text-xs text-status-standby">
             <AlertTriangle className="mt-0.5 h-3 w-3 flex-shrink-0" aria-hidden="true" />
             <span>
               Cue {referenceCue?.cueNumber} cần {cueCount} đèn nhưng rig chỉ khai báo {rigCount}.
@@ -239,14 +239,14 @@ export const StageRigEditor: React.FC = () => {
           <button
             type="button"
             onClick={() => addScreen()}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-vx hover:bg-surface-2"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold text-dept-vx hover:bg-surface-2"
             title="Thêm màn LED"
           >
             <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {config.screens.length === 0 && (
-          <p className="text-[10px] italic text-content-3">Chưa có màn LED.</p>
+          <p className="text-xs italic text-content-3">Chưa có màn LED.</p>
         )}
         {config.screens.map((screen) => {
           const isSelected = selectedScreenId === screen.id;
@@ -327,14 +327,14 @@ export const StageRigEditor: React.FC = () => {
           <button
             type="button"
             onClick={() => addTruss()}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-lx hover:bg-surface-2"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold text-dept-lx hover:bg-surface-2"
             title="Thêm truss"
           >
             <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {config.trusses.length === 0 && (
-          <p className="text-[10px] italic text-content-3">Chưa có truss.</p>
+          <p className="text-xs italic text-content-3">Chưa có truss.</p>
         )}
         {config.trusses.map((truss) => (
           <div key={truss.id} className="space-y-1 rounded border border-border-default bg-surface-0/60 p-1.5">
@@ -358,7 +358,7 @@ export const StageRigEditor: React.FC = () => {
                 onChange={(e) =>
                   updateTruss(truss.id, { position: e.target.value as RigPosition })
                 }
-                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[10px] text-content-2"
+                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-2"
                 title="Vị trí rig"
               >
                 {RIG_POSITIONS.map((position) => (
@@ -420,14 +420,14 @@ export const StageRigEditor: React.FC = () => {
           <button
             type="button"
             onClick={() => addFixture()}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-status-go hover:bg-surface-2"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold text-status-go hover:bg-surface-2"
             title="Thêm đèn vào rig"
           >
             <Plus className="h-3 w-3" aria-hidden="true" /> Thêm
           </button>
         </div>
         {fixtures.length === 0 && (
-          <p className="text-[10px] italic text-content-3">
+          <p className="text-xs italic text-content-3">
             Rig chưa khai báo đèn — Stage 2D sẽ dựng slot ảo theo cue.
           </p>
         )}
@@ -444,7 +444,7 @@ export const StageRigEditor: React.FC = () => {
               }`}
             >
             <div className="flex items-center gap-1">
-              <span className="w-6 flex-shrink-0 font-mono text-[10px] font-bold text-content-3">
+              <span className="w-6 flex-shrink-0 font-mono text-xs font-bold text-content-3">
                 #{fixture.slot}
               </span>
               <select
@@ -457,7 +457,7 @@ export const StageRigEditor: React.FC = () => {
                     loadWatts: DEFAULT_FIXTURE_WATTS[type],
                   });
                 }}
-                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[10px] text-content-2"
+                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-2"
                 title="Loại đèn"
               >
                 {FIXTURE_TYPES.map((type) => (
@@ -471,7 +471,7 @@ export const StageRigEditor: React.FC = () => {
                 onChange={(e) =>
                   updateFixture(fixture.id, { position: e.target.value as RigPosition })
                 }
-                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-[10px] text-content-2"
+                className="rounded border border-border-default bg-surface-0 px-1 py-0.5 text-xs text-content-2"
                 title="Vị trí treo"
               >
                 {RIG_POSITIONS.map((position) => (

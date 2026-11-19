@@ -170,10 +170,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 <div className="border border-border-default hover:border-accent rounded p-4 bg-surface-0 relative flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-content-3">
+                      <span className="text-xs font-bold text-content-3">
                         Tệp Dữ Liệu (File)
                       </span>
-                      <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-mono text-accent">
+                      <span className="rounded bg-surface-2 px-1.5 py-0.5 text-xs font-mono text-accent">
                         .CSV / .TSV / .TXT
                       </span>
                     </div>
@@ -181,7 +181,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                       <Upload className="h-6 w-6 text-accent flex-shrink-0" aria-hidden="true" />
                       <div>
                         <p className="text-xs font-semibold text-content-1">Kéo thả tệp hoặc bấm chọn</p>
-                        <p className="text-[10px] text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab. Chưa đọc trực tiếp .xlsx — hãy lưu sang CSV/TSV.</p>
+                        <p className="text-xs text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab. Chưa đọc trực tiếp .xlsx — hãy lưu sang CSV/TSV.</p>
                       </div>
                     </div>
                   </div>
@@ -196,14 +196,14 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 {/* Card 2: Clipboard (FreeShow Feature) */}
                 <div className="border border-border-default hover:border-accent rounded p-4 bg-surface-0 flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-content-3">
+                    <span className="text-xs font-bold text-content-3">
                       Bảng Tạm (Clipboard)
                     </span>
-                    <span className="rounded bg-status-go/20 text-status-go px-1.5 py-0.5 text-[9px] font-mono">
+                    <span className="rounded bg-status-go/20 text-status-go px-1.5 py-0.5 text-xs font-mono">
                       Excel / Google Sheets
                     </span>
                   </div>
-                  <p className="text-[10px] text-content-3 mb-2">
+                  <p className="text-xs text-content-3 mb-2">
                     Copy các cột bảng từ Excel hoặc Sheets rồi bấm nút bên dưới để nạp tức thì:
                   </p>
                   <button
@@ -220,7 +220,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
               {/* Sample Actions Bar */}
               <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded bg-surface-0 border border-border-default text-xs">
-                <span className="text-content-3 font-medium text-[11px]">Bạn chưa có sẵn file kịch bản?</span>
+                <span className="text-content-3 font-medium text-xs">Bạn chưa có sẵn file kịch bản?</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -245,7 +245,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
               {/* Text Area Manual Paste */}
               <div className="relative">
-                <div className="text-[11px] text-content-3 font-semibold mb-1">
+                <div className="text-xs text-content-3 font-semibold mb-1">
                   Hoặc dán trực tiếp chuỗi CSV / TSV vào đây:
                 </div>
                 <textarea
@@ -404,7 +404,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                   </div>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {previewResult.acts.flatMap((a) => a.cues).slice(0, 5).map((c, i) => (
-                      <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-border-subtle/40">
+                      <div key={i} className="flex justify-between items-center text-xs py-1 border-b border-border-subtle/40">
                         <span className="font-mono text-accent">{c.cueNumber}</span>
                         <span className="font-medium text-content-1 truncate max-w-[200px]">{c.title}</span>
                         <span className="text-dept-lx">{c.totalLightingFixtures} fixtures</span>
@@ -412,7 +412,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                       </div>
                     ))}
                     {previewResult.acts.flatMap((a) => a.cues).length > 5 && (
-                      <div className="text-[10px] text-content-3 text-center pt-1">
+                      <div className="text-xs text-content-3 text-center pt-1">
                         ... và {previewResult.acts.flatMap((a) => a.cues).length - 5} cues khác
                       </div>
                     )}

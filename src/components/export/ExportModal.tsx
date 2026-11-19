@@ -154,7 +154,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Print / Save PDF Cue Sheet
                 </div>
-                <div className="text-[11px] text-content-3">
+                <div className="text-xs text-content-3">
                   A4 Landscape formatted for stage crew with department filters
                 </div>
               </div>
@@ -175,7 +175,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Print / Save PDF Light Plot
                 </div>
-                <div className="text-[11px] text-content-3">
+                <div className="text-xs text-content-3">
                   Top-down rig plan, numbered symbols and fixture schedule
                 </div>
               </div>
@@ -196,7 +196,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Download Cue Sheet (CSV)
                 </div>
-                <div className="text-[11px] text-content-3">
+                <div className="text-xs text-content-3">
                   Full rundown columns, UTF-8 BOM so Vietnamese text stays intact
                 </div>
               </div>
@@ -217,7 +217,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Download Hardware Inventory (CSV)
                 </div>
-                <div className="text-[11px] text-content-3">
+                <div className="text-xs text-content-3">
                   Equipment peak concurrent usage & total show fixture breakdown
                 </div>
               </div>
@@ -238,7 +238,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
                   Save Project (.lightstage)
                 </div>
-                <div className="text-[11px] text-content-3">
+                <div className="text-xs text-content-3">
                   Native JSON schema backup with full show data & settings
                 </div>
               </div>

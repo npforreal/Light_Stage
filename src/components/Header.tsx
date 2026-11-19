@@ -269,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="font-bold text-xs sm:text-sm text-content-1 whitespace-nowrap">
               Light Stage
             </span>
-            <span className="hidden xl:inline-block rounded bg-surface-2 px-1.5 py-0.2 text-[9px] text-content-3 font-mono">
+            <span className="hidden xl:inline-block rounded bg-surface-2 px-1.5 py-0.2 text-xs text-content-3 font-mono">
               v0.1.0
             </span>
           </div>
@@ -328,7 +328,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {autosaveError ? (
               <div
-                className="flex items-center gap-1 text-[10px] text-status-danger font-mono font-medium whitespace-nowrap"
+                className="flex items-center gap-1 text-xs text-status-danger font-mono font-medium whitespace-nowrap"
                 title={`${autosaveError} Nhấn Ctrl/Cmd+S hoặc lưu file .lightstage để giữ dự án.`}
               >
                 <AlertTriangle className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
@@ -337,7 +337,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             ) : isDirty ? (
               <div
-                className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium whitespace-nowrap"
+                className="flex items-center gap-1 text-xs text-status-standby font-mono font-medium whitespace-nowrap"
                 title="Có thay đổi chưa lưu"
               >
                 <span className="h-2 w-2 rounded-full bg-status-standby animate-pulse flex-shrink-0" />
@@ -345,7 +345,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             ) : (
               <div
-                className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium whitespace-nowrap"
+                className="flex items-center gap-1 text-xs text-content-3 font-mono font-medium whitespace-nowrap"
                 title="Đã lưu"
               >
                 <span className="h-2 w-2 rounded-full bg-status-go flex-shrink-0" />
@@ -355,7 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Live Hardware Badges */}
-          <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] flex-shrink-0">
+          <div className="hidden xl:flex items-center gap-2 font-mono text-xs flex-shrink-0">
             <div
               className="flex items-center gap-1 text-dept-lx"
               title={
@@ -390,7 +390,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="hidden 2xl:flex items-center gap-1 rounded bg-surface-2 border border-border-default px-2 py-1 text-xs text-status-standby max-w-[130px] truncate flex-shrink-0"
             title={standbyCue ? `Standby: ${standbyCue.cueNumber} ${standbyCue.title}` : 'No standby cue'}
           >
-            <span className="text-[10px] font-bold text-content-3">STBY:</span>
+            <span className="text-xs font-bold text-content-3">STBY:</span>
             <span className="font-semibold truncate">
               {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
             </span>
@@ -408,11 +408,11 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Play className="h-4 w-4 fill-current flex-shrink-0" aria-hidden="true" />
             <span>GO</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-surface-0/20 text-surface-0 font-mono text-[10px] font-bold border border-surface-0/30 select-none">
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-0/20 text-surface-0 font-mono text-xs font-bold border border-surface-0/30 select-none">
               Space
             </kbd>
             {(isRunning || activeCue?.status === 'Go') && (
-              <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-status-danger/30 text-surface-0 text-[9px] font-black uppercase animate-pulse border border-status-danger/60">
+              <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-status-danger/30 text-surface-0 text-xs font-black uppercase animate-pulse border border-status-danger/60">
                 <span className="h-1.5 w-1.5 rounded-full bg-status-danger" />
                 LIVE
               </span>
@@ -431,7 +431,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <FastForward className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden lg:inline">STBY</span>
-            <kbd className="text-[9px] font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+            <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
               B
             </kbd>
           </button>
@@ -451,7 +451,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Pause className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden lg:inline">Hold</span>
-            <kbd className="text-[9px] font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+            <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
               Esc
             </kbd>
           </button>
@@ -463,7 +463,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-1.5 bg-surface-2 border border-border-default rounded px-2 py-1 font-mono flex-shrink-0 tabular-nums whitespace-nowrap">
             {/* Wall Clock - hidden on viewports < 1536px to prevent 1280px overflow */}
             <div className="hidden 2xl:flex flex-col items-center leading-tight">
-              <span className="text-[9px] font-medium text-content-3 whitespace-nowrap">
+              <span className="text-xs font-medium text-content-3 whitespace-nowrap">
                 Wall
               </span>
               <span className="text-xs font-semibold text-content-2 tabular-nums">
@@ -474,7 +474,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Master Show Time */}
             <div className="flex flex-col items-center leading-tight">
-              <span className="text-[9px] font-medium text-content-3 whitespace-nowrap">
+              <span className="text-xs font-medium text-content-3 whitespace-nowrap">
                 Show Time
               </span>
               <span className="text-xs sm:text-sm font-bold text-content-1 tabular-nums">
@@ -486,7 +486,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Cue Remainder */}
             <div className="flex flex-col items-center leading-tight">
-              <span className="text-[9px] font-medium text-content-3 whitespace-nowrap">
+              <span className="text-xs font-medium text-content-3 whitespace-nowrap">
                 Cue Remainder
               </span>
               <span
@@ -502,7 +502,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Delta */}
             <div className="hidden xl:flex flex-col items-center leading-tight">
-              <span className="text-[9px] font-medium text-content-3 whitespace-nowrap">
+              <span className="text-xs font-medium text-content-3 whitespace-nowrap">
                 Delta
               </span>
               <span
@@ -728,10 +728,10 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Center: Contextual Role Filters & Add Cue */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center gap-1">
-            <span className="hidden md:inline text-[10px] font-semibold text-content-3">
+            <span className="hidden md:inline text-xs font-semibold text-content-3">
               Filter:
             </span>
-            <div className="inline-flex rounded bg-surface-2 border border-border-subtle p-0.5 text-[11px]">
+            <div className="inline-flex rounded bg-surface-2 border border-border-subtle p-0.5 text-xs">
               {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as RoleFilter[]).map((role) => (
                 <button
                   key={role}
@@ -752,7 +752,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={handleAddCue}
-            className="inline-flex items-center gap-1 rounded bg-surface-2 hover:bg-surface-3 border border-border-subtle px-2 py-0.5 text-[11px] font-medium text-content-1 transition-colors cursor-pointer flex-shrink-0"
+            className="inline-flex items-center gap-1 rounded bg-surface-2 hover:bg-surface-3 border border-border-subtle px-2 py-0.5 text-xs font-medium text-content-1 transition-colors cursor-pointer flex-shrink-0"
             title="Thêm Cue mới"
           >
             <Plus className="h-3 w-3 text-accent" aria-hidden="true" />
@@ -762,7 +762,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Summary Stats & Inspector Drawer Toggle Button */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <span className="text-content-3 font-mono text-[11px] whitespace-nowrap hidden sm:inline-flex items-center gap-2">
+          <span className="text-content-3 font-mono text-xs whitespace-nowrap hidden sm:inline-flex items-center gap-2">
             <span>{totalCues} Cues</span>
             <span aria-hidden="true">|</span>
             <span>{formatDuration(totalRuntimeMs)}</span>
@@ -781,7 +781,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <PanelRight className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden md:inline">Inspector</span>
-            <kbd className="px-1 py-0.2 rounded bg-surface-3 text-[10px] font-mono text-content-2 border border-border-subtle">
+            <kbd className="px-1 py-0.2 rounded bg-surface-3 text-xs font-mono text-content-2 border border-border-subtle">
               I
             </kbd>
           </button>

@@ -454,7 +454,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={handleSaveProjectFile}
-              className="rounded bg-status-danger text-surface-0 px-2.5 py-0.5 text-[11px] font-bold hover:opacity-90"
+              className="rounded bg-status-danger text-surface-0 px-2.5 py-0.5 text-xs font-bold hover:opacity-90"
             >
               Lưu file .lightstage
             </button>
@@ -462,7 +462,7 @@ export const App: React.FC = () => {
               type="button"
               onClick={() => setIsAutosaveBannerOpen(false)}
               aria-label="Đóng cảnh báo lỗi lưu"
-              className="rounded px-2 py-0.5 text-[11px] font-semibold text-content-2 hover:bg-surface-2"
+              className="rounded px-2 py-0.5 text-xs font-semibold text-content-2 hover:bg-surface-2"
             >
               Đóng
             </button>
@@ -479,7 +479,7 @@ export const App: React.FC = () => {
           </div>
           <button
             onClick={() => setOperatorLocked(false)}
-            className="rounded bg-status-standby text-surface-0 px-2.5 py-0.5 text-[11px] font-bold hover:opacity-90 active:scale-[0.98] transition-all"
+            className="rounded bg-status-standby text-surface-0 px-2.5 py-0.5 text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all"
           >
             Mở khóa
           </button>
