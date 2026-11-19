@@ -762,8 +762,10 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Summary Stats & Inspector Drawer Toggle Button */}
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <span className="text-content-3 font-mono text-[11px] whitespace-nowrap hidden sm:inline">
-            {totalCues} Cues · {formatDuration(totalRuntimeMs)}
+          <span className="text-content-3 font-mono text-[11px] whitespace-nowrap hidden sm:inline-flex items-center gap-2">
+            <span>{totalCues} Cues</span>
+            <span aria-hidden="true">|</span>
+            <span>{formatDuration(totalRuntimeMs)}</span>
           </span>
 
           <button

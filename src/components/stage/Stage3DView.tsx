@@ -439,10 +439,18 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   }
                   data-testid="cue-count-badge"
                 >
-                  <span>
-                    {activeCue
-                      ? `Cue ${activeCue.cueNumber}: Nhập ${requestedCount} · Hiển thị ${activeCount}`
-                      : 'Cue: chưa gọi · 0 đèn'}
+                  <span className="inline-flex items-center gap-2">
+                    {activeCue ? (
+                      <>
+                        <span>Cue {activeCue.cueNumber}</span>
+                        <span aria-hidden="true">|</span>
+                        <span>Nhập {requestedCount}</span>
+                        <span aria-hidden="true">|</span>
+                        <span>Hiển thị {activeCount}</span>
+                      </>
+                    ) : (
+                      <span>Cue: chưa gọi — 0 đèn</span>
+                    )}
                   </span>
                   {isCountMismatch && <AlertTriangle className="h-3.5 w-3.5 text-status-danger"  aria-hidden="true"/>}
                 </div>
@@ -461,7 +469,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               {/* Bottom Instructions Prompt (spaced above VxControlBar) */}
               <div className="pointer-events-none flex justify-center mb-14">
                 <span className="rounded bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 backdrop-blur border border-border-default/40">
-                  Kéo chuột xoay · Cuộn phóng to · Click vào đèn hoặc màn hình để chọn · Chọn đèn để xem chùm sáng
+                  Kéo để xoay, cuộn để phóng to; chọn đèn/màn để chỉnh
                 </span>
               </div>
             </div>
@@ -500,8 +508,10 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
           )}
 
           <div className="flex items-center gap-3 border-l border-border-default/60 pl-4 font-mono text-[10px] text-content-3">
-            <span data-testid="footer-fixture-counts">
-              Cue: {activeCount}/{requestedCount} đèn · Rig: {rigCount}
+            <span data-testid="footer-fixture-counts" className="inline-flex items-center gap-2">
+              <span>Cue: {activeCount}/{requestedCount} đèn</span>
+              <span aria-hidden="true">|</span>
+              <span>Rig: {rigCount}</span>
             </span>
             <span>Dimmer: {dimmerCurve}</span>
             <span>Haze: {haze ? 'Enabled' : 'Off'}</span>

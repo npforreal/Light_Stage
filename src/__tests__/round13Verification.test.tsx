@@ -130,13 +130,14 @@ describe('Đợt 13: Stage 3D after review', () => {
       render(<Stage3DView rendererFactory={mockControls.rendererFactory} />);
 
       expect(screen.getByTestId('cue-count-badge').textContent).toContain(
-        'Cue: chưa gọi · 0 đèn'
+        'chưa gọi — 0 đèn'
       );
       expect(screen.getByTestId('rig-count-badge').textContent).toContain('Rig mặc định 44');
       expect(screen.getByTestId('no-cue-hint').textContent).toContain('rig mặc định 44');
       expect(screen.getByTestId('footer-fixture-counts').textContent).toContain(
-        'Cue: 0/0 đèn · Rig: 44'
+        'Cue: 0/0 đèn'
       );
+      expect(screen.getByTestId('footer-fixture-counts').textContent).toContain('Rig: 44');
 
       render(
         <Header
@@ -174,9 +175,9 @@ describe('Đợt 13: Stage 3D after review', () => {
       expect(useShowStore.getState().getActiveCue()?.id).toBe(cueId);
 
       render(<Stage3DView rendererFactory={mockControls.rendererFactory} />);
-      expect(screen.getByTestId('cue-count-badge').textContent).toContain(
-        'Nhập 30 · Hiển thị 30'
-      );
+      const cueBadge = screen.getByTestId('cue-count-badge').textContent ?? '';
+      expect(cueBadge).toContain('Nhập 30');
+      expect(cueBadge).toContain('Hiển thị 30');
       expect(screen.getByTestId('footer-fixture-counts').textContent).toContain(
         'Cue: 30/30 đèn'
       );
@@ -198,12 +199,13 @@ describe('Đợt 13: Stage 3D after review', () => {
 
       render(<Stage3DView rendererFactory={mockControls.rendererFactory} />);
 
-      expect(screen.getByTestId('cue-count-badge').textContent).toContain(
-        'Cue 13.0: Nhập 30 · Hiển thị 30'
-      );
-      expect(screen.getByTestId('footer-fixture-counts').textContent).toContain(
-        'Cue: 30/30 đèn · Rig: 44'
-      );
+      const badge = screen.getByTestId('cue-count-badge').textContent ?? '';
+      expect(badge).toContain('Cue 13.0');
+      expect(badge).toContain('Nhập 30');
+      expect(badge).toContain('Hiển thị 30');
+      const footer = screen.getByTestId('footer-fixture-counts').textContent ?? '';
+      expect(footer).toContain('Cue: 30/30 đèn');
+      expect(footer).toContain('Rig: 44');
 
       render(
         <Header

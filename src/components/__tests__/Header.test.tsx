@@ -289,7 +289,7 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     expect(onAddCue).toHaveBeenCalled();
 
     // Cue summary count
-    expect(screen.getByText(/Cues ·/)).toBeInTheDocument();
+    expect(screen.getByText(/Cues/)).toBeInTheDocument();
 
     // Inspector Drawer toggle button with "I" chip
     const inspectorBtn = screen.getByTestId('header-inspector-toggle');

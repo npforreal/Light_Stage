@@ -42,7 +42,7 @@ export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
                   ? 'border-border-subtle bg-surface-2 text-content-1'
                   : 'border-transparent bg-surface-0/60 text-content-3 line-through opacity-60'
               }`}
-              title={`${out.name} (${out.aspectRatio} · ${out.resolution.width}x${out.resolution.height}) - ${out.status.toUpperCase()}`}
+              title={`${out.name} (${out.aspectRatio}, ${out.resolution.width}x${out.resolution.height}) — ${out.status}`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${getOutputStatusDotClass(out.status)}`} />
               <span className="truncate max-w-[90px]">{out.name}</span>
