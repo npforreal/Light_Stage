@@ -460,7 +460,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
               {/* Bottom Instructions Prompt (spaced above VxControlBar) */}
               <div className="pointer-events-none flex justify-center mb-14">
-                <span className="rounded-full bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 backdrop-blur border border-border-default/40">
+                <span className="rounded bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 backdrop-blur border border-border-default/40">
                   Kéo chuột xoay · Cuộn phóng to · Click vào đèn hoặc màn hình để chọn · Chọn đèn để xem chùm sáng
                 </span>
               </div>

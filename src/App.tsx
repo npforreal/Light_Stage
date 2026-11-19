@@ -521,7 +521,7 @@ export const App: React.FC = () => {
           aria-labelledby="import-error-title"
           data-testid="import-error-modal"
         >
-          <div className="w-full max-w-md rounded-xl border border-status-danger/40 bg-surface-1 p-5 shadow-2xl">
+          <div className="w-full max-w-md rounded border border-status-danger/40 bg-surface-1 p-5 shadow-lg">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-status-danger" aria-hidden="true" />
               <div className="min-w-0 flex-1">
@@ -541,14 +541,14 @@ export const App: React.FC = () => {
                   setImportError(null);
                   fileInputRef.current?.click();
                 }}
-                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-surface-0 hover:opacity-90"
+                className="rounded bg-accent px-3 py-1.5 text-xs font-bold text-surface-0 hover:opacity-90"
               >
                 Chọn file khác
               </button>
               <button
                 type="button"
                 onClick={() => setImportError(null)}
-                className="rounded-lg bg-surface-2 px-3 py-1.5 text-xs font-bold text-content-2 hover:bg-surface-3"
+                className="rounded bg-surface-2 px-3 py-1.5 text-xs font-bold text-content-2 hover:bg-surface-3"
               >
                 Đóng
               </button>

@@ -85,9 +85,6 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
     >
       <div className="w-full max-w-lg rounded border border-border-default bg-surface-1 p-6 shadow-lg text-content-1 flex flex-col relative overflow-hidden">
-        {/* Accent background glow */}
-        <div className="absolute -top-16 -right-16 w-44 h-44 rounded bg-accent/10 blur-3xl pointer-events-none" />
-
         {/* Close Button */}
         <button
           onClick={handleFinish}
