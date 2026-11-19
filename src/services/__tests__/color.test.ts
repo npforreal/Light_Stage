@@ -16,6 +16,7 @@ import {
   contrastWcag,
   contrastApca,
 } from '../color';
+import { TokenValues, readToken } from './tokenValues.gen';
 
 describe('Color Science Engine (color.ts)', () => {
   describe('sRGB <-> Linear Transfer', () => {
@@ -170,36 +171,28 @@ describe('Color Science Engine (color.ts)', () => {
     });
 
     it('verifies generated design system tokens meet WCAG 2.2 and APCA standards', () => {
-      // Surface tiers
-      const surface0 = '#06090f';
-      const surface1 = '#0d121a';
-      const surface2 = '#171d26';
-
-      // Text tokens
-      const text1 = '#ebeff5'; // Primary
-      const text2 = '#b2b8c1'; // Secondary
-      const text3 = '#7a818b'; // Muted
+      const { surface_0, surface_1, surface_2, text_1, text_2, text_3 } = TokenValues;
 
       // Primary text must achieve WCAG >= 10:1 and APCA Lc >= 75
-      const cText1On0 = contrastWcag(text1, surface0);
-      const apca1On0 = contrastApca(text1, surface0);
+      const cText1On0 = contrastWcag(text_1, surface_0);
+      const apca1On0 = contrastApca(text_1, surface_0);
       expect(cText1On0).toBeGreaterThanOrEqual(10.0);
       expect(apca1On0).toBeGreaterThanOrEqual(75);
 
-      const cText1On1 = contrastWcag(text1, surface1);
+      const cText1On1 = contrastWcag(text_1, surface_1);
       expect(cText1On1).toBeGreaterThanOrEqual(9.0);
 
       // Secondary text must achieve WCAG >= 4.5:1 (normal text threshold)
-      const cText2On0 = contrastWcag(text2, surface0);
-      const cText2On1 = contrastWcag(text2, surface1);
-      const cText2On2 = contrastWcag(text2, surface2);
+      const cText2On0 = contrastWcag(text_2, surface_0);
+      const cText2On1 = contrastWcag(text_2, surface_1);
+      const cText2On2 = contrastWcag(text_2, surface_2);
       expect(cText2On0).toBeGreaterThanOrEqual(4.5);
       expect(cText2On1).toBeGreaterThanOrEqual(4.5);
       expect(cText2On2).toBeGreaterThanOrEqual(4.5);
 
       // Muted text must achieve WCAG >= 3.0:1 (UI / large text threshold)
-      const cText3On0 = contrastWcag(text3, surface0);
-      const cText3On1 = contrastWcag(text3, surface1);
+      const cText3On0 = contrastWcag(text_3, surface_0);
+      const cText3On1 = contrastWcag(text_3, surface_1);
       expect(cText3On0).toBeGreaterThanOrEqual(3.0);
       expect(cText3On1).toBeGreaterThanOrEqual(3.0);
     });
@@ -222,9 +215,9 @@ describe('Color Science Engine (color.ts)', () => {
         return { r: Math.round(lR), g: Math.round(lG), b: Math.round(lB) };
       };
 
-      const goColor = '#10b981'; // Emerald
-      const standbyColor = '#f59e0b'; // Amber
-      const dangerColor = '#ef4444'; // Rose / Red
+      const goColor = readToken('status_go'); // Emerald
+      const standbyColor = readToken('status_standby'); // Amber-orange
+      const dangerColor = readToken('status_danger'); // Red
 
       // Under protanopia: Standby and Danger have different lightness & luminance
       const protanGo = simulateProtan(goColor);
@@ -243,33 +236,33 @@ describe('Color Science Engine (color.ts)', () => {
 
     it('exhaustively asserts automated WCAG AA compliance across all semantic tokens and surface tiers', () => {
       const surfaces = {
-        surface0: '#06090f',
-        surface1: '#0d121a',
-        surface2: '#171d26',
-        surface3: '#232934',
+        surface0: readToken('surface_0'),
+        surface1: readToken('surface_1'),
+        surface2: readToken('surface_2'),
+        surface3: readToken('surface_3'),
       };
 
       const textTokens = {
-        text1: '#ebeff5',
-        text2: '#b2b8c1',
-        text3: '#7a818b',
+        text1: readToken('text_1'),
+        text2: readToken('text_2'),
+        text3: readToken('text_3'),
       };
 
       const statusTokens = {
-        go: '#65c86b',
-        standby: '#e9ab2b',
-        hold: '#5eaceb',
-        danger: '#f14d4c',
+        go: readToken('status_go'),
+        standby: readToken('status_standby'),
+        hold: readToken('status_hold'),
+        danger: readToken('status_danger'),
       };
 
       const deptTokens = {
-        lx: '#c69d63',
-        vx: '#ad98d5',
-        sq: '#57b6b6',
-        st: '#98af70',
+        lx: readToken('dept_lx'),
+        vx: readToken('dept_vx'),
+        sq: readToken('dept_sq'),
+        st: readToken('dept_st'),
       };
 
-      const accent = '#4ebceb';
+      const accent = readToken('accent');
 
       // 1. Primary Text (text-1) across all surfaces must exceed WCAG AAA (>= 7.0:1)
       Object.values(surfaces).forEach((surfaceHex) => {

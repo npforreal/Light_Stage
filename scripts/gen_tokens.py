@@ -55,36 +55,36 @@ def oklch_to_hex(l, c, h):
     return linear_to_srgb_hex(r, g, b)
 
 TOKENS = [
-    # Surface Elevation (L 0.14 -> 0.28, subtle cool dark)
-    ("surface-0", 0.14, 0.015, 260, "Canvas base surface"),
-    ("surface-1", 0.18, 0.018, 260, "Panels, headers, sidebar"),
-    ("surface-2", 0.23, 0.020, 260, "Cards, table headers"),
-    ("surface-3", 0.28, 0.022, 260, "Hover states, popovers"),
+    # Surface Elevation (L 0.16..0.31, low chroma ~0.004, hue 285°)
+    ("surface-0", 0.16, 0.004, 285, "Canvas base surface"),
+    ("surface-1", 0.21, 0.004, 285, "Panels, headers, sidebar"),
+    ("surface-2", 0.26, 0.004, 285, "Cards, table headers"),
+    ("surface-3", 0.31, 0.004, 285, "Hover states, popovers"),
 
-    # Borders
-    ("border-subtle", 0.26, 0.015, 260, "Subtle dividers"),
-    ("border-default", 0.34, 0.018, 260, "Standard card & table borders"),
-    ("border-strong", 0.42, 0.022, 260, "Highlighted / active borders"),
+    # Borders (neutral grays, low chroma)
+    ("border-subtle", 0.26, 0.005, 285, "Subtle dividers"),
+    ("border-default", 0.34, 0.012, 285, "Standard card & table borders"),
+    ("border-strong", 0.42, 0.025, 285, "Highlighted / active borders"),
 
     # Text
-    ("text-1", 0.95, 0.010, 260, "Primary headline / active cue text"),
-    ("text-2", 0.78, 0.015, 260, "Secondary content text"),
-    ("text-3", 0.60, 0.018, 260, "Muted labels & timestamps"),
+    ("text-1", 0.95, 0.010, 285, "Primary headline / active cue text"),
+    ("text-2", 0.78, 0.015, 285, "Secondary content text"),
+    ("text-3", 0.60, 0.018, 285, "Muted labels & timestamps"),
 
-    # Brand Accent
-    ("accent", 0.75, 0.120, 230, "Active tab / focus ring"),
+    # Brand Accent (desaturated neutral for focus/selection, no longer blue brand)
+    ("accent", 0.80, 0.02, 285, "Focus ring / selection highlight"),
 
-    # Stage Departments (Equal L 0.72, equal C 0.09, 90 deg hue separation)
-    ("dept-lx", 0.72, 0.090, 75, "Lighting department indicator"),
-    ("dept-vx", 0.72, 0.090, 300, "Visual LED department indicator"),
-    ("dept-sq", 0.72, 0.090, 195, "Sound department indicator"),
-    ("dept-st", 0.72, 0.090, 125, "Stage action department indicator"),
+    # Stage Departments (Equal L 0.72, low chroma ~0.06, hues 75/300/195/125)
+    ("dept-lx", 0.72, 0.06, 75, "Lighting department indicator"),
+    ("dept-vx", 0.72, 0.06, 300, "Visual LED department indicator"),
+    ("dept-sq", 0.72, 0.06, 195, "Sound department indicator"),
+    ("dept-st", 0.72, 0.06, 125, "Stage action department indicator"),
 
-    # Operating Statuses (Distinct high-clarity cues)
-    ("status-go", 0.75, 0.160, 145, "Active Go status (emerald)"),
-    ("status-standby", 0.78, 0.150, 80, "Standby status (amber-orange)"),
-    ("status-hold", 0.72, 0.120, 245, "Hold status (steel blue)"),
-    ("status-danger", 0.65, 0.200, 25, "Overrun & alert status (vivid red)"),
+    # Operating Statuses (Distinct high-clarity cues, slightly reduced saturation)
+    ("status-go", 0.75, 0.14, 145, "Active Go status (emerald)"),
+    ("status-standby", 0.78, 0.13, 80, "Standby status (amber-orange)"),
+    ("status-hold", 0.72, 0.10, 245, "Hold status (steel blue)"),
+    ("status-danger", 0.65, 0.17, 25, "Overrun & alert status (vivid red)"),
 ]
 
 def main():
