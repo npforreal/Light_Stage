@@ -30,6 +30,7 @@ import {
   Check,
   Plus,
   PanelRight,
+  AlertTriangle,
 } from 'lucide-react';
 
 export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
@@ -74,6 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const show = useShowStore((s) => s.show);
   const isDirty = useShowStore((s) => s.isDirty);
+  const autosaveError = useShowStore((s) => s.autosaveError);
   const updateMetadata = useShowStore((s) => s.updateMetadata);
   const newShow = useShowStore((s) => s.newShow);
   const activeCue = useShowStore((s) => s.getActiveCue());
@@ -298,24 +300,39 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Status Dot */}
-          {isDirty ? (
-            <div
-              className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium whitespace-nowrap flex-shrink-0"
-              title="Có thay đổi chưa lưu"
-            >
-              <span className="h-2 w-2 rounded-full bg-status-standby animate-pulse flex-shrink-0" />
-              <span className="hidden lg:inline">Chưa lưu</span>
-            </div>
-          ) : (
-            <div
-              className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium whitespace-nowrap flex-shrink-0"
-              title="Đã lưu"
-            >
-              <span className="h-2 w-2 rounded-full bg-status-go flex-shrink-0" />
-              <span className="hidden lg:inline">Đã lưu</span>
-            </div>
-          )}
+          {/* Save Status: error wins over dirty/saved (icon + text, never colour alone) */}
+          <div
+            data-testid="header-save-status"
+            data-state={autosaveError ? 'error' : isDirty ? 'dirty' : 'saved'}
+            className="flex-shrink-0"
+          >
+            {autosaveError ? (
+              <div
+                className="flex items-center gap-1 text-[10px] text-status-danger font-mono font-medium whitespace-nowrap"
+                title={`${autosaveError} Nhấn Ctrl/Cmd+S hoặc lưu file .lightstage để giữ dự án.`}
+              >
+                <AlertTriangle className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+                <span className="hidden lg:inline">Chưa lưu — lỗi lưu tự động</span>
+                <span className="lg:hidden">Lỗi lưu</span>
+              </div>
+            ) : isDirty ? (
+              <div
+                className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium whitespace-nowrap"
+                title="Có thay đổi chưa lưu"
+              >
+                <span className="h-2 w-2 rounded-full bg-status-standby animate-pulse flex-shrink-0" />
+                <span className="hidden lg:inline">Chưa lưu</span>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium whitespace-nowrap"
+                title="Đã lưu"
+              >
+                <span className="h-2 w-2 rounded-full bg-status-go flex-shrink-0" />
+                <span className="hidden lg:inline">Đã lưu</span>
+              </div>
+            )}
+          </div>
 
           {/* Live Hardware Badges */}
           <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] flex-shrink-0">

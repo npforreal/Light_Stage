@@ -3,6 +3,33 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 16.2: autosave trung thực + báo lỗi có hành động
+
+### Thay đổi
+- `src/store/useShowStore.ts`: thêm `autosaveError: string | null` + `setAutosaveError()`; reset về `null` trong `loadShow`/`newShow`.
+- `src/App.tsx`:
+  - `persistNow()` (dùng chung cho autosave debounce **và** Ctrl/Cmd+S): gọi `saveAutoSave()`; **chỉ** `markSaved()` + xoá lỗi khi trả `true`; thất bại → `setAutosaveError(...)` và **giữ `isDirty`**.
+  - Bỏ đoạn autosave cũ gọi `saveAutoSave()` rồi `markSaved()` vô điều kiện.
+  - Banner lỗi một lần (`role="alert"`, `data-testid="autosave-error-banner"`) với nút **"Lưu file .lightstage"** (tải file thật rồi `markSaved`) + nút "Đóng"; tự ẩn khi lỗi được xoá. So sánh `previousAutosaveError` bằng `useRef` để không spam khi cùng một lỗi.
+  - `beforeunload` giữ nguyên theo `isDirty` → vẫn cảnh báo khi lưu lỗi.
+- `src/services/persistence.ts`: thêm `downloadLightStageFile()` dùng chung; `ExportModal` chuyển sang helper này (bỏ code tải file trùng lặp).
+- `src/components/Header.tsx`: chip trạng thái có `data-state` (`error`/`dirty`/`saved`); khi lỗi hiện icon `AlertTriangle` + chữ (lg: "Chưa lưu — lỗi lưu tự động", nhỏ hơn: "Lỗi lưu"), tooltip nêu cách xử lý.
+- Test mới `src/__tests__/round16AutosaveError.test.tsx` (7 test, viết trước): storage ném `QuotaExceededError`, `localStorage` hỏng, Ctrl+S lỗi vẫn dirty, phục hồi → sạch lỗi, autosave thành công, `beforeunload` vẫn chặn.
+
+### Quyết định kỹ thuật
+- Không thêm thư viện toast/UI mới: dùng store flag + chip + banner như chốt trong PLAN.
+- Lỗi lưu **thắng** trạng thái dirty trong chip (một nguồn sự thật, không hiện hai cảnh báo mâu thuẫn).
+- "Lưu file .lightstage" tải file trực tiếp (không mở Export modal) rồi `markSaved()` — vì file đã thực sự được ghi ra đĩa.
+- Gộp autosave + Ctrl+S vào cùng `persistNow()` để không còn hai đường lưu lệch hành vi.
+
+### Kiểm chứng
+- TDD: 7 test mới đỏ trước khi implement (4 fail), sau implement **7/7 xanh**.
+- `npx tsc --noEmit` sạch; `npx vitest run` → **36 files / 340 tests pass**.
+- Browser thật (ép `Storage.prototype.setItem` ném `QuotaExceededError` rồi bấm "Add Cue", chờ 1.4s):
+  - chip `data-state="error"`, có `<svg>` cảnh báo, text "Lỗi lưu", tooltip đầy đủ;
+  - banner `role="alert"`: "Chưa lưu — lỗi lưu tự động: không ghi được bộ nhớ cục bộ (đầy hoặc bị chặn). | Lưu file .lightstage | Đóng";
+  - khôi phục storage + Ctrl/Cmd+S → chip `data-state="saved"`, banner biến mất, `lightstage_autosave_v1` có dữ liệu.
+
 ## 2026-11-19 — Đợt 16.1: Operator Lock chỉ chặn 5 lệnh gọi cue (TDD)
 
 ### Thay đổi

@@ -7,7 +7,7 @@ import {
   generateLightPlotHtml,
   generatePrintableCueSheetHtml,
 } from '../../services/exporter';
-import { exportToLightStageBlob } from '../../services/persistence';
+import { downloadLightStageFile } from '../../services/persistence';
 import {
   Download,
   Printer,
@@ -84,13 +84,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleDownloadProjectFile = () => {
-    const blob = exportToLightStageBlob(show, stageConfig);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${show.metadata.title.replace(/\s+/g, '_')}.lightstage`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadLightStageFile(show, stageConfig);
   };
 
   return (

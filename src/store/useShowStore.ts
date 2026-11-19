@@ -28,6 +28,8 @@ export interface ShowState {
   selectedCueId: string | null;
   isInspectorOpen: boolean;
   isOperatorLocked: boolean;
+  /** Human-readable reason the last autosave failed; null when saving works. */
+  autosaveError: string | null;
 
   // History / Undo / Redo
   past: Show[];
@@ -39,6 +41,7 @@ export interface ShowState {
 
   // Operator Lock Action
   setOperatorLocked: (locked: boolean) => void;
+  setAutosaveError: (message: string | null) => void;
 
   // Inspector & Selection Actions
   selectCue: (cueId: string | null) => void;
@@ -118,7 +121,9 @@ export const useShowStore = create<ShowState>((set, get) => {
     selectedCueId: null,
     isInspectorOpen: false,
     isOperatorLocked: false,
+    autosaveError: null,
     setOperatorLocked: (locked: boolean) => set({ isOperatorLocked: locked }),
+    setAutosaveError: (message: string | null) => set({ autosaveError: message }),
     selectCue: (cueId: string | null) =>
       set({
         selectedCueId: cueId,
@@ -191,6 +196,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         selectedCueId: null,
         isInspectorOpen: false,
         isOperatorLocked: false,
+        autosaveError: null,
         past: [],
         future: [],
         canUndo: false,
@@ -233,6 +239,7 @@ export const useShowStore = create<ShowState>((set, get) => {
         selectedCueId: null,
         isInspectorOpen: false,
         isOperatorLocked: false,
+        autosaveError: null,
         past: [],
         future: [],
         canUndo: false,

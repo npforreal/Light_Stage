@@ -181,6 +181,25 @@ export function exportToLightStageBlob(show: Show, stage?: StageConfig): Blob {
 }
 
 /**
+ * Downloads the project as a `.lightstage` file. Shared by the Export modal and
+ * the "save now" recovery action, so there is a single save path.
+ */
+export function downloadLightStageFile(
+  show: Show,
+  stage?: StageConfig,
+  filenameTitle = show.metadata.title
+): void {
+  if (typeof document === 'undefined') return;
+  const blob = exportToLightStageBlob(show, stage);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filenameTitle.replace(/\s+/g, '_')}.lightstage`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Safe local storage accessor
  */
 function getStorage(): Storage | null {

@@ -8,6 +8,7 @@ import {
   getAutoSaveMeta,
   clearAutoSave,
   parseLightStageFile,
+  downloadLightStageFile,
   AutoSaveMeta,
 } from './services/persistence';
 import { useStageStore } from './store/useStageStore';
@@ -24,7 +25,11 @@ import { HelpModal } from './components/HelpModal';
 import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
 import { StageClockWindow } from './components/StageClockWindow';
 import { CueInspector } from './components/CueInspector';
-import { Lock } from 'lucide-react';
+import { Lock, AlertTriangle } from 'lucide-react';
+
+/** Shown whenever autosave could not write to storage. */
+export const AUTOSAVE_ERROR_MESSAGE =
+  'Chưa lưu — lỗi lưu tự động: không ghi được bộ nhớ cục bộ (đầy hoặc bị chặn).';
 
 export const App: React.FC = () => {
   // Check if this window was opened as a dedicated Stage Confidence Clock
@@ -64,8 +69,12 @@ export const App: React.FC = () => {
   const setOperatorLocked = useShowStore((s) => s.setOperatorLocked);
   const isInspectorOpen = useShowStore((s) => s.isInspectorOpen);
   const toggleInspector = useShowStore((s) => s.toggleInspector);
+  const autosaveError = useShowStore((s) => s.autosaveError);
+  const setAutosaveError = useShowStore((s) => s.setAutosaveError);
   const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
   const [recoveryMeta, setRecoveryMeta] = useState<AutoSaveMeta | null>(null);
+  const [isAutosaveBannerOpen, setIsAutosaveBannerOpen] = useState(false);
+  const previousAutosaveError = useRef<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,15 +102,45 @@ export const App: React.FC = () => {
     }
   }, []);
 
+  // Persist the show for Ctrl/Cmd+S. Returns true only when bytes were written.
+  // Never calls markSaved() on a failed write: a lost project must stay "dirty".
+  const persistNow = useCallback(() => {
+    const ok = saveAutoSave(show, stageConfig);
+    if (ok) {
+      markSaved();
+      setAutosaveError(null);
+    } else {
+      setAutosaveError(AUTOSAVE_ERROR_MESSAGE);
+    }
+    return ok;
+  }, [show, stageConfig, markSaved, setAutosaveError]);
+
   // Debounced Autosave: saves after 1 second of inactivity whenever show or rig changes
   useEffect(() => {
     if (!isDirty) return;
     const timer = setTimeout(() => {
-      saveAutoSave(show, stageConfig);
-      markSaved();
+      persistNow();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [show, isDirty, markSaved, stageConfig]);
+  }, [isDirty, persistNow]);
+
+  // Autosave failure banner: appears once per new error, disappears on recovery.
+  useEffect(() => {
+    if (autosaveError && previousAutosaveError.current !== autosaveError) {
+      setIsAutosaveBannerOpen(true);
+    }
+    if (!autosaveError) {
+      setIsAutosaveBannerOpen(false);
+    }
+    previousAutosaveError.current = autosaveError;
+  }, [autosaveError]);
+
+  const handleSaveProjectFile = () => {
+    downloadLightStageFile(show, stageConfig);
+    markSaved();
+    setAutosaveError(null);
+    setIsAutosaveBannerOpen(false);
+  };
 
   // Window exit protection: warn if there are unsaved changes
   useEffect(() => {
@@ -185,13 +224,6 @@ export const App: React.FC = () => {
     isRunning,
     getAllCues,
   ]);
-
-  // Persist the show for Ctrl/Cmd+S. Returns true only when bytes were written.
-  const persistNow = useCallback(() => {
-    const ok = saveAutoSave(show, stageConfig);
-    if (ok) markSaved();
-    return ok;
-  }, [show, stageConfig, markSaved]);
 
   // Global undo/redo/save shortcuts (no lock guard: they are not cue commands)
   useEffect(() => {
@@ -365,6 +397,37 @@ export const App: React.FC = () => {
               className="bg-surface-2 hover:bg-surface-3 active:scale-[0.98] text-content-2 px-3 py-1 rounded transition-all"
             >
               Bỏ qua
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Autosave Failure Banner — one-shot, actionable, keeps the dirty warning */}
+      {autosaveError && isAutosaveBannerOpen && (
+        <div
+          role="alert"
+          data-testid="autosave-error-banner"
+          className="bg-status-danger/15 border-b border-status-danger/40 px-4 py-1.5 flex items-center justify-between gap-3 text-xs text-status-danger z-40 flex-shrink-0"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+            <span className="font-bold truncate">{AUTOSAVE_ERROR_MESSAGE}</span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleSaveProjectFile}
+              className="rounded bg-status-danger text-surface-0 px-2.5 py-0.5 text-[11px] font-bold hover:opacity-90"
+            >
+              Lưu file .lightstage
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAutosaveBannerOpen(false)}
+              aria-label="Đóng cảnh báo lỗi lưu"
+              className="rounded px-2 py-0.5 text-[11px] font-semibold text-content-2 hover:bg-surface-2"
+            >
+              Đóng
             </button>
           </div>
         </div>
