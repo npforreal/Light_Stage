@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import App from "../App";
 import { useShowStore } from "../store/useShowStore";
 import { useClockStore } from "../store/useClockStore";
@@ -158,7 +158,7 @@ describe("Real-World User Journey & Usability Simulation", () => {
     expect(useShowStore.getState().show.acts[0].cues[0].status).toBe("Hold");
   });
 
-  it("Hành trình 4: Hiển thị Sân khấu Ảo 2D & Cảnh báo Quang học Thực tế (Optical Stage 2D)", () => {
+  it("Hành trình 4: Hiển thị Sân khấu Ảo 2D & Cảnh báo Quang học Thực tế (Optical Stage 2D)", async () => {
     const stageShow: Show = {
       ...createDefaultShow("Rock Festival Live"),
       acts: [
@@ -205,9 +205,9 @@ describe("Real-World User Journey & Usability Simulation", () => {
     const stageBtn = screen.getByTitle("Stage 3D Preview");
     fireEvent.click(stageBtn);
 
-    // Người dùng thấy gì trên sân khấu 3D:
+    // Người dùng thấy gì trên sân khấu 3D (chunk tải lười):
     // - Camera 3D Presets
-    expect(screen.getByTestId("preset-foh")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("preset-foh")).toBeInTheDocument());
     expect(screen.getByTestId("preset-topdown")).toBeInTheDocument();
     expect(screen.getByTestId("preset-backstage")).toBeInTheDocument();
 

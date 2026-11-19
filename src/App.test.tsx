@@ -16,7 +16,7 @@ describe("App Dual View Integration", () => {
     expect(screen.getByTitle("Stage 3D Preview")).toBeInTheDocument();
   });
 
-  it("switches view modes on button click", () => {
+  it("switches view modes on button click", async () => {
     render(<App />);
 
     const rundownBtn = screen.getByTitle("Cue Rundown List");
@@ -32,7 +32,8 @@ describe("App Dual View Integration", () => {
     const stageBtn = screen.getByTitle("Stage 3D Preview");
     fireEvent.click(stageBtn);
 
-    expect(screen.getByTestId("stage-3d-view")).toBeInTheDocument();
+    // Stage 3D is lazy-loaded; wait for the chunk before asserting.
+    expect(await screen.findByTestId("stage-3d-view")).toBeInTheDocument();
   });
 
   it("toggles Operator Lock mode", () => {

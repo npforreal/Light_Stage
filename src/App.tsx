@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { useShowStore, attachGlobalShortcuts } from './store/useShowStore';
 import { useClockStore } from './store/useClockStore';
 import {
@@ -19,7 +19,6 @@ import { isKeyboardProtected } from './services/shortcutRegistry';
 import { Header, ViewMode } from './components/Header';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
-import { Stage3DView } from './components/stage/Stage3DView';
 import { ImportModal } from './components/importer/ImportModal';
 import { ExportModal } from './components/export/ExportModal';
 import { HelpModal } from './components/HelpModal';
@@ -27,6 +26,32 @@ import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
 import { StageClockWindow } from './components/StageClockWindow';
 import { CueInspector } from './components/CueInspector';
 import { Lock, AlertTriangle } from 'lucide-react';
+
+// Stage 3D pulls in three.js (~550 kB). Keep it out of the startup chunk so
+// GO / hotkeys stay responsive while the preview loads on demand (PLAN 16.5).
+const Stage3DView = lazy(() =>
+  import('./components/stage/Stage3DView').then((m) => ({ default: m.Stage3DView }))
+);
+
+/** Fixed-size placeholder so switching to Stage 3D never shifts the layout. */
+const Stage3DLoadingSkeleton: React.FC = () => (
+  <div
+    className="flex h-full w-full flex-col bg-surface-0"
+    data-testid="stage-3d-skeleton"
+    aria-busy="true"
+    aria-label="Đang tải sân khấu 3D"
+  >
+    <div className="h-9 flex-shrink-0 border-b border-border-default bg-surface-1 px-3 flex items-center gap-2">
+      <div className="h-3 w-3 rounded-sm bg-surface-3 animate-pulse" />
+      <div className="h-2.5 w-32 rounded bg-surface-3 animate-pulse" />
+    </div>
+    <div className="relative flex-1 overflow-hidden bg-gradient-to-b from-surface-1 to-surface-0">
+      <div className="absolute inset-0 flex items-center justify-center text-xs font-mono text-content-3">
+        Đang tải Sân khấu 3D…
+      </div>
+    </div>
+  </div>
+);
 
 export const App: React.FC = () => {
   // Check if this window was opened as a dedicated Stage Confidence Clock
@@ -463,7 +488,9 @@ export const App: React.FC = () => {
 
           {viewMode === 'stage' && (
             <div className="flex-1 overflow-hidden">
-              <Stage3DView />
+              <Suspense fallback={<Stage3DLoadingSkeleton />}>
+                <Stage3DView />
+              </Suspense>
             </div>
           )}
 
