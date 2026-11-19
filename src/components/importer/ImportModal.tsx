@@ -137,12 +137,12 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
       aria-labelledby="import-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-surface-1 p-6 shadow-2xl text-content-1 flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-2xl rounded border border-border-default bg-surface-1 p-6 shadow-lg text-content-1 flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-border-default pb-4 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
-              <FileSpreadsheet className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-accent/20 text-accent">
+              <FileSpreadsheet className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
               <h3 id="import-modal-title" className="font-bold text-content-1 text-base">
@@ -156,7 +156,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
             aria-label="Đóng bảng import"
             className="rounded p-1 text-content-3 hover:text-content-1 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -167,10 +167,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               {/* Grouped Grid (FreeShow Inspiration) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Card 1: Files */}
-                <div className="border border-border-default hover:border-accent rounded-xl p-4 bg-surface-0 relative flex flex-col justify-between">
+                <div className="border border-border-default hover:border-accent rounded p-4 bg-surface-0 relative flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-content-3">
+                      <span className="text-[11px] font-bold text-content-3">
                         Tệp Dữ Liệu (File)
                       </span>
                       <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[9px] font-mono text-accent">
@@ -178,7 +178,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                       </span>
                     </div>
                     <div className="flex items-center gap-3 my-2">
-                      <Upload className="h-6 w-6 text-accent flex-shrink-0" />
+                      <Upload className="h-6 w-6 text-accent flex-shrink-0" aria-hidden="true" />
                       <div>
                         <p className="text-xs font-semibold text-content-1">Kéo thả tệp hoặc bấm chọn</p>
                         <p className="text-[10px] text-content-3">Định dạng UTF-8 phân tách bằng dấu phẩy hoặc tab. Chưa đọc trực tiếp .xlsx — hãy lưu sang CSV/TSV.</p>
@@ -194,9 +194,9 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 {/* Card 2: Clipboard (FreeShow Feature) */}
-                <div className="border border-border-default hover:border-accent rounded-xl p-4 bg-surface-0 flex flex-col justify-between">
+                <div className="border border-border-default hover:border-accent rounded p-4 bg-surface-0 flex flex-col justify-between">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-content-3">
+                    <span className="text-[11px] font-bold text-content-3">
                       Bảng Tạm (Clipboard)
                     </span>
                     <span className="rounded bg-status-go/20 text-status-go px-1.5 py-0.5 text-[9px] font-mono">
@@ -209,17 +209,17 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                   <button
                     type="button"
                     onClick={handlePasteFromClipboard}
-                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-accent/20 hover:bg-accent/30 text-accent font-bold text-xs border border-accent/40 transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded bg-accent/20 hover:bg-accent/30 text-accent font-bold text-xs border border-accent/40 transition-colors"
                     title="Đọc dữ liệu bảng từ clipboard (Dán từ clipboard)"
                   >
-                    <FileSpreadsheet className="h-4 w-4" />
+                    <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
                     <span>Dán từ clipboard (Paste from Clipboard)</span>
                   </button>
                 </div>
               </div>
 
               {/* Sample Actions Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-surface-0 border border-border-default text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded bg-surface-0 border border-border-default text-xs">
                 <span className="text-content-3 font-medium text-[11px]">Bạn chưa có sẵn file kịch bản?</span>
                 <div className="flex items-center gap-2">
                   <button
@@ -228,7 +228,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-default transition-colors text-xs"
                     title="Tải file mẫu CSV chuẩn UTF-8"
                   >
-                    <Download className="h-3.5 w-3.5 text-accent" />
+                    <Download className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     <span>Tải file CSV mẫu (Download Sample)</span>
                   </button>
                   <button
@@ -237,7 +237,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent/20 hover:bg-accent/30 text-accent font-semibold border border-accent/40 transition-colors text-xs"
                     title="Nạp ngay show mẫu hoàn chỉnh"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Nạp Show Mẫu (Load Demo Show)</span>
                   </button>
                 </div>
@@ -253,7 +253,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                   onChange={(e) => setRawText(e.target.value)}
                   placeholder={`STT,Tiết mục,Thời lượng,Ánh sáng,Màn LED,Âm thanh\n1.0,Opening,00:03:00,4 Beam 350W + 2 Follow,Màn LED cánh x 2,BGM Intro\n1.1,Speech,05:00,Follow,Logo Loop,Mic 1`}
                   rows={4}
-                  className="w-full rounded-lg border border-border-default bg-surface-0 p-3 font-mono text-xs text-content-1 focus:border-accent focus:outline-none"
+                  className="w-full rounded border border-border-default bg-surface-0 p-3 font-mono text-xs text-content-1 focus:border-accent focus:outline-none"
                 />
               </div>
 
@@ -261,7 +261,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 type="button"
                 disabled={!rawText.trim()}
                 onClick={() => handleProcessCsv(rawText)}
-                className="w-full rounded-lg bg-surface-3 hover:bg-surface-2 disabled:opacity-50 text-content-1 font-semibold py-2.5 text-xs transition-colors shadow border border-border-default"
+                className="w-full rounded bg-surface-3 hover:bg-surface-2 disabled:opacity-50 text-content-1 font-semibold py-2.5 text-xs transition-colors border border-border-default"
               >
                 Phân tích Cột & Xem trước (Analyze Columns)
               </button>
@@ -270,7 +270,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
           {step === 'mapping' && (
             <div className="space-y-4 text-xs">
-              <div className="rounded-lg bg-surface-2 border border-border-default p-3 text-content-2">
+              <div className="rounded bg-surface-2 border border-border-default p-3 text-content-2">
                 Headers detected! Verify or adjust column mappings below:
               </div>
 
@@ -398,7 +398,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               </div>
 
               {previewResult && (
-                <div className="border border-border-default rounded-lg p-3 bg-surface-0 mt-3">
+                <div className="border border-border-default rounded p-3 bg-surface-0 mt-3">
                   <div className="font-semibold text-content-1 mb-2">
                     Preview: {previewResult.acts.reduce((acc, a) => acc + a.cues.length, 0)} cues detected across {previewResult.acts.length} acts
                   </div>
@@ -430,16 +430,16 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               <button
                 type="button"
                 onClick={() => setStep('input')}
-                className="rounded-lg bg-surface-2 px-3 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors"
+                className="rounded bg-surface-2 px-3 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors"
               >
                 Back
               </button>
               <button
                 type="button"
                 onClick={handleConfirmImport}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-accent hover:bg-accent/90 text-surface-0 px-4 py-1.5 text-xs font-bold shadow transition-colors"
+                className="inline-flex items-center gap-1.5 rounded bg-accent hover:bg-accent/90 text-surface-0 px-4 py-1.5 text-xs font-bold transition-colors"
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-4 w-4" aria-hidden="true" />
                 <span>Confirm & Import Cues</span>
               </button>
             </>
@@ -448,7 +448,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
+                className="rounded bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
               >
                 Close
               </button>

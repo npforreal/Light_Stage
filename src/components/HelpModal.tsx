@@ -37,12 +37,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       aria-labelledby="help-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
     >
-      <div className="w-full max-w-2xl rounded-xl border border-border-default bg-surface-1 p-6 shadow-2xl text-content-1 flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-2xl rounded border border-border-default bg-surface-1 p-6 shadow-lg text-content-1 flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-border-default pb-3 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
-              <HelpCircle className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-accent/20 text-accent">
+              <HelpCircle className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
               <h2 id="help-modal-title" className="font-bold text-content-1 text-base">
@@ -58,7 +58,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             aria-label="Đóng trợ giúp"
             className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -66,11 +66,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto space-y-5 pr-1 text-xs">
           {/* Scope statement */}
           <section>
-            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
-              <HelpCircle className="h-4 w-4" />
+            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold text-[11px]">
+              <HelpCircle className="h-4 w-4" aria-hidden="true" />
               <span>Phạm vi sử dụng (Scope)</span>
             </div>
-            <div className="rounded-lg border border-border-default bg-surface-0 p-3 text-content-2 space-y-1.5 text-[11px] leading-relaxed">
+            <div className="rounded border border-border-default bg-surface-0 p-3 text-content-2 space-y-1.5 text-[11px] leading-relaxed">
               <p>
                 Light Stage là công cụ <span className="font-semibold text-content-1">rundown + show-calling + preview</span> cho người điều phối sân khấu. GO / Standby / Hold chỉ đổi trạng thái cue trong app và đồng hồ đếm ngược — <span className="font-semibold text-content-1">không gửi lệnh tới thiết bị thật</span>.
               </p>
@@ -82,11 +82,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
           {/* Hotkey Table */}
           <section>
-            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
-              <Keyboard className="h-4 w-4" />
+            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold text-[11px]">
+              <Keyboard className="h-4 w-4" aria-hidden="true" />
               <span>Phím tắt Vận hành Live (Keyboard Shortcuts)</span>
             </div>
-            <div className="rounded-lg border border-border-default bg-surface-0 overflow-hidden">
+            <div className="rounded border border-border-default bg-surface-0 overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead className="bg-surface-2 text-content-3 border-b border-border-default">
                   <tr>
@@ -166,59 +166,59 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
           {/* Cue Status Guide */}
           <section>
-            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
-              <Play className="h-4 w-4" />
+            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold text-[11px]">
+              <Play className="h-4 w-4" aria-hidden="true" />
               <span>Ý nghĩa Trạng thái Cue (Cue Status Lifecycle)</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-status-go/20 text-status-go font-bold text-[10px] mt-0.5">
-                  <Play className="h-3 w-3 fill-current" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-status-go/20 text-status-go font-bold text-[10px] mt-0.5">
+                  <Play className="h-3 w-3 fill-current" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-status-go">GO (Đang diễn ra)</div>
                   <div className="text-content-3 text-[11px]">Cảnh đang phát trên sân khấu. Đồng hồ chạy đếm ngược.</div>
                 </div>
               </div>
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-status-standby/20 text-status-standby font-bold text-[10px] mt-0.5">
-                  <AlertCircle className="h-3 w-3" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-status-standby/20 text-status-standby font-bold text-[10px] mt-0.5">
+                  <AlertCircle className="h-3 w-3" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-status-standby">STANDBY (Sẵn sàng)</div>
                   <div className="text-content-3 text-[11px]">Cảnh kế tiếp chuẩn bị kích hoạt. Ekip sẵn sàng nhận lệnh.</div>
                 </div>
               </div>
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-status-hold/20 text-status-hold font-bold text-[10px] mt-0.5">
-                  <Pause className="h-3 w-3" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-status-hold/20 text-status-hold font-bold text-[10px] mt-0.5">
+                  <Pause className="h-3 w-3" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-status-hold">HOLD (Tạm dừng)</div>
                   <div className="text-content-3 text-[11px]">Đang tạm hoãn cue để xử lý tình huống phát sinh trên sân khấu.</div>
                 </div>
               </div>
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
-                  <FastForward className="h-3 w-3" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
+                  <FastForward className="h-3 w-3" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-content-2">SKIP (Bỏ qua)</div>
                   <div className="text-content-3 text-[11px]">Tiết mục bị cắt bỏ hoặc bỏ qua trong kịch bản trực tiếp.</div>
                 </div>
               </div>
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
-                  <CheckCircle className="h-3 w-3" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
+                  <CheckCircle className="h-3 w-3" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-content-2">DONE (Hoàn thành)</div>
                   <div className="text-content-3 text-[11px]">Cảnh đã thực hiện xong và chuyển sang cue mới.</div>
                 </div>
               </div>
-              <div className="rounded-lg border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
-                  <RotateCcw className="h-3 w-3" />
+              <div className="rounded border border-border-default bg-surface-0 p-2.5 flex items-start gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded bg-surface-2 text-content-3 font-bold text-[10px] mt-0.5">
+                  <RotateCcw className="h-3 w-3" aria-hidden="true" />
                 </span>
                 <div>
                   <div className="font-bold text-content-3">PENDING (Chưa đến)</div>
@@ -230,11 +230,11 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
           {/* Operator Lock Guide */}
           <section>
-            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold uppercase tracking-wider text-[11px]">
-              <ShieldAlert className="h-4 w-4" />
+            <div className="flex items-center gap-2 mb-2.5 text-accent font-semibold text-[11px]">
+              <ShieldAlert className="h-4 w-4" aria-hidden="true" />
               <span>Chế độ Khóa Vận Hành (Operator Lock)</span>
             </div>
-            <div className="rounded-lg border border-status-standby/40 bg-status-standby/10 p-3 text-content-2 space-y-1.5">
+            <div className="rounded border border-status-standby/40 bg-status-standby/10 p-3 text-content-2 space-y-1.5">
               <p className="font-medium text-status-standby">
                 Bảo vệ tối đa chống cấn phím ngoài ý muốn:
               </p>
@@ -252,7 +252,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         <div className="border-t border-border-default pt-3 mt-4 flex justify-end">
           <button
             onClick={onClose}
-            className="rounded-lg bg-surface-2 hover:bg-surface-3 border border-border-default px-4 py-1.5 text-xs font-semibold text-content-1 transition-colors"
+            className="rounded bg-surface-2 hover:bg-surface-3 border border-border-default px-4 py-1.5 text-xs font-semibold text-content-1 transition-colors"
           >
             Đóng (Close)
           </button>

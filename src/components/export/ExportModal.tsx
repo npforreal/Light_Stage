@@ -94,12 +94,12 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
       aria-labelledby="export-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
     >
-      <div className="w-full max-w-lg rounded-xl border border-border-default bg-surface-1 p-6 shadow-2xl text-content-1 flex flex-col">
+      <div className="w-full max-w-lg rounded border border-border-default bg-surface-1 p-6 shadow-lg text-content-1 flex flex-col">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-border-default pb-3 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
-              <Download className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-accent/20 text-accent">
+              <Download className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
               <h3 id="export-modal-title" className="font-bold text-content-1 text-base">
@@ -113,14 +113,14 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
             aria-label="Đóng xuất báo cáo"
             className="rounded p-1 text-content-3 hover:text-content-1 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Role Selector for Cue Sheets */}
         <div className="mb-4 space-y-1.5">
           <label className="text-xs font-semibold text-content-3">Target Role / Department Filter:</label>
-          <div className="inline-flex w-full rounded-lg bg-surface-0 p-1 text-xs border border-border-default gap-1">
+          <div className="inline-flex w-full rounded bg-surface-0 p-1 text-xs border border-border-default gap-1">
             {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as const).map((r) => (
               <button
                 key={r}
@@ -144,11 +144,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={handlePrintPdf}
-            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+            className="group w-full text-left flex items-center justify-between rounded border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
-                <Printer className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <Printer className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
@@ -165,11 +165,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={handlePrintLightPlot}
-            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+            className="group w-full text-left flex items-center justify-between rounded border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
-                <MapIcon className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <MapIcon className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
@@ -186,11 +186,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={handleDownloadCueSheetCsv}
-            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+            className="group w-full text-left flex items-center justify-between rounded border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
-                <FileSpreadsheet className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <FileSpreadsheet className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
@@ -207,11 +207,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={handleDownloadHardwareCsv}
-            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+            className="group w-full text-left flex items-center justify-between rounded border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
-                <PackageCheck className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <PackageCheck className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
@@ -228,11 +228,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={handleDownloadProjectFile}
-            className="group w-full text-left flex items-center justify-between rounded-lg border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
+            className="group w-full text-left flex items-center justify-between rounded border border-border-default bg-surface-0 p-3 hover:border-accent hover:bg-surface-2/60 cursor-pointer transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
-                <FileCode className="h-5 w-5" />
+              <div className="flex h-9 w-9 items-center justify-center rounded bg-surface-2 text-content-1 group-hover:scale-105 transition-transform border border-border-default">
+                <FileCode className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
@@ -251,7 +251,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
+            className="rounded bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
           >
             Close
           </button>
