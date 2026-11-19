@@ -482,6 +482,8 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     standbyCue: (cueId: string) => {
       const state = get();
+      // Operator Lock: only blocks cue commands (see PLAN 16.1). Viewing/clock/save stay live.
+      if (state.isOperatorLocked) return;
       const allCues = state.getAllCues();
       const targetCue = allCues.find((c) => c.id === cueId);
       if (!targetCue) return;
@@ -508,6 +510,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     goCue: (cueId?: string) => {
       const state = get();
+      if (state.isOperatorLocked) return;
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 
@@ -599,6 +602,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     holdCue: (cueId?: string) => {
       const state = get();
+      if (state.isOperatorLocked) return;
       const targetId = cueId || state.activeCueId;
       if (!targetId) return;
 
@@ -687,6 +691,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     nextCue: () => {
       const state = get();
+      if (state.isOperatorLocked) return;
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 
@@ -701,6 +706,7 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     prevCue: () => {
       const state = get();
+      if (state.isOperatorLocked) return;
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 
@@ -774,13 +780,12 @@ export interface GlobalShortcutOptions {
  * Supports:
  * - Ctrl+Z / Cmd+Z: Undo
  * - Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y / Cmd+Y: Redo
- * - Ctrl+S / Cmd+S: Save / Export
+ * - Ctrl+S / Cmd+S: Save (delegates to options.onSave, no fake "saved" state)
+ *
+ * Operator Lock intentionally does NOT block this handler: it only manages
+ * undo/redo/save, which are not cue commands (PLAN 16.1).
  */
 export function handleGlobalKeyDown(e: KeyboardEvent, options?: GlobalShortcutOptions): boolean {
-  if (useShowStore.getState().isOperatorLocked) {
-    return false;
-  }
-
   const isCtrlOrCmd = e.ctrlKey || e.metaKey;
   if (!isCtrlOrCmd) return false;
 
@@ -818,16 +823,14 @@ export function handleGlobalKeyDown(e: KeyboardEvent, options?: GlobalShortcutOp
     e.preventDefault();
     if (options?.onSave) {
       options.onSave();
-    } else {
-      useShowStore.getState().markSaved();
+      return true;
     }
-    return true;
+    // No saver wired: never pretend the project was saved.
+    return false;
   }
 
   return false;
 }
-
-let globalShortcutsCleanup: (() => void) | null = null;
 
 export function attachGlobalShortcuts(
   target: EventTarget = window,
@@ -843,10 +846,6 @@ export function attachGlobalShortcuts(
   };
 }
 
-// Auto-attach when running in browser
-if (typeof window !== 'undefined') {
-  if (typeof globalShortcutsCleanup === 'function') {
-    (globalShortcutsCleanup as () => void)();
-  }
-  globalShortcutsCleanup = attachGlobalShortcuts(window);
-}
+// Note: the app wires the shortcut once, with a real save handler, in App.tsx.
+// Auto-attaching here without `onSave` used to fake `markSaved()` on Ctrl+S
+// (PLAN 16.2), so it is intentionally removed.

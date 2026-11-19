@@ -333,8 +333,8 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     const holdText = screen.getByText('Hold');
     expect(holdText.className).toContain('hidden lg:inline');
 
-    // 5. Operator Lock Label ("Lock") is hidden below lg (1024px)
-    const lockText = screen.getByText('Lock');
+    // 5. Operator Lock Label ("Khóa") is hidden below lg (1024px)
+    const lockText = screen.getByText('Khóa');
     expect(lockText.className).toContain('hidden lg:inline');
 
     // 6. Delta Time block is hidden below xl (1280px)

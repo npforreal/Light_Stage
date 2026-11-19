@@ -3,6 +3,34 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-19 — Đợt 16.1: Operator Lock chỉ chặn 5 lệnh gọi cue (TDD)
+
+### Thay đổi
+- `src/store/useShowStore.ts`:
+  - Thêm guard `if (state.isOperatorLocked) return;` vào **5 hàm**: `standbyCue`, `goCue`, `holdCue`, `nextCue`, `prevCue` (nên `goNextCue` bị chặn gián tiếp qua `goCue`). Guard đặt **sau** khi đọc state, **trước** mọi mutation và trước `useClockStore` → khóa không đổi cue, không chạy/pause đồng hồ, không set `isDirty`.
+  - `handleGlobalKeyDown`: **bỏ** guard khóa ở đầu (hàm này chỉ xử lý undo/redo/save, không phải lệnh cue). Nhánh `Ctrl/Cmd+S` không còn gọi `markSaved()` khi thiếu `onSave` (trước đây báo "đã lưu" giả).
+  - Gỡ auto-attach `attachGlobalShortcuts(window)` lúc import (nguyên nhân Ctrl+S không lưu thật); App đăng ký lại kèm `onSave`.
+- `src/App.tsx`:
+  - Tách guard thành 3 nhóm: **(1) luôn chạy** (`?`, `i`, `F1`–`F4`, `Alt+F`) → **(2) `if (isOperatorLocked) return`** → **(3) nhóm cue** (Space/Enter, B, ↑/↓, Esc).
+  - Thêm `persistNow()` = `saveAutoSave(show, stageConfig)` + `markSaved()` **chỉ khi trả `true`**, gắn vào `attachGlobalShortcuts(window, { onSave: persistNow })`.
+  - Banner khóa: đổi câu thành "Các lệnh gọi cue đã bị vô hiệu hóa…" cho đúng phạm vi.
+- `src/components/Header.tsx`: GO / STBY / Hold có `disabled`, `aria-disabled`, `cursor-not-allowed`, `disabled:opacity-50`, tooltip "Đang khóa — mở khóa để gọi cue", thêm `data-testid` (`header-hero-go-button`, `header-standby-button`, `header-hold-button`); chip Lock hiện icon + chữ **"Đã khóa"** (mở: "Khóa").
+- Test: thêm `src/__tests__/round16OperatorLock.test.tsx` (16 test, viết **trước** khi sửa); cập nhật `keyboardShortcuts.test.tsx` (lock không còn chặn undo/redo/save) và `App.test.tsx`/`Header.test.tsx` theo nhãn mới.
+
+### Quyết định kỹ thuật
+- Undo/Redo được coi là **sửa dữ liệu**, không phải lệnh gọi cue → vẫn chạy khi khóa (khớp câu chốt "khóa chỉ chặn 5 lệnh gọi cue"). Đã ghi rõ trong test.
+- `Ctrl+S` không còn fallback `markSaved()`: nếu không có luồng lưu thì trả `false` thay vì nói dối trạng thái. 16.2 sẽ thêm UI báo lỗi.
+- Không đụng `VxControlBar`/VX store: panic là đường thoát sự cố, phải sống ngoài khóa.
+
+### Kiểm chứng
+- TDD: test mới **đỏ 12/16** trước khi sửa (`npx vitest run src/__tests__/round16OperatorLock.test.tsx`), sau khi sửa **16/16 xanh**.
+- `npx tsc --noEmit` → sạch. `npx vitest run` → **35 files, 333 tests pass**.
+- Browser thật (`vite --port 1420` + `browser.evaluate`):
+  - Khóa → gửi Space/Enter/B/↑/↓/Esc: `live=false`, `LX: 0` (không cue nào chạy).
+  - 3 nút Header: `disabled=true`, `aria-disabled=true`, `title="Đang khóa — mở khóa để gọi cue"`, `cursor=not-allowed`; keyframes opacity `["1","0.5"]` (transition bị treo vì tab nền nên `getComputedStyle` còn 1 — CSS đã áp đúng).
+  - Khóa → `i` mở/đóng `[data-testid="cue-inspector-drawer"]`, `?` mở `#help-modal-title` (cả hai vẫn chạy).
+  - Mở khóa → Space: `live=true`, `LX: 12`.
+
 ## 2026-11-19 — Đợt 16.0: viết lại kịch bản test người dùng cho OpenCode
 
 ### Thay đổi

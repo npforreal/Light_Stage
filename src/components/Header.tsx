@@ -35,6 +35,9 @@ import {
 export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
 export type RoleFilter = 'ALL' | 'LX' | 'VX' | 'SQ' | 'ST';
 
+/** Shared tooltip for cue-firing controls while Operator Lock is engaged. */
+const LOCKED_CUE_TOOLTIP = 'Đang khóa — mở khóa để gọi cue';
+
 export interface HeaderProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
@@ -360,8 +363,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => goCue()}
-            className="h-10 px-5 sm:px-6 rounded-xl bg-status-go hover:bg-status-go/90 text-surface-0 font-black shadow-lg shadow-status-go/25 active:scale-[0.97] transition-all flex items-center gap-2 select-none cursor-pointer flex-shrink-0"
-            title="Start Clock"
+            disabled={isOperatorLocked}
+            aria-disabled={isOperatorLocked || undefined}
+            className="h-10 px-5 sm:px-6 rounded-xl bg-status-go hover:bg-status-go/90 disabled:hover:bg-status-go text-surface-0 font-black shadow-lg shadow-status-go/25 active:scale-[0.97] transition-all flex items-center gap-2 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 flex-shrink-0"
+            title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Start Clock'}
             data-testid="header-hero-go-button"
           >
             <Play className="h-4 w-4 fill-current flex-shrink-0" />
@@ -381,8 +386,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={nextCue}
-            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-status-standby border border-border-default font-bold text-xs flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer"
-            title="Chuyển Standby tiếp theo (Go Next Cue - B)"
+            disabled={isOperatorLocked}
+            aria-disabled={isOperatorLocked || undefined}
+            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-status-standby border border-border-default font-bold text-xs flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Chuyển Standby tiếp theo (Go Next Cue - B)'}
+            data-testid="header-standby-button"
           >
             <FastForward className="h-3.5 w-3.5" />
             <span className="hidden lg:inline">STBY</span>
@@ -398,8 +406,11 @@ export const Header: React.FC<HeaderProps> = ({
               holdCue(activeCue?.id);
               pauseClock();
             }}
-            className="h-8 px-2 rounded-lg bg-surface-2 hover:bg-status-hold/20 text-content-2 hover:text-status-hold border border-border-default transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer"
-            title="Stop Clock"
+            className="h-8 px-2 rounded-lg bg-surface-2 hover:bg-status-hold/20 text-content-2 hover:text-status-hold border border-border-default transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isOperatorLocked}
+            aria-disabled={isOperatorLocked || undefined}
+            title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Stop Clock'}
+            data-testid="header-hold-button"
           >
             <Pause className="h-3.5 w-3.5" />
             <span className="hidden lg:inline">Hold</span>
@@ -496,12 +507,12 @@ export const Header: React.FC<HeaderProps> = ({
             {isOperatorLocked ? (
               <>
                 <Lock className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="hidden lg:inline">Locked</span>
+                <span className="hidden lg:inline">Đã khóa</span>
               </>
             ) : (
               <>
                 <Unlock className="h-3.5 w-3.5 text-content-3 flex-shrink-0" />
-                <span className="hidden lg:inline">Lock</span>
+                <span className="hidden lg:inline">Khóa</span>
               </>
             )}
           </button>

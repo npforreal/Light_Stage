@@ -42,11 +42,11 @@ describe("App Dual View Integration", () => {
     expect(lockBtn).toBeInTheDocument();
     fireEvent.click(lockBtn);
 
-    expect(screen.getByText("Locked")).toBeInTheDocument();
+    expect(screen.getByText("Đã khóa")).toBeInTheDocument();
     expect(screen.getByTitle(/Operator Locked: Hotkeys disabled/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle(/Operator Locked: Hotkeys disabled/i));
-    expect(screen.getByText("Lock")).toBeInTheDocument();
+    expect(screen.getByText("Khóa")).toBeInTheDocument();
   });
 
   it("opens Export Modal on Export button click", () => {

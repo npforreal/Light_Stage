@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useShowStore } from './store/useShowStore';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useShowStore, attachGlobalShortcuts } from './store/useShowStore';
 import { useClockStore } from './store/useClockStore';
 import {
   saveAutoSave,
@@ -186,14 +186,66 @@ export const App: React.FC = () => {
     getAllCues,
   ]);
 
+  // Persist the show for Ctrl/Cmd+S. Returns true only when bytes were written.
+  const persistNow = useCallback(() => {
+    const ok = saveAutoSave(show, stageConfig);
+    if (ok) markSaved();
+    return ok;
+  }, [show, stageConfig, markSaved]);
+
+  // Global undo/redo/save shortcuts (no lock guard: they are not cue commands)
+  useEffect(() => {
+    return attachGlobalShortcuts(window, { onSave: persistNow });
+  }, [persistNow]);
+
   // Keyboard Shortcuts: Space/Enter = GO, B = Standby / Next, Arrows = Next/Prev, Esc = Hold/Pause
+  // Operator Lock only blocks the cue group below; Help / Inspector / VX panic stay live.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isOperatorLocked) return; // Prevent triggering hotkeys when locked
-
       if (isKeyboardProtected(e)) {
         return; // Don't intercept when user is typing
       }
+
+      // --- Group 1: always available, even when the operator is locked ---
+      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setIsHelpOpen(true);
+        return;
+      }
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        useShowStore.getState().toggleInspector();
+        return;
+      }
+      // VX panic is the live-show escape hatch: never lock it out.
+      if (e.key === 'F1') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('background');
+        return;
+      }
+      if (e.key === 'F2') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('slide');
+        return;
+      }
+      if (e.key === 'F3') {
+        e.preventDefault();
+        useVisualStore.getState().clearLayer('overlay');
+        return;
+      }
+      if (e.key === 'F4') {
+        e.preventDefault();
+        useVisualStore.getState().clearAllVx();
+        return;
+      }
+      if (e.altKey && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        useVisualStore.getState().toggleFreezeVx();
+        return;
+      }
+
+      // --- Group 2: Operator Lock blocks cue commands below this line ---
+      if (isOperatorLocked) return;
 
       const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === 'button' && (e.code === 'Space' || e.code === 'Enter')) {
@@ -215,27 +267,6 @@ export const App: React.FC = () => {
       } else if (e.key === 'Escape') {
         e.preventDefault();
         useShowStore.getState().holdCue();
-      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
-        e.preventDefault();
-        setIsHelpOpen(true);
-      } else if (e.key === 'i' || e.key === 'I') {
-        e.preventDefault();
-        useShowStore.getState().toggleInspector();
-      } else if (e.key === 'F1') {
-        e.preventDefault();
-        useVisualStore.getState().clearLayer('background');
-      } else if (e.key === 'F2') {
-        e.preventDefault();
-        useVisualStore.getState().clearLayer('slide');
-      } else if (e.key === 'F3') {
-        e.preventDefault();
-        useVisualStore.getState().clearLayer('overlay');
-      } else if (e.key === 'F4') {
-        e.preventDefault();
-        useVisualStore.getState().clearAllVx();
-      } else if (e.altKey && (e.key === 'f' || e.key === 'F')) {
-        e.preventDefault();
-        useVisualStore.getState().toggleFreezeVx();
       }
     };
 
@@ -344,7 +375,7 @@ export const App: React.FC = () => {
         <div className="bg-status-standby/15 border-b border-status-standby/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-status-standby z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-status-standby animate-pulse" />
-            <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Toàn bộ phím tắt điều khiển đã được vô hiệu hóa để bảo đảm an toàn live show.</span>
+            <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Các lệnh gọi cue đã bị vô hiệu hóa. Phím tắt xem/trợ giúp, lưu và VX panic vẫn hoạt động.</span>
           </div>
           <button
             onClick={() => setOperatorLocked(false)}

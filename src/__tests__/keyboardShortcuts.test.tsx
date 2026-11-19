@@ -338,7 +338,6 @@ describe('Keyboard Shortcuts & Anti-Conflict Suite (Đợt 14.2 / R2)', () => {
       useShowStore.setState({ canUndo: true, canRedo: true });
       const undoSpy = vi.spyOn(useShowStore.getState(), 'undo');
       const redoSpy = vi.spyOn(useShowStore.getState(), 'redo');
-      const markSavedSpy = vi.spyOn(useShowStore.getState(), 'markSaved');
 
       document.body.focus();
 
@@ -354,14 +353,18 @@ describe('Keyboard Shortcuts & Anti-Conflict Suite (Đợt 14.2 / R2)', () => {
       fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true });
       expect(redoSpy).toHaveBeenCalledTimes(2);
 
-      // Ctrl+S (Save)
+      // Ctrl+S (Save) — must actually persist, not just flip the flag
+      useShowStore.setState({ isDirty: true });
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
       fireEvent.keyDown(window, { key: 's', ctrlKey: true });
-      expect(markSavedSpy).toHaveBeenCalled();
+      expect(setItemSpy).toHaveBeenCalled();
+      expect(useShowStore.getState().isDirty).toBe(false);
+      setItemSpy.mockRestore();
     });
   });
 
-  describe('3. Operator Lock Guard', () => {
-    it('suppresses 100% of shortcuts (Space, B, Undo, Redo, Save) when Operator Lock is active', () => {
+  describe('3. Operator Lock Guard (chỉ chặn lệnh gọi cue)', () => {
+    it('suppresses cue shortcuts (Space, B) but keeps undo/redo/save when Operator Lock is active', () => {
       render(<App />);
       useShowStore.setState({ canUndo: true, canRedo: true });
 
@@ -373,45 +376,44 @@ describe('Keyboard Shortcuts & Anti-Conflict Suite (Đợt 14.2 / R2)', () => {
       const nextCueSpy = vi.spyOn(useShowStore.getState(), 'nextCue');
       const undoSpy = vi.spyOn(useShowStore.getState(), 'undo');
       const redoSpy = vi.spyOn(useShowStore.getState(), 'redo');
-      const markSavedSpy = vi.spyOn(useShowStore.getState(), 'markSaved');
 
       document.body.focus();
 
-      // Playback hotkeys
+      // Playback hotkeys stay blocked
       fireEvent.keyDown(window, { key: ' ', code: 'Space' });
       fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
       expect(goCueSpy).not.toHaveBeenCalled();
       expect(nextCueSpy).not.toHaveBeenCalled();
 
-      // Undo: Ctrl+Z / Cmd+Z
+      // Undo / Redo are edits, not cue commands -> still work while locked
       fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
-      expect(undoSpy).not.toHaveBeenCalled();
-
-      // Redo: Ctrl+Y / Cmd+Y
+      expect(undoSpy).toHaveBeenCalled();
       fireEvent.keyDown(window, { key: 'y', ctrlKey: true });
-      expect(redoSpy).not.toHaveBeenCalled();
+      expect(redoSpy).toHaveBeenCalled();
 
-      // Redo: Ctrl+Shift+Z / Cmd+Shift+Z
-      fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true });
-      expect(redoSpy).not.toHaveBeenCalled();
-
-      // Save: Ctrl+S / Cmd+S
+      // Ctrl+S is never locked out; App wires it to a real autosave
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
       fireEvent.keyDown(window, { key: 's', ctrlKey: true });
-      expect(markSavedSpy).not.toHaveBeenCalled();
+      expect(setItemSpy).toHaveBeenCalled();
+      setItemSpy.mockRestore();
     });
 
-    it('handleGlobalKeyDown returns false directly when isOperatorLocked is true', () => {
+    it('handleGlobalKeyDown keeps undo/redo/save working when isOperatorLocked is true', () => {
       useShowStore.setState({ isOperatorLocked: true, canUndo: true, canRedo: true });
       const undoSpy = vi.spyOn(useShowStore.getState(), 'undo');
       const redoSpy = vi.spyOn(useShowStore.getState(), 'redo');
+      const onSave = vi.fn();
 
       const undoEvt = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
       const redoEvt = new KeyboardEvent('keydown', { key: 'y', ctrlKey: true });
+      const saveEvt = new KeyboardEvent('keydown', { key: 's', ctrlKey: true });
 
-      expect(handleGlobalKeyDown(undoEvt)).toBe(false);
-      expect(handleGlobalKeyDown(redoEvt)).toBe(false);
-      expect(undoSpy).not.toHaveBeenCalled();
-      expect(redoSpy).not.toHaveBeenCalled();
+      expect(handleGlobalKeyDown(undoEvt)).toBe(true);
+      expect(handleGlobalKeyDown(redoEvt)).toBe(true);
+      expect(handleGlobalKeyDown(saveEvt, { onSave })).toBe(true);
+      expect(onSave).toHaveBeenCalledTimes(1);
+      expect(undoSpy).toHaveBeenCalled();
+      expect(redoSpy).toHaveBeenCalled();
     });
   });
 
