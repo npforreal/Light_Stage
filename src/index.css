@@ -30,6 +30,19 @@
 
 :root {
   color-scheme: dark;
+  --motion-fast: 120ms;
+  --motion-base: 160ms;
+  --motion-slow: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 body {

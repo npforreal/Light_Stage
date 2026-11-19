@@ -164,7 +164,7 @@ export const TimelineTracks: React.FC = () => {
             {/* Red / Emerald Realtime Playhead */}
             <div
               style={{ left: `${playheadX}px` }}
-              className="absolute top-0 bottom-0 w-0.5 bg-status-danger z-30 pointer-events-none transition-all duration-75 shadow-[0_0_8px_rgba(244,63,94,0.8)]"
+              className="absolute top-0 bottom-0 w-0.5 bg-status-danger z-30 pointer-events-none transition-all duration-150 shadow-[0_0_8px_rgba(244,63,94,0.8)]"
             >
               <div className="h-0 w-0 border-x-4 border-x-transparent border-t-6 border-t-status-danger -ml-[3.5px]" />
             </div>

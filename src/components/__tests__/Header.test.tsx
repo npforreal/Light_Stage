@@ -73,7 +73,8 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     const heroGoBtn = screen.getByTestId('header-hero-go-button');
     expect(heroGoBtn).toBeInTheDocument();
     expect(heroGoBtn.className).toContain('bg-status-go');
-    expect(heroGoBtn.className).toContain('rounded-xl');
+    // 17.4: buttons use 4px corner radius (rounded), reserved 4px for controls
+    expect(heroGoBtn.className).toContain('rounded');
     expect(heroGoBtn.className).toContain('font-black');
 
     // Explicit Space chip inside GO button

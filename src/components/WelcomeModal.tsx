@@ -119,7 +119,7 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({
               key={s.step}
               type="button"
               onClick={() => setCurrentStep(idx)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-150 ${
                 idx === currentStep
                   ? 'bg-accent shadow-sm'
                   : idx < currentStep
