@@ -53,19 +53,3 @@
 - Browser thật mở `http://localhost:1431`: `document.title` đúng, `#root` có 1 con, header "Light Stage" render, **0 console error** (không có vi phạm CSP).
 - `tauri build --debug` được kiểm ở 16.7 để chắc chắn webview Tauri không khác trình duyệt.
 
-## 2026-11-19 — Đợt 16.5: lazy-load Stage 3D, chunk khởi động < 500 kB
-
-### Thay đổi
-- `src/App.tsx`: `Stage3DView` chuyển sang `React.lazy(() => import(...))` (named export → `default`), bọc `<Suspense>` với skeleton `Stage3DLoadingSkeleton` (`data-testid="stage-3d-skeleton"`, `aria-busy`, chiều cao `h-full` → không nhảy bố cục). Import tĩnh cũ bị gỡ.
-- Test cập nhật theo async chunk: `App.test.tsx` dùng `await screen.findByTestId("stage-3d-view")`; `realUserJourney.test.tsx` Hành trình 4 chuyển `async` + `waitFor(preset-foh)`.
-
-### Quyết định kỹ thuật
-- `manualChunks.three` đã có sẵn từ trước; phần giảm thật đến từ việc gỡ import tĩnh `Stage3DView` khỏi entry → `three` chỉ tải khi mở tab Stage 3D.
-- Skeleton cố định kích thước thay vì spinner giữa màn hình để không đẩy layout khi chunk về.
-- Suspense đặt **trong** nhánh `viewMode === 'stage'` nên các view khác không bị ảnh hưởng.
-
-### Kiểm chứng (`npm run build`)
-- Trước: `index` 557.21 kB (gzip 152.96) + `three` 547.36 kB.
-- Sau: `index` **481.70 kB (gzip 133.41)** < 500 kB; `Stage3DView` 76.73 kB (gzip 20.86); `three` 547.36 kB chỉ tải lười.
-- `npx vitest run` → **37 files / 353 tests pass**.
-
