@@ -22,7 +22,8 @@ describe("App Dual View Integration", () => {
     const rundownBtn = screen.getByTitle("Cue Rundown List");
     fireEvent.click(rundownBtn);
 
-    expect(screen.getByText("View Role:")).toBeInTheDocument();
+    // Rundown-only view unmounts the split view's Timeline Tracks pane
+    expect(screen.queryByText("Timeline Tracks")).not.toBeInTheDocument();
 
     const timelineBtn = screen.getByTitle("Timeline Tracks");
     fireEvent.click(timelineBtn);

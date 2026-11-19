@@ -339,8 +339,8 @@ export const RundownTable: React.FC = () => {
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
     if (isActive || status === 'Go') {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 shadow-sm animate-pulse">
-          <Play className="h-3 w-3 fill-current" />
+        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 animate-pulse">
+          <Play className="h-3 w-3 fill-current" aria-hidden="true" />
           <span>GO</span>
           <span className="relative flex h-2 w-2 ml-0.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-go opacity-75" />
@@ -352,7 +352,7 @@ export const RundownTable: React.FC = () => {
     if (isStandby || status === 'Standby') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
-          <AlertCircle className="h-3 w-3" />
+          <AlertCircle className="h-3 w-3" aria-hidden="true" />
           <span>STANDBY</span>
         </span>
       );
@@ -360,7 +360,7 @@ export const RundownTable: React.FC = () => {
     if (status === 'Hold') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
-          <Pause className="h-3 w-3" />
+          <Pause className="h-3 w-3" aria-hidden="true" />
           <span>HOLD</span>
         </span>
       );
@@ -368,7 +368,7 @@ export const RundownTable: React.FC = () => {
     if (status === 'Skip') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
-          <FastForward className="h-3 w-3" />
+          <FastForward className="h-3 w-3" aria-hidden="true" />
           <span>SKIP</span>
         </span>
       );
@@ -376,7 +376,7 @@ export const RundownTable: React.FC = () => {
     if (status === 'Completed') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
-          <CheckCircle2 className="h-3 w-3 text-status-go/70" />
+          <CheckCircle2 className="h-3 w-3 text-status-go/70" aria-hidden="true" />
           <span>COMPLETED</span>
         </span>
       );
@@ -384,7 +384,7 @@ export const RundownTable: React.FC = () => {
     // Pending
     return (
       <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
-        <Clock className="h-3 w-3 text-content-3" />
+        <Clock className="h-3 w-3 text-content-3" aria-hidden="true" />
         <span>PENDING</span>
       </span>
     );
@@ -395,7 +395,7 @@ export const RundownTable: React.FC = () => {
     if (isActive) {
       return `bg-status-go/10 border-l-4 border-l-status-go ${
         isSelected ? 'ring-2 ring-accent' : 'ring-1 ring-status-go/30'
-      } shadow-sm`;
+      }`;
     }
     if (isSelected) {
       return 'bg-surface-2/80 ring-1 ring-accent/60 border-l-4 border-l-accent';
@@ -409,20 +409,17 @@ export const RundownTable: React.FC = () => {
   return (
     <div className="flex h-full w-full flex-col bg-surface-0 text-content-1 select-none">
       {/* Table Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1/90 px-4 py-2.5 backdrop-blur flex-shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1 px-4 py-2.5 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-content-3">
-            View Role:
-          </span>
-          <div className="inline-flex rounded-lg bg-surface-2 p-0.5 text-xs border border-border-default">
+<div className="inline-flex rounded bg-surface-2 p-0.5 text-xs border border-border-default">
             {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as RoleFilter[]).map((role) => (
               <button
                 key={role}
                 type="button"
                 onClick={() => setRoleFilter(role)}
-                className={`rounded-md px-3 py-1 font-medium transition-colors ${
+                className={`rounded px-3 py-1 font-medium transition-colors ${
                   roleFilter === role
-                    ? 'bg-accent text-surface-0 font-bold shadow-sm'
+                    ? 'bg-accent text-surface-0 font-bold '
                     : 'text-content-3 hover:text-content-1'
                 }`}
               >
@@ -441,9 +438,9 @@ export const RundownTable: React.FC = () => {
                 addCue(actId, { title: 'New Cue' });
               }
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-surface-3 hover:bg-surface-2 border border-border-default px-3 py-1.5 text-xs font-semibold text-content-1 shadow transition-colors"
+            className="inline-flex items-center gap-1.5 rounded bg-surface-3 hover:bg-surface-2 border border-border-default px-3 py-1.5 text-xs font-semibold text-content-1 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5 text-accent" />
+            <Plus className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             <span>Add Cue</span>
           </button>
         </div>
@@ -452,7 +449,7 @@ export const RundownTable: React.FC = () => {
       {/* Table Container */}
       <div className="flex-1 overflow-auto">
         <table className="w-full border-collapse text-left text-xs">
-          <thead className="sticky top-0 z-10 border-b border-border-default bg-surface-1 text-content-3 uppercase font-mono tracking-wider">
+          <thead className="sticky top-0 z-10 border-b border-border-default bg-surface-1 text-content-3 font-semibold">
             <tr>
               <th className="py-2.5 px-3 w-24">Status</th>
               <th className="py-2.5 px-3 w-16">Cue #</th>
@@ -462,7 +459,7 @@ export const RundownTable: React.FC = () => {
               {(roleFilter === 'ALL' || roleFilter === 'LX') && (
                 <th className="py-2.5 px-3 min-w-[170px] text-dept-lx">
                   <div className="flex items-center gap-1">
-                    <Lightbulb className="h-3.5 w-3.5" />
+                    <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Lighting (LX)</span>
                   </div>
                 </th>
@@ -471,7 +468,7 @@ export const RundownTable: React.FC = () => {
               {(roleFilter === 'ALL' || roleFilter === 'VX') && (
                 <th className="py-2.5 px-3 min-w-[150px] text-dept-vx">
                   <div className="flex items-center gap-1">
-                    <Tv className="h-3.5 w-3.5" />
+                    <Tv className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Visual LED (VX)</span>
                   </div>
                 </th>
@@ -480,7 +477,7 @@ export const RundownTable: React.FC = () => {
               {(roleFilter === 'ALL' || roleFilter === 'SQ') && (
                 <th className="py-2.5 px-3 min-w-[140px] text-dept-sq">
                   <div className="flex items-center gap-1">
-                    <Volume2 className="h-3.5 w-3.5" />
+                    <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Sound (SQ)</span>
                   </div>
                 </th>
@@ -489,7 +486,7 @@ export const RundownTable: React.FC = () => {
               {(roleFilter === 'ALL' || roleFilter === 'ST') && (
                 <th className="py-2.5 px-3 min-w-[140px] text-dept-st">
                   <div className="flex items-center gap-1">
-                    <Users className="h-3.5 w-3.5" />
+                    <Users className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Stage Action</span>
                   </div>
                 </th>
@@ -504,7 +501,7 @@ export const RundownTable: React.FC = () => {
               <React.Fragment key={act.id}>
                 {/* Act Header Banner */}
                 <tr className="bg-surface-1 font-semibold text-content-2">
-                  <td colSpan={10} className="py-2 px-4 text-xs tracking-wide">
+                  <td colSpan={10} className="py-2 px-4 text-xs">
                     <span className="text-content-1 mr-2 font-mono">{act.title}</span>
                     <span className="text-[11px] font-normal text-content-3">
                       ({act.cues.length} cues)
@@ -558,11 +555,12 @@ export const RundownTable: React.FC = () => {
                               autoFocus
                             />
                             <button
+                              aria-label="Lưu (Save)"
                               type="button"
                               onClick={commitCurrentEdit}
                               className="rounded bg-accent/20 px-2 py-1 text-[11px] font-medium text-accent hover:bg-accent/30"
                             >
-                              <Check className="h-3 w-3" />
+                              <Check className="h-3 w-3" aria-hidden="true" />
                             </button>
                           </div>
                         ) : (
@@ -600,11 +598,12 @@ export const RundownTable: React.FC = () => {
                               autoFocus
                             />
                             <button
+                              aria-label="Lưu (Save)"
                               type="button"
                               onClick={commitCurrentEdit}
                               className="rounded bg-accent/20 p-1 text-accent"
                             >
-                              <Check className="h-3 w-3" />
+                              <Check className="h-3 w-3" aria-hidden="true" />
                             </button>
                           </div>
                         ) : (
@@ -613,7 +612,7 @@ export const RundownTable: React.FC = () => {
                             className="flex items-center gap-1.5 text-content-2 hover:text-accent"
                             title="Bấm để chỉnh sửa Thời lượng"
                           >
-                            <Clock className="h-3 w-3 text-content-3" />
+                            <Clock className="h-3 w-3 text-content-3" aria-hidden="true" />
                             <span>{formatDuration(cue.durationMs)}</span>
                           </div>
                         )}
@@ -630,29 +629,31 @@ export const RundownTable: React.FC = () => {
                               anchor={editAnchor}
                               width={288}
                               popoverRef={editContainerRef}
-                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2.5 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                              className="rounded border border-border-default bg-surface-1 p-3 shadow-lg space-y-2.5 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1.5">
                                 <span className="font-bold text-dept-lx flex items-center gap-1.5">
-                                  <Lightbulb className="h-3.5 w-3.5" />
+                                  <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Chỉnh sửa Ánh sáng (LX)</span>
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <button
+                              aria-label="Lưu (Save)"
                                     type="button"
                                     onClick={commitCurrentEdit}
                                     className="rounded p-1 text-status-go hover:bg-surface-2"
                                     title="Lưu (Enter)"
                                   >
-                                    <Check className="h-3.5 w-3.5" />
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                   <button
+                              aria-label="Hủy (Cancel)"
                                     type="button"
                                     onClick={cancelEdit}
                                     className="rounded p-1 text-content-3 hover:bg-surface-2"
                                     title="Hủy (Esc)"
                                   >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                 </div>
                               </div>
@@ -822,7 +823,7 @@ export const RundownTable: React.FC = () => {
                                             className="rounded p-0.5 text-content-3 hover:bg-surface-2 hover:text-status-hold"
                                             title="Xoá đèn"
                                           >
-                                            <Trash2 className="h-3 w-3" />
+                                            <Trash2 className="h-3 w-3" aria-hidden="true" />
                                           </button>
                                         </div>
                                       );
@@ -851,7 +852,7 @@ export const RundownTable: React.FC = () => {
                                       }
                                       className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-dept-lx hover:bg-surface-2"
                                     >
-                                      <Plus className="h-3 w-3" />
+                                      <Plus className="h-3 w-3" aria-hidden="true" />
                                       <span>Thêm đèn</span>
                                     </button>
                                     {hasUnclassifiedFixtures(draftLx.fixtures) && (
@@ -859,7 +860,7 @@ export const RundownTable: React.FC = () => {
                                         className="inline-flex items-center gap-1 text-[10px] text-status-standby"
                                         title="Loại đèn chưa nhận diện — sẽ được vẽ ở vị trí mặc định"
                                       >
-                                        <AlertTriangle className="h-3 w-3" />
+                                        <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                                         <span>{UNCLASSIFIED_LABEL}</span>
                                       </span>
                                     )}
@@ -900,7 +901,7 @@ export const RundownTable: React.FC = () => {
                                   max="100"
                                   value={draftLx.intensity}
                                   onChange={(e) => setDraftLx({ ...draftLx, intensity: Number(e.target.value) })}
-                                  className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
+                                  className="w-full h-1.5 rounded appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
                                 />
                               </div>
 
@@ -908,7 +909,7 @@ export const RundownTable: React.FC = () => {
                               <div className="border-t border-border-subtle pt-2">
                                 <div className="flex justify-between items-center mb-1.5">
                                   <label className="text-[10px] font-semibold text-content-3 flex items-center gap-1">
-                                    <Palette className="h-3 w-3" />
+                                    <Palette className="h-3 w-3" aria-hidden="true" />
                                     <span>Màu Đèn / Kelvin / Gel</span>
                                   </label>
                                   <div
@@ -989,7 +990,7 @@ export const RundownTable: React.FC = () => {
                                         hex,
                                       });
                                     }}
-                                    className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
+                                    className="w-full h-1.5 rounded appearance-none bg-surface-2 accent-dept-lx cursor-pointer"
                                   />
                                 </div>
 
@@ -1016,7 +1017,7 @@ export const RundownTable: React.FC = () => {
                                       className="flex items-center gap-1 text-[9px] text-status-standby bg-status-standby/15 border border-status-standby/40 rounded px-1.5 py-0.5 whitespace-nowrap"
                                       title="Màu này nằm ngoài không gian màu tiêu chuẩn sRGB"
                                     >
-                                      <AlertTriangle className="h-3 w-3 text-status-standby flex-shrink-0" />
+                                      <AlertTriangle className="h-3 w-3 text-status-standby flex-shrink-0" aria-hidden="true" />
                                       <span>Gamut warning</span>
                                     </div>
                                   )}
@@ -1070,27 +1071,29 @@ export const RundownTable: React.FC = () => {
                               anchor={editAnchor}
                               width={256}
                               popoverRef={editContainerRef}
-                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                              className="rounded border border-border-default bg-surface-1 p-3 shadow-lg space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-vx flex items-center gap-1">
-                                  <Tv className="h-3.5 w-3.5" />
+                                  <Tv className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Visual LED (VX)</span>
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <button
+                              aria-label="Lưu (Save)"
                                     type="button"
                                     onClick={commitCurrentEdit}
                                     className="rounded p-1 text-status-go hover:bg-surface-2"
                                   >
-                                    <Check className="h-3.5 w-3.5" />
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                   <button
+                              aria-label="Hủy (Cancel)"
                                     type="button"
                                     onClick={cancelEdit}
                                     className="rounded p-1 text-content-3 hover:bg-surface-2"
                                   >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                 </div>
                               </div>
@@ -1167,27 +1170,29 @@ export const RundownTable: React.FC = () => {
                               anchor={editAnchor}
                               width={256}
                               popoverRef={editContainerRef}
-                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                              className="rounded border border-border-default bg-surface-1 p-3 shadow-lg space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-sq flex items-center gap-1">
-                                  <Volume2 className="h-3.5 w-3.5" />
+                                  <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Âm thanh (SQ)</span>
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <button
+                              aria-label="Lưu (Save)"
                                     type="button"
                                     onClick={commitCurrentEdit}
                                     className="rounded p-1 text-status-go hover:bg-surface-2"
                                   >
-                                    <Check className="h-3.5 w-3.5" />
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                   <button
+                              aria-label="Hủy (Cancel)"
                                     type="button"
                                     onClick={cancelEdit}
                                     className="rounded p-1 text-content-3 hover:bg-surface-2"
                                   >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                 </div>
                               </div>
@@ -1222,7 +1227,7 @@ export const RundownTable: React.FC = () => {
                                   max="100"
                                   value={draftSq.volume}
                                   onChange={(e) => setDraftSq({ ...draftSq, volume: Number(e.target.value) })}
-                                  className="w-full h-1.5 rounded-lg appearance-none bg-surface-2 accent-dept-sq cursor-pointer"
+                                  className="w-full h-1.5 rounded appearance-none bg-surface-2 accent-dept-sq cursor-pointer"
                                 />
                               </div>
                             </ClampedPopover>
@@ -1251,27 +1256,29 @@ export const RundownTable: React.FC = () => {
                               anchor={editAnchor}
                               width={288}
                               popoverRef={editContainerRef}
-                              className="rounded-xl border border-border-default bg-surface-1 p-3 shadow-2xl space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
+                              className="rounded border border-border-default bg-surface-1 p-3 shadow-lg space-y-2 text-xs text-content-1 animate-in fade-in zoom-in-95"
                             >
                               <div className="flex items-center justify-between border-b border-border-default pb-1">
                                 <span className="font-bold text-dept-st flex items-center gap-1">
-                                  <Users className="h-3.5 w-3.5" />
+                                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Hoạt cảnh Sân khấu (ST)</span>
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <button
+                              aria-label="Lưu (Save)"
                                     type="button"
                                     onClick={commitCurrentEdit}
                                     className="rounded p-1 text-status-go hover:bg-surface-2"
                                   >
-                                    <Check className="h-3.5 w-3.5" />
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                   <button
+                              aria-label="Hủy (Cancel)"
                                     type="button"
                                     onClick={cancelEdit}
                                     className="rounded p-1 text-content-3 hover:bg-surface-2"
                                   >
-                                    <X className="h-3.5 w-3.5" />
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                                   </button>
                                 </div>
                               </div>
@@ -1315,7 +1322,7 @@ export const RundownTable: React.FC = () => {
                               e.stopPropagation();
                               standbyCue(cue.id);
                             }}
-                            className={`rounded px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors ${
+                            className={`rounded px-2.5 py-1 text-[11px] font-bold transition-colors ${
                               isStandby
                                 ? 'bg-status-standby text-surface-0 ring-2 ring-status-standby'
                                 : 'bg-status-standby/20 text-status-standby hover:bg-status-standby/30 border border-status-standby/40'
@@ -1339,12 +1346,12 @@ export const RundownTable: React.FC = () => {
                               aria-label="Tùy chọn khác"
                               className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                             </button>
 
                             {activeRowMenuCueId === cue.id && (
                               <div
-                                className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-border-default bg-surface-1 shadow-xl z-30 py-1 text-xs text-content-1"
+                                className="absolute right-0 top-full mt-1 w-44 rounded border border-border-default bg-surface-1 shadow-lg z-30 py-1 text-xs text-content-1"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <button
@@ -1356,7 +1363,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-accent"
                                   title="Thêm Cue bên dưới"
                                 >
-                                  <Plus className="h-3.5 w-3.5" />
+                                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Thêm Cue bên dưới</span>
                                 </button>
                                 <button
@@ -1368,7 +1375,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
                                   title="Nhân đôi Cue"
                                 >
-                                  <Copy className="h-3.5 w-3.5" />
+                                  <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Nhân đôi Cue</span>
                                 </button>
                                 <button
@@ -1380,7 +1387,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-status-hold"
                                   title="Hold Cue"
                                 >
-                                  <Pause className="h-3.5 w-3.5" />
+                                  <Pause className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Tạm dừng (Hold)</span>
                                 </button>
                                 <button
@@ -1392,7 +1399,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
                                   title="Skip Cue"
                                 >
-                                  <FastForward className="h-3.5 w-3.5" />
+                                  <FastForward className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Bỏ qua (Skip)</span>
                                 </button>
                                 <button
@@ -1404,7 +1411,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
                                   title="Reset Cue"
                                 >
-                                  <RotateCcw className="h-3.5 w-3.5" />
+                                  <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Đặt lại (Reset)</span>
                                 </button>
                                 <div className="my-1 border-t border-border-subtle" />
@@ -1417,7 +1424,7 @@ export const RundownTable: React.FC = () => {
                                   className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-status-danger/10 text-left text-status-danger"
                                   title="Xóa Cue"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Xóa Cue</span>
                                 </button>
                               </div>
