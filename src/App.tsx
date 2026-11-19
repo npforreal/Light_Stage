@@ -11,6 +11,7 @@ import {
   downloadLightStageFile,
   AUTOSAVE_FAILURE_MESSAGE as AUTOSAVE_ERROR_MESSAGE,
   AutoSaveMeta,
+  initAutoSaveSubscription,
 } from './services/persistence';
 import { useStageStore } from './store/useStageStore';
 import { useVisualStore } from './store/useVisualStore';
@@ -114,6 +115,10 @@ export const App: React.FC = () => {
       }
     }
   }, []);
+
+  // Wire the autosave subscription once on mount (cleanup unsubscribes).
+  // No module side effects on import — keeps tests and tooling deterministic.
+  useEffect(() => initAutoSaveSubscription(), []);
 
   // Startup check: discover existing autosave and prompt user to recover
   useEffect(() => {

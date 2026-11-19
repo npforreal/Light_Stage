@@ -154,6 +154,9 @@ export function serializeShow(show: Show, pretty = true, stage?: StageConfig): s
   return pretty ? JSON.stringify(file, null, 2) : JSON.stringify(file);
 }
 
+/** Largest .lightstage file we will read into memory (25 MB). */
+export const MAX_LIGHTSTAGE_FILE_BYTES = 25 * 1024 * 1024;
+
 /**
  * Reads a `.lightstage` file from disk and parses it. FileReader errors and
  * empty files are reported as a failed ParseResult instead of throwing, so the
@@ -167,6 +170,13 @@ export function readLightStageFile(file: File): Promise<ParseResult> {
     }
     if (file.size === 0) {
       resolve({ success: false, error: 'File is empty' });
+      return;
+    }
+    if (file.size > MAX_LIGHTSTAGE_FILE_BYTES) {
+      resolve({
+        success: false,
+        error: `File is too large — tối đa ${Math.round(MAX_LIGHTSTAGE_FILE_BYTES / (1024 * 1024))} MB. Dùng file .lightstage xuất từ app này.`,
+      });
       return;
     }
 
@@ -553,7 +563,11 @@ export function stopAutoSaveSubscription(): void {
   }
 }
 
-// Auto-initialize in browser/desktop environment
-if (typeof window !== 'undefined') {
-  setupAutoSaveSubscription();
+/**
+ * Explicit autosave wiring. The renderer (App.tsx) calls this once on mount
+ * and relies on the returned unsubscribe for cleanup — no module side effects
+ * on import, so tests and tooling stay deterministic.
+ */
+export function initAutoSaveSubscription(debounceMs = 200): () => void {
+  return setupAutoSaveSubscription(debounceMs);
 }
