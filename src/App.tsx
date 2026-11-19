@@ -261,6 +261,13 @@ export const App: React.FC = () => {
         return; // Don't intercept when user is typing
       }
 
+      // Import-error dialog is modal: Esc dismisses it; the rest stays inert.
+      if (importError && e.key === 'Escape') {
+        e.preventDefault();
+        setImportError(null);
+        return;
+      }
+
       // --- Group 1: always available, even when the operator is locked ---
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
@@ -299,6 +306,9 @@ export const App: React.FC = () => {
         return;
       }
 
+      // Modal open: cue commands stay inert; VX panic above is still live.
+      if (importError) return;
+
       // --- Group 2: Operator Lock blocks cue commands below this line ---
       if (isOperatorLocked) return;
 
@@ -327,7 +337,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goCue, nextCue, prevCue, holdCue, isOperatorLocked]);
+  }, [goCue, nextCue, prevCue, holdCue, isOperatorLocked, importError]);
 
   const handleOpenProjectClick = () => {
     if (isDirty && typeof window !== 'undefined' && window.confirm) {
