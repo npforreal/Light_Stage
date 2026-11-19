@@ -47,17 +47,17 @@ Nguồn học (đã tìm được):
 ## A3. Đề xuất hệ màu Light Stage (bản nháp, cần chỉnh khi implement)
 Nguyên tắc: **màu bão hoà chỉ dành cho trạng thái và cho "ánh sáng thật" trên Stage 2D; phần còn lại gần xám.**
 
-| Vai trò | Token | Hướng OKLCH (nháp) | Ghi chú |
+| Vai trò | Token | Hướng OKLCH (đã triển khai 2026-11-19, đợt 17.1) | Ghi chú |
 |---|---|---|---|
-| Nền ứng dụng | `--surface-0/1/2/3` | L 0.16 → 0.30, C ≤ 0.02, H ≈ 260 | 4 nấc nâng, không đen tuyệt đối |
-| Viền | `--border` | L ≈ 0.36, C 0.02 | |
-| Chữ chính / phụ / mờ | `--text-1/2/3` | L 0.93 / 0.75 / 0.60 | text-3 chỉ cho nhãn phụ, kiểm Lc |
-| Accent thương hiệu | `--accent` | L 0.75, C 0.12, H 230 | chỉ cho focus, lựa chọn đang chọn |
-| Phân hệ LX / VX / SQ / ST | `--dept-*` | **cùng L ≈ 0.72, cùng C ≈ 0.09**, 4 hue cách đều ~90° | màu nhạt, chỉ dùng cho chấm nhận diện + dải timeline mờ |
-| Go | `--status-go` | xanh lục, C vừa | luôn kèm chữ GO |
-| Standby | `--status-standby` | hổ phách | luôn kèm chữ STBY |
-| Hold | `--status-hold` | xanh dương nhạt | |
-| Overrun / lỗi | `--status-danger` | đỏ | nhấp nháy chỉ khi Overrun |
+| Nền ứng dụng | `--surface-0/1/2/3` | L 0.16 / 0.21 / 0.26 / 0.31, C ≤ 0.004, H 285° | 4 nấc nâng gần trung tính, không đen tuyệt đối |
+| Viền | `--border` | L ≈ 0.34 / 0.42, C 0.005 / 0.012 / 0.025, H 285° | |
+| Chữ chính / phụ / mờ | `--text-1/2/3` | L 0.95 / 0.78 / 0.60 | text-3 chỉ cho nhãn phụ, kiểm Lc |
+| Accent | `--accent` | L 0.80, C 0.02, H 285° | **chỉ** cho focus ring / lựa chọn đang chọn (không còn màu thương hiệu xanh dương riêng) |
+| Phân hệ LX / VX / SQ / ST | `--dept-*` | **cùng L ≈ 0.72, cùng C ≈ 0.06**, 4 hue cách đều ~90° | màu nhạt, chỉ dùng cho chấm nhận diện + dải timeline mờ |
+| Go | `--status-go` | xanh lục, C ≈ 0.14 | luôn kèm chữ GO |
+| Standby | `--status-standby` | hổ phách, C ≈ 0.13 | luôn kèm chữ STBY |
+| Hold | `--status-hold` | xanh dương nhạt, C ≈ 0.10 | |
+| Overrun / lỗi | `--status-danger` | đỏ, C ≈ 0.17 | nhấp nháy chỉ khi Overrun |
 
 Quy tắc: màu phân hệ **không được trùng hue** với 4 màu trạng thái; nếu buộc trùng thì phân hệ dùng độ nhạt khác (nền mờ 12% + viền) còn trạng thái dùng nền đặc.
 
