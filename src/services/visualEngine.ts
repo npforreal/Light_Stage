@@ -56,13 +56,13 @@ export function checkAspectMismatch(
 export function getOutputStatusDotClass(status: VxOutputStatus): string {
   switch (status) {
     case 'active':
-      return 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]';
+      return 'bg-status-go shadow-[0_0_8px_var(--color-status-go)]';
     case 'frozen':
-      return 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]';
+      return 'bg-status-standby shadow-[0_0_8px_var(--color-status-standby)]';
     case 'blackout':
-      return 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]';
+      return 'bg-status-danger shadow-[0_0_8px_var(--color-status-danger)]';
     case 'standby':
     default:
-      return 'bg-slate-500';
+      return 'bg-content-3';
   }
 }

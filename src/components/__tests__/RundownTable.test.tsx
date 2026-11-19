@@ -33,19 +33,28 @@ describe('RundownTable Component', () => {
     expect(screen.queryByText(/Visual LED \(VX\)/i)).not.toBeInTheDocument();
   });
 
-  it('triggers Standby and GO actions on cue', () => {
+  it('arms Standby on cue and selects row without firing GO (Đợt 15.2 / R4 live safety)', () => {
     render(<RundownTable />);
 
+    const firstCue = useShowStore.getState().show.acts[0].cues[0];
+
+    // Standby button arms cue
     const stbyBtn = screen.getByText('STBY');
     fireEvent.click(stbyBtn);
-
-    const firstCue = useShowStore.getState().show.acts[0].cues[0];
     expect(useShowStore.getState().standbyCueId).toBe(firstCue.id);
 
-    const goBtn = screen.getByRole('button', { name: /GO/i });
-    fireEvent.click(goBtn);
+    // Row-level GO button is removed for live safety
+    const goButtons = screen.queryAllByRole('button', { name: /^GO$/i });
+    expect(goButtons).toHaveLength(0);
 
-    expect(useShowStore.getState().activeCueId).toBe(firstCue.id);
+    // Clicking row selects cue and opens Inspector, NEVER firing GO
+    const cueRow = screen.getByText('Pre-Show / Walk-in').closest('tr');
+    expect(cueRow).not.toBeNull();
+    fireEvent.click(cueRow!);
+
+    expect(useShowStore.getState().selectedCueId).toBe(firstCue.id);
+    expect(useShowStore.getState().isInspectorOpen).toBe(true);
+    expect(useShowStore.getState().activeCueId).toBeNull(); // Strict rule: NEVER triggers playback
   });
 
   it('supports inline editing of Title, LX, VX, SQ, and ST cells', () => {
@@ -131,30 +140,53 @@ describe('RundownTable Component', () => {
     expect(goCueSpy).not.toHaveBeenCalled();
   });
 
-  it('supports row actions: Add Below, Duplicate, and Delete cue', () => {
+  it('supports row actions via ··· menu: Add Below, Duplicate, and Delete cue (Đợt 15.2 / R4)', () => {
     render(<RundownTable />);
 
     expect(screen.getByText('1.0')).toBeInTheDocument();
     const initialCueCount = useShowStore.getState().show.acts[0].cues.length;
 
-    // 1. Add Cue Below
+    // 1. Add Cue Below via ··· menu
+    const menuBtn1 = screen.getAllByTitle('Tùy chọn khác')[0];
+    fireEvent.click(menuBtn1);
+
     const addBelowBtn = screen.getByTitle('Thêm Cue bên dưới');
     fireEvent.click(addBelowBtn);
 
     expect(useShowStore.getState().show.acts[0].cues.length).toBe(initialCueCount + 1);
 
-    // 2. Duplicate Cue
-    const duplicateBtns = screen.getAllByTitle('Nhân đôi Cue');
-    fireEvent.click(duplicateBtns[0]);
+    // 2. Duplicate Cue via ··· menu
+    const menuBtn2 = screen.getAllByTitle('Tùy chọn khác')[0];
+    fireEvent.click(menuBtn2);
+
+    const duplicateBtn = screen.getByTitle('Nhân đôi Cue');
+    fireEvent.click(duplicateBtn);
 
     expect(useShowStore.getState().show.acts[0].cues.length).toBe(initialCueCount + 2);
     expect(screen.getByText(/Pre-Show \/ Walk-in \(Copy\)/i)).toBeInTheDocument();
 
-    // 3. Delete Cue
-    const deleteBtns = screen.getAllByTitle('Xóa Cue');
-    fireEvent.click(deleteBtns[0]);
+    // 3. Delete Cue via ··· menu
+    const menuBtn3 = screen.getAllByTitle('Tùy chọn khác')[0];
+    fireEvent.click(menuBtn3);
+
+    const deleteBtn = screen.getByTitle('Xóa Cue');
+    fireEvent.click(deleteBtn);
 
     expect(useShowStore.getState().show.acts[0].cues.length).toBe(initialCueCount + 1);
+  });
+
+  it('enforces touch target >= 40px and visual row highlight matrix (Đợt 15.2 / R4)', () => {
+    render(<RundownTable />);
+
+    const cueRow = screen.getByText('Pre-Show / Walk-in').closest('tr');
+    expect(cueRow).not.toBeNull();
+    // Class includes min-h-[44px] or h-11
+    expect(cueRow?.className).toMatch(/min-h-\[44px\]|h-11/);
+
+    // Click to select
+    fireEvent.click(cueRow!);
+    // Selected highlight has border-l-accent
+    expect(cueRow?.className).toMatch(/border-l-accent/);
   });
 
   it('keeps the Rundown count in sync with the 30-fixture quick entry (Đợt 10.1)', () => {

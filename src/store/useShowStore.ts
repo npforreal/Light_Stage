@@ -11,6 +11,7 @@ import {
   calculateCueDeviceCounts,
 } from '../types/stage';
 import { normalizeCue, normalizeShow } from '../services/fixtureModel';
+import { isKeyboardProtected } from '../services/shortcutRegistry';
 
 export interface DeviceStats {
   totalLightingFixtures: number;
@@ -24,6 +25,9 @@ export interface ShowState {
   isDirty: boolean;
   activeCueId: string | null;
   standbyCueId: string | null;
+  selectedCueId: string | null;
+  isInspectorOpen: boolean;
+  isOperatorLocked: boolean;
 
   // History / Undo / Redo
   past: Show[];
@@ -32,6 +36,14 @@ export interface ShowState {
   canRedo: boolean;
   undo: () => void;
   redo: () => void;
+
+  // Operator Lock Action
+  setOperatorLocked: (locked: boolean) => void;
+
+  // Inspector & Selection Actions
+  selectCue: (cueId: string | null) => void;
+  toggleInspector: () => void;
+  setInspectorOpen: (open: boolean) => void;
 
   // Show Actions
   loadShow: (show: Show) => void;
@@ -68,6 +80,7 @@ export interface ShowState {
   getCueById: (cueId: string) => Cue | undefined;
   getActiveCue: () => Cue | undefined;
   getStandbyCue: () => Cue | undefined;
+  getSelectedCue: () => Cue | undefined;
   getDeviceStats: () => DeviceStats;
 }
 
@@ -102,6 +115,17 @@ export const useShowStore = create<ShowState>((set, get) => {
     isDirty: false,
     activeCueId: null,
     standbyCueId: initialStandby,
+    selectedCueId: null,
+    isInspectorOpen: false,
+    isOperatorLocked: false,
+    setOperatorLocked: (locked: boolean) => set({ isOperatorLocked: locked }),
+    selectCue: (cueId: string | null) =>
+      set({
+        selectedCueId: cueId,
+        ...(cueId !== null ? { isInspectorOpen: true } : {}),
+      }),
+    toggleInspector: () => set((state) => ({ isInspectorOpen: !state.isInspectorOpen })),
+    setInspectorOpen: (open: boolean) => set({ isInspectorOpen: open }),
     past: [],
     future: [],
     canUndo: false,
@@ -164,6 +188,9 @@ export const useShowStore = create<ShowState>((set, get) => {
         isDirty: false,
         activeCueId: active,
         standbyCueId: standby,
+        selectedCueId: null,
+        isInspectorOpen: false,
+        isOperatorLocked: false,
         past: [],
         future: [],
         canUndo: false,
@@ -203,6 +230,9 @@ export const useShowStore = create<ShowState>((set, get) => {
         isDirty: true,
         activeCueId: null,
         standbyCueId: firstCueId,
+        selectedCueId: null,
+        isInspectorOpen: false,
+        isOperatorLocked: false,
         past: [],
         future: [],
         canUndo: false,
@@ -422,6 +452,7 @@ export const useShowStore = create<ShowState>((set, get) => {
             state.standbyCueId === cueId
               ? (allRemaining[0]?.id ?? null)
               : state.standbyCueId,
+          selectedCueId: state.selectedCueId === cueId ? null : state.selectedCueId,
         };
       });
     },
@@ -700,6 +731,11 @@ export const useShowStore = create<ShowState>((set, get) => {
       return standbyCueId ? get().getCueById(standbyCueId) : undefined;
     },
 
+    getSelectedCue: () => {
+      const { selectedCueId } = get();
+      return selectedCueId ? get().getCueById(selectedCueId) : undefined;
+    },
+
     getDeviceStats: () => {
       const cues = get().getAllCues();
       let totalLighting = 0;
@@ -741,10 +777,19 @@ export interface GlobalShortcutOptions {
  * - Ctrl+S / Cmd+S: Save / Export
  */
 export function handleGlobalKeyDown(e: KeyboardEvent, options?: GlobalShortcutOptions): boolean {
+  if (useShowStore.getState().isOperatorLocked) {
+    return false;
+  }
+
   const isCtrlOrCmd = e.ctrlKey || e.metaKey;
   if (!isCtrlOrCmd) return false;
 
   const key = e.key.toLowerCase();
+
+  // Allow browser native undo/redo when typing inside an editable target (input/textarea)
+  if (isKeyboardProtected(e) && key !== 's') {
+    return false;
+  }
 
   // Undo: Ctrl+Z / Cmd+Z (without Shift)
   if (key === 'z' && !e.shiftKey) {

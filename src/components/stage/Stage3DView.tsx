@@ -14,14 +14,13 @@ import {
   getLegendTypes,
 } from '../../services/stageSymbols';
 import { StageRigEditor } from './StageRigEditor';
+import { VxControlBar } from './VxControlBar';
 import { Stage3DScene, isWebGLAvailable, CameraPresetType, CameraMode } from './Stage3DScene';
 import {
-  Eye,
   Sliders,
   AlertTriangle,
   Info,
   Wind,
-  Zap,
   Box,
   Layers,
 } from 'lucide-react';
@@ -46,7 +45,6 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
   const selectScreen = useStageStore((s) => s.selectScreen);
 
   const activeCue = useShowStore((s) => s.getActiveCue());
-  const standbyCue = useShowStore((s) => s.getStandbyCue());
   const vxOutputs = useVisualStore((s) => s.outputs);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -146,8 +144,22 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
     const scene = new Stage3DScene(containerRef.current, {
       beamThreshold,
       rendererFactory,
-      onSelectFixture: (id) => selectFixture(id),
-      onSelectScreen: (id) => selectScreen(id),
+      onSelectFixture: (id) => {
+        selectFixture(id);
+        const activeCue = useShowStore.getState().getActiveCue();
+        if (activeCue) {
+          useShowStore.getState().selectCue(activeCue.id);
+          useShowStore.getState().setInspectorOpen(true);
+        }
+      },
+      onSelectScreen: (id) => {
+        selectScreen(id);
+        const activeCue = useShowStore.getState().getActiveCue();
+        if (activeCue) {
+          useShowStore.getState().selectCue(activeCue.id);
+          useShowStore.getState().setInspectorOpen(true);
+        }
+      },
       onCameraModeChange: (mode) => setCameraPresetState(mode),
     });
 
@@ -183,17 +195,16 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-surface-0 text-content-1 select-none overflow-hidden" data-testid="stage-3d-view">
-      {/* Top Controls Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-default bg-surface-1/90 px-4 py-2 backdrop-blur z-20">
-        {/* Camera Views & Presets */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs">
-            <Eye className="h-3.5 w-3.5 text-accent" />
-            <span className="font-semibold text-content-2">Camera 3D:</span>
-          </div>
-
-          <div className="inline-flex rounded-lg bg-surface-2 p-0.5 text-xs border border-border-default">
+    <div className="relative flex h-full w-full flex-col bg-surface-0 text-content-1 select-none overflow-hidden" data-testid="stage-3d-view">
+      {/* Main 3D Canvas / Fallback Area */}
+      <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
+        {/* Floating Pill: Glassmorphism Technical Pill centered over 3D Canvas */}
+        <div
+          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl bg-[#0d121a]/80 border border-white/10 px-4 py-2 shadow-2xl backdrop-blur-md select-none text-xs"
+          data-testid="stage-3d-floating-pill"
+        >
+          {/* Camera Presets Segmented Control */}
+          <div className="inline-flex rounded-lg bg-surface-2/80 p-0.5 border border-border-subtle text-xs">
             <button
               onClick={() => handleCameraPreset('foh')}
               className={`rounded px-2.5 py-1 font-medium transition-colors ${
@@ -242,11 +253,10 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
             </span>
           )}
 
-          <div className="h-4 w-px bg-border-default" />
+          <div className="h-4 w-px bg-white/10" />
 
-          {/* Preset Buttons */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-content-3 font-semibold">Preset:</span>
+          {/* Stage Presets */}
+          <div className="flex items-center gap-1">
             {(['EndStage', 'Festival', 'Thrust'] as StagePreset[]).map((preset) => (
               <button
                 key={preset}
@@ -262,9 +272,9 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
             ))}
           </div>
 
-          <div className="h-4 w-px bg-border-default" />
+          <div className="h-4 w-px bg-white/10" />
 
-          {/* Haze & Dimmer Controls */}
+          {/* Optical Environment Controls: Haze & Dimmer */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setHaze(!haze)}
@@ -274,8 +284,9 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   : 'bg-surface-2 border-border-default text-content-3 hover:text-content-1'
               }`}
               title="Công tắc khói sân khấu (Haze/Fog) tăng giảm độ rõ chùm sáng"
+              data-testid="haze-toggle"
             >
-              <Wind className="h-3 w-3" />
+              <Wind className="h-3.5 w-3.5" />
               <span>Haze: {haze ? 'ON' : 'OFF'}</span>
             </button>
 
@@ -290,89 +301,54 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
               <option value="s-curve">Curve: S-Curve</option>
             </select>
           </div>
-        </div>
 
-        {/* Status Indicators & Drawer Toggle */}
-        <div className="flex items-center gap-3">
-          {/* Cue fixture counter (single source: cue fixtureModel) */}
-          <div
-            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono font-medium ${
-              isCountMismatch
-                ? 'bg-status-danger/20 text-status-danger border-status-danger/60 animate-pulse'
-                : 'bg-surface-2 text-content-2 border-border-default'
-            }`}
-            title={
-              isCountMismatch
-                ? 'Cảnh báo: Số lượng đèn hiển thị trên sân khấu không khớp số lượng nhập trong Cue!'
-                : 'Đèn của cue đang chạy (Go). Chưa gọi cue thì sân khấu trống.'
-            }
-            data-testid="cue-count-badge"
-          >
-            <span>
-              {activeCue
-                ? `Cue ${activeCue.cueNumber}: Nhập ${requestedCount} · Hiển thị ${activeCount}`
-                : 'Cue: chưa gọi · 0 đèn'}
-            </span>
-            {isCountMismatch && <AlertTriangle className="h-3.5 w-3.5 text-status-danger" />}
+          <div className="h-4 w-px bg-white/10" />
+
+          {/* Beams toggle: All Beams / Selected */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setShowAllBeams((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-semibold border transition-colors ${
+                showAllBeams
+                  ? 'bg-accent/20 border-accent text-accent'
+                  : 'bg-surface-2 border-border-default text-content-3 hover:text-content-1'
+              }`}
+              title="Chế độ hiển thị chùm sáng: Tất cả đèn trong cue hoặc chỉ đèn đang chọn"
+              data-testid="beam-show-all"
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>{showAllBeams ? 'All Beams' : 'Selected'}</span>
+            </button>
+
+            <button
+              onClick={() => setBeamThresholdState((prev) => (prev > 50 ? 50 : 150))}
+              className="font-mono text-[11px] font-bold text-accent hover:underline rounded bg-surface-2 px-1.5 py-0.5 border border-border-subtle"
+              title="Ngưỡng tự động ngắt chùm tia để tiết kiệm GPU/CPU khi số lượng đèn vượt ngưỡng"
+              data-testid="beam-threshold-toggle"
+            >
+              {beamThreshold > 50 ? '≤ 150' : '≤ 50'}
+            </button>
           </div>
 
-          {/* Base rig counter (configuration, NOT what is lit on stage) */}
-          <div
-            className="flex items-center gap-1 rounded-lg bg-surface-2 border border-border-default px-2.5 py-1 text-xs text-content-3 font-mono"
-            title="Số đèn trong rig mặc định của sân khấu (cấu hình). Đây không phải số đèn đang chiếu."
-            data-testid="rig-count-badge"
-          >
-            <Box className="h-3.5 w-3.5 text-content-3" />
-            <span>Rig mặc định {rigCount}</span>
-          </div>
+          <div className="h-4 w-px bg-white/10" />
 
-          {/* Power Consumption Badge */}
-          <div className="flex items-center gap-1 rounded-lg bg-surface-2 border border-border-default px-2.5 py-1 text-xs text-content-2 font-mono">
-            <Zap className="h-3.5 w-3.5 text-accent" />
-            <span className="font-semibold">{powerKw} kW</span>
-          </div>
-
-          {/* Active Cue Status */}
-          {activeCue ? (
-            <div className="flex items-center gap-2 rounded-lg bg-status-go/20 border border-status-go/50 px-2.5 py-1 text-xs">
-              <span className="h-2 w-2 rounded-full bg-status-go animate-ping" />
-              <span className="font-bold text-status-go font-mono">
-                {activeCue.cueNumber}
-              </span>
-              <span className="text-content-1 truncate max-w-[140px]">
-                {activeCue.title}
-              </span>
-            </div>
-          ) : standbyCue ? (
-            <div className="flex items-center gap-2 rounded-lg bg-status-standby/20 border border-status-standby/50 px-2.5 py-1 text-xs">
-              <span className="h-2 w-2 rounded-full bg-status-standby" />
-              <span className="font-bold text-status-standby font-mono">
-                STBY {standbyCue.cueNumber}
-              </span>
-            </div>
-          ) : (
-            <span className="text-xs text-content-3 italic">No Cue Active</span>
-          )}
-
+          {/* Rig Config Toggle */}
           <button
             onClick={() => setIsConfigOpen(!isConfigOpen)}
-            title="Mở bảng cấu hình Rig sân khấu (Stage Rig Config)"
             className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors border border-border-default ${
               isConfigOpen
-                ? 'bg-accent text-surface-0'
+                ? 'bg-accent text-surface-0 font-bold'
                 : 'bg-surface-2 text-content-2 hover:bg-surface-3 hover:text-content-1'
             }`}
+            title="Mở bảng cấu hình Rig sân khấu (Stage Rig Config)"
           >
             <Sliders className="h-3.5 w-3.5" />
             <span>Config</span>
           </button>
         </div>
-      </div>
 
-      {/* Main 3D Canvas / Fallback Area */}
-      <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
         {!webglAvailable ? (
-          <div className="flex h-full w-full flex-col items-center justify-center p-8 text-center" data-testid="webgl-fallback">
+          <div className="relative flex h-full w-full flex-col items-center justify-center p-8 text-center" data-testid="webgl-fallback">
             <div className="rounded-2xl border border-border-default bg-surface-1/90 p-8 max-w-md shadow-2xl backdrop-blur">
               <Box className="mx-auto h-12 w-12 text-status-standby mb-3 opacity-80" />
               <h3 className="text-sm font-bold text-content-1">Chế độ Fallback Sân Khấu 3D</h3>
@@ -403,6 +379,9 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Integrated VX Control Dock in fallback mode */}
+            <VxControlBar />
           </div>
         ) : (
           <div className="relative flex min-h-0 w-full flex-1 items-center justify-center rounded-lg overflow-hidden border border-border-default/40">
@@ -411,10 +390,10 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
 
             {/* 2D HUD Overlays */}
             <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3">
-              {/* Top HUD: Active Cue Card & Beam controls */}
-              <div className="flex items-start justify-between gap-2">
+              {/* Top HUD: Active Cue Card & Cue Counter Badges */}
+              <div className="pointer-events-auto flex items-start gap-2">
                 {activeCue ? (
-                  <div className="pointer-events-auto rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-xs backdrop-blur shadow-lg">
+                  <div className="rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-xs backdrop-blur shadow-lg">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-accent font-mono">Cue #{activeCue.cueNumber}</span>
                       <span className="text-content-1 font-medium">{activeCue.title}</span>
@@ -435,7 +414,7 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   </div>
                 ) : (
                   <div
-                    className="pointer-events-auto rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3 backdrop-blur shadow-lg"
+                    className="rounded-lg border border-border-default/70 bg-surface-1/80 p-2 text-[11px] text-content-3 backdrop-blur shadow-lg"
                     data-testid="no-cue-hint"
                   >
                     <span className="font-semibold text-content-2">Chưa gọi cue</span>
@@ -446,41 +425,49 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
                   </div>
                 )}
 
-                {/* Beam visibility & performance threshold */}
-                <div className="pointer-events-auto ml-auto flex items-center gap-2 rounded-lg border border-border-default/70 bg-surface-1/80 px-2.5 py-1 text-xs backdrop-blur shadow-lg">
-                  <Layers className="h-3.5 w-3.5 text-accent" />
-                  <button
-                    onClick={() => setShowAllBeams((prev) => !prev)}
-                    className={`rounded px-1.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                      showAllBeams
-                        ? 'bg-accent/20 text-accent border border-accent/50'
-                        : 'text-content-3 hover:text-content-1'
-                    }`}
-                    title="Mặc định chỉ đèn đang chọn mới hiện chùm sáng. Bật để hiện chùm của toàn bộ đèn trong cue."
-                    data-testid="beam-show-all"
-                  >
-                    {showAllBeams ? 'Ẩn chùm khác' : 'Hiện tất cả chùm'}
-                  </button>
-                  <span className="h-3 w-px bg-border-default" />
-                  <span className="text-[11px] text-content-3 font-mono">Ngưỡng:</span>
-                  <button
-                    onClick={() => setBeamThresholdState((prev) => (prev > 50 ? 50 : 150))}
-                    className="font-mono text-[11px] font-bold text-accent hover:underline"
-                    title="Ngưỡng tự động ngắt chùm tia để tiết kiệm GPU/CPU khi số lượng đèn vượt ngưỡng"
-                    data-testid="beam-threshold-toggle"
-                  >
-                    {beamThreshold > 50 ? '≤ 150' : '≤ 50'}
-                  </button>
+                {/* Cue fixture counter badge */}
+                <div
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono font-medium ${
+                    isCountMismatch
+                      ? 'bg-status-danger/20 text-status-danger border-status-danger/60 animate-pulse'
+                      : 'bg-surface-1/80 text-content-2 border-border-default/70 backdrop-blur shadow-lg'
+                  }`}
+                  title={
+                    isCountMismatch
+                      ? 'Cảnh báo: Số lượng đèn hiển thị trên sân khấu không khớp số lượng nhập trong Cue!'
+                      : 'Đèn của cue đang chạy (Go). Chưa gọi cue thì sân khấu trống.'
+                  }
+                  data-testid="cue-count-badge"
+                >
+                  <span>
+                    {activeCue
+                      ? `Cue ${activeCue.cueNumber}: Nhập ${requestedCount} · Hiển thị ${activeCount}`
+                      : 'Cue: chưa gọi · 0 đèn'}
+                  </span>
+                  {isCountMismatch && <AlertTriangle className="h-3.5 w-3.5 text-status-danger" />}
+                </div>
+
+                {/* Base rig counter */}
+                <div
+                  className="flex items-center gap-1 rounded-lg bg-surface-1/80 border border-border-default/70 px-2.5 py-1 text-xs text-content-3 font-mono backdrop-blur shadow-lg"
+                  title="Số đèn trong rig mặc định của sân khấu (cấu hình). Đây không phải số đèn đang chiếu."
+                  data-testid="rig-count-badge"
+                >
+                  <Box className="h-3.5 w-3.5 text-content-3" />
+                  <span>Rig mặc định {rigCount}</span>
                 </div>
               </div>
 
-              {/* Bottom Instructions Prompt */}
-              <div className="pointer-events-none flex justify-center">
+              {/* Bottom Instructions Prompt (spaced above VxControlBar) */}
+              <div className="pointer-events-none flex justify-center mb-14">
                 <span className="rounded-full bg-surface-1/60 px-3 py-0.5 text-[10px] text-content-3 backdrop-blur border border-border-default/40">
                   Kéo chuột xoay · Cuộn phóng to · Click vào đèn hoặc màn hình để chọn · Chọn đèn để xem chùm sáng
                 </span>
               </div>
             </div>
+
+            {/* Integrated VX Control Dock inside 3D Canvas */}
+            <VxControlBar />
           </div>
         )}
 

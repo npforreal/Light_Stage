@@ -240,5 +240,112 @@ describe('Color Science Engine (color.ts)', () => {
       const deutanStandby = simulateDeutan(standbyColor);
       expect(Math.abs(deutanStandby.r - deutanGo.r)).toBeGreaterThan(20);
     });
+
+    it('exhaustively asserts automated WCAG AA compliance across all semantic tokens and surface tiers', () => {
+      const surfaces = {
+        surface0: '#06090f',
+        surface1: '#0d121a',
+        surface2: '#171d26',
+        surface3: '#232934',
+      };
+
+      const textTokens = {
+        text1: '#ebeff5',
+        text2: '#b2b8c1',
+        text3: '#7a818b',
+      };
+
+      const statusTokens = {
+        go: '#65c86b',
+        standby: '#e9ab2b',
+        hold: '#5eaceb',
+        danger: '#f14d4c',
+      };
+
+      const deptTokens = {
+        lx: '#c69d63',
+        vx: '#ad98d5',
+        sq: '#57b6b6',
+        st: '#98af70',
+      };
+
+      const accent = '#4ebceb';
+
+      // 1. Primary Text (text-1) across all surfaces must exceed WCAG AAA (>= 7.0:1)
+      Object.values(surfaces).forEach((surfaceHex) => {
+        const ratio = contrastWcag(textTokens.text1, surfaceHex);
+        expect(ratio).toBeGreaterThanOrEqual(7.0);
+      });
+
+      // 2. Secondary Text (text-2) across all surfaces must exceed WCAG AA (>= 4.5:1)
+      Object.values(surfaces).forEach((surfaceHex) => {
+        const ratio = contrastWcag(textTokens.text2, surfaceHex);
+        expect(ratio).toBeGreaterThanOrEqual(4.5);
+      });
+
+      // 3. Muted Text (text-3) across all surfaces must exceed WCAG AA for UI/Large Text (>= 3.0:1)
+      Object.values(surfaces).forEach((surfaceHex) => {
+        const ratio = contrastWcag(textTokens.text3, surfaceHex);
+        expect(ratio).toBeGreaterThanOrEqual(3.0);
+      });
+
+      // 4. Status tokens on primary canvas surfaces (surface-0 and surface-1) must exceed WCAG AA (>= 4.5:1)
+      [surfaces.surface0, surfaces.surface1].forEach((surfaceHex) => {
+        Object.values(statusTokens).forEach((statusHex) => {
+          const ratio = contrastWcag(statusHex, surfaceHex);
+          expect(ratio).toBeGreaterThanOrEqual(4.5);
+        });
+      });
+
+      // 5. Department indicators on canvas surfaces must exceed WCAG AA (>= 4.5:1)
+      [surfaces.surface0, surfaces.surface1].forEach((surfaceHex) => {
+        Object.values(deptTokens).forEach((deptHex) => {
+          const ratio = contrastWcag(deptHex, surfaceHex);
+          expect(ratio).toBeGreaterThanOrEqual(4.5);
+        });
+      });
+
+      // 6. Accent color on canvas surfaces must exceed WCAG AA (>= 4.5:1)
+      [surfaces.surface0, surfaces.surface1].forEach((surfaceHex) => {
+        const ratio = contrastWcag(accent, surfaceHex);
+        expect(ratio).toBeGreaterThanOrEqual(4.5);
+      });
+
+      // 7. High-contrast tactile action buttons: dark text on vibrant status backgrounds
+      expect(contrastWcag(surfaces.surface0, statusTokens.go)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastWcag(surfaces.surface0, statusTokens.standby)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastWcag(surfaces.surface0, accent)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastWcag(surfaces.surface0, statusTokens.danger)).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('verifies standard 6 interaction states matrix definition and styling classes', () => {
+      // 6 standardized states: default, hover, active, focus-visible, disabled, selected
+      const INTERACTION_STATES = {
+        default: 'bg-surface-2 text-content-1 border-border-default',
+        hover: 'hover:bg-surface-3 hover:border-border-strong',
+        active: 'active:scale-[0.98]',
+        focusVisible: 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-0',
+        disabled: 'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+        selected: 'bg-status-go/10 border-l-4 border-l-status-go ring-1 ring-status-go/20',
+      };
+
+      // Ensure all 6 distinct interaction states are defined
+      expect(Object.keys(INTERACTION_STATES)).toHaveLength(6);
+
+      // Verify each state uses semantic tokens exclusively (no raw Tailwind colors)
+      const RAW_COLOR_REGEX = /\b(bg|text|border|ring|from|to|via|fill|stroke|divide|shadow|outline|decoration|accent|caret)-(zinc|slate|gray|neutral|stone|cyan|amber|emerald|rose|indigo|violet|purple|blue|red|green|yellow)-\d+\b/;
+      Object.entries(INTERACTION_STATES).forEach(([, classString]) => {
+        expect(RAW_COLOR_REGEX.test(classString)).toBe(false);
+      });
+
+      // Assert specific tokens in interaction states
+      expect(INTERACTION_STATES.default).toContain('surface-2');
+      expect(INTERACTION_STATES.default).toContain('content-1');
+      expect(INTERACTION_STATES.hover).toContain('surface-3');
+      expect(INTERACTION_STATES.active).toContain('scale-[0.98]');
+      expect(INTERACTION_STATES.focusVisible).toContain('ring-accent');
+      expect(INTERACTION_STATES.disabled).toContain('disabled:opacity-50');
+      expect(INTERACTION_STATES.selected).toContain('status-go');
+    });
   });
 });

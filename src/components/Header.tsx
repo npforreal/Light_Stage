@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useShowStore } from '../store/useShowStore';
 import { useClockStore, formatDuration } from '../store/useClockStore';
 import { getCueLightingCount, getCueScreenCount } from '../services/fixtureModel';
@@ -9,7 +9,6 @@ import {
   Tv,
   Play,
   Pause,
-  Square,
   RotateCcw,
   FastForward,
   LayoutList,
@@ -29,9 +28,12 @@ import {
   MoreHorizontal,
   Edit2,
   Check,
+  Plus,
+  PanelRight,
 } from 'lucide-react';
 
 export type ViewMode = 'rundown' | 'timeline' | 'stage' | 'split';
+export type RoleFilter = 'ALL' | 'LX' | 'VX' | 'SQ' | 'ST';
 
 export interface HeaderProps {
   viewMode: ViewMode;
@@ -43,6 +45,12 @@ export interface HeaderProps {
   onExportClick: () => void;
   onHelpClick: () => void;
   wallClock: string;
+  // Optional extensions for contextual workspace controls & inspector drawer
+  isInspectorOpen?: boolean;
+  onToggleInspector?: () => void;
+  roleFilter?: RoleFilter;
+  onRoleFilterChange?: (role: RoleFilter) => void;
+  onAddCue?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -55,6 +63,11 @@ export const Header: React.FC<HeaderProps> = ({
   onExportClick,
   onHelpClick,
   wallClock,
+  isInspectorOpen,
+  onToggleInspector,
+  roleFilter,
+  onRoleFilterChange,
+  onAddCue,
 }) => {
   const show = useShowStore((s) => s.show);
   const isDirty = useShowStore((s) => s.isDirty);
@@ -62,14 +75,16 @@ export const Header: React.FC<HeaderProps> = ({
   const newShow = useShowStore((s) => s.newShow);
   const activeCue = useShowStore((s) => s.getActiveCue());
   const standbyCue = useShowStore((s) => s.getStandbyCue());
+  const goCue = useShowStore((s) => s.goCue);
   const nextCue = useShowStore((s) => s.nextCue);
+  const holdCue = useShowStore((s) => s.holdCue);
+  const addCue = useShowStore((s) => s.addCue);
   const getAllCues = useShowStore((s) => s.getAllCues);
 
   const isRunning = useClockStore((s) => s.isRunning);
   const masterElapsedMs = useClockStore((s) => s.masterElapsedMs);
   const cueRemainingMs = useClockStore((s) => s.cueRemainingMs);
   const isOverrun = useClockStore((s) => s.isOverrun);
-  const startClock = useClockStore((s) => s.startClock);
   const pauseClock = useClockStore((s) => s.pauseClock);
   const resetClock = useClockStore((s) => s.resetClock);
 
@@ -77,13 +92,29 @@ export const Header: React.FC<HeaderProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(show.metadata.title);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [localRoleFilter, setLocalRoleFilter] = useState<RoleFilter>(roleFilter ?? 'ALL');
+  const [localInspectorOpen, setLocalInspectorOpen] = useState(false);
+
   const titleInputRef = useRef<HTMLInputElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  // Header badges show the LIVE cue (Go). Nothing on stage => 0, matching the
-  // Stage 3D view and the cue counter instead of show-wide totals.
+  // Live fixture counts on stage
   const liveLxCount = activeCue ? getCueLightingCount(activeCue) : 0;
   const liveVxCount = activeCue ? getCueScreenCount(activeCue) : 0;
+
+  // Workspace summary counts & runtime
+  const allCues = getAllCues();
+  const totalCues = allCues.length;
+  const totalRuntimeMs = useMemo(() => {
+    return allCues.reduce((sum, c) => sum + c.durationMs, 0);
+  }, [allCues]);
+
+  // Sync role filter and inspector states
+  const currentFilter = roleFilter ?? localRoleFilter;
+  const storeInspectorOpen = (useShowStore as unknown as { getState: () => { isInspectorOpen?: boolean } })
+    .getState()
+    ?.isInspectorOpen;
+  const isInspectorActive = isInspectorOpen ?? storeInspectorOpen ?? localInspectorOpen;
 
   useEffect(() => {
     setTitleDraft(show.metadata.title);
@@ -96,17 +127,27 @@ export const Header: React.FC<HeaderProps> = ({
     }
   }, [isEditingTitle]);
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
         setIsMoreMenuOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsMoreMenuOpen(false);
+      }
+    };
     if (isMoreMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('keydown', handleKeyDown, true);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
   }, [isMoreMenuOpen]);
 
   const handleSaveTitle = () => {
@@ -138,9 +179,39 @@ export const Header: React.FC<HeaderProps> = ({
     openStageClockWindow();
   };
 
+  const handleFilterSelect = (role: RoleFilter) => {
+    setLocalRoleFilter(role);
+    onRoleFilterChange?.(role);
+  };
+
+  const handleAddCue = () => {
+    if (onAddCue) {
+      onAddCue();
+      return;
+    }
+    if (show.acts.length > 0) {
+      const actId = show.acts[0].id;
+      addCue(actId, { title: 'New Cue' });
+    }
+  };
+
+  const handleToggleInspector = () => {
+    if (onToggleInspector) {
+      onToggleInspector();
+      return;
+    }
+    const storeToggle = (
+      useShowStore.getState() as unknown as { toggleInspector?: () => void }
+    ).toggleInspector;
+    if (typeof storeToggle === 'function') {
+      storeToggle();
+      return;
+    }
+    setLocalInspectorOpen((prev) => !prev);
+  };
+
   // Delta Time calculation
-  const deltaTimeMs = React.useMemo(() => {
-    const allCues = getAllCues();
+  const deltaTimeMs = useMemo(() => {
     if (!activeCue || allCues.length === 0) return 0;
     const activeIdx = allCues.findIndex((c) => c.id === activeCue.id);
     if (activeIdx === -1) return 0;
@@ -152,32 +223,37 @@ export const Header: React.FC<HeaderProps> = ({
     const actualStartMs = masterElapsedMs - useClockStore.getState().cueElapsedMs;
     const cueOverrunMs = Math.max(0, useClockStore.getState().cueElapsedMs - activeCue.durationMs);
     return plannedStartMs - actualStartMs - cueOverrunMs;
-  }, [getAllCues, activeCue, masterElapsedMs]);
+  }, [allCues, activeCue, masterElapsedMs]);
 
   return (
     <header className="flex flex-col border-b border-border-default bg-surface-1 backdrop-blur z-50 flex-shrink-0">
       {/* ======================================================== */}
-      {/* TIER 1: LIVE OPERATION & MASTER CLOCKS                  */}
+      {/* STRIP 1: COMMAND BAR (Exact Height: 52px / h-[52px])      */}
       {/* ======================================================== */}
-      <div className="flex h-12 items-center justify-between px-3 lg:px-4 border-b border-border-subtle/60 gap-2 overflow-x-auto select-none">
-        {/* Brand & Show Title */}
-        <div className="flex items-center gap-2.5 flex-shrink-0 min-w-0">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 border border-border-strong text-accent font-bold text-xs shadow-sm">
+      <div
+        className="flex h-[52px] items-center justify-between px-3 lg:px-4 border-b border-border-subtle/60 gap-2 select-none"
+        data-testid="header-command-bar"
+      >
+        {/* Left Zone: Compact Brand, Editable Title, Status Dot, Hardware Badges (~260px at 960px) */}
+        <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+          {/* Brand Logo */}
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-2 border border-border-strong text-accent font-bold text-xs shadow-sm flex-shrink-0">
             LS
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className="font-bold tracking-wide text-xs sm:text-sm text-content-1 whitespace-nowrap">
               Light Stage
             </span>
-            <span className="hidden sm:inline-block rounded bg-surface-2 px-1.5 py-0.2 text-[9px] text-content-3 font-mono">
+            <span className="hidden xl:inline-block rounded bg-surface-2 px-1.5 py-0.2 text-[9px] text-content-3 font-mono">
               v0.1.0
             </span>
           </div>
 
-          <span className="text-border-strong hidden sm:inline">•</span>
+          <span className="text-border-strong hidden sm:inline flex-shrink-0">•</span>
 
-          {/* Editable Show Name */}
-          <div className="flex items-center gap-1.5">
+          {/* Editable Show Title */}
+          <div className="flex items-center gap-1 min-w-0">
             {isEditingTitle ? (
               <div className="flex items-center gap-1">
                 <input
@@ -193,12 +269,12 @@ export const Header: React.FC<HeaderProps> = ({
                     }
                   }}
                   onBlur={handleSaveTitle}
-                  className="rounded border border-accent bg-surface-2 px-1.5 py-0.5 text-xs text-content-1 font-semibold focus:outline-none max-w-[140px] sm:max-w-[200px]"
+                  className="rounded border border-accent bg-surface-2 px-1.5 py-0.5 text-xs text-content-1 font-semibold focus:outline-none max-w-[110px] sm:max-w-[150px]"
                 />
                 <button
                   type="button"
                   onClick={handleSaveTitle}
-                  className="rounded p-1 text-accent hover:bg-surface-2"
+                  className="rounded p-1 text-accent hover:bg-surface-2 cursor-pointer"
                   title="Lưu tên show"
                 >
                   <Check className="h-3 w-3" />
@@ -208,246 +284,38 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setIsEditingTitle(true)}
-                className="group flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-surface-2 text-left transition-colors"
+                className="group flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-surface-2 text-left transition-colors truncate max-w-[90px] sm:max-w-[130px] cursor-pointer"
                 title="Bấm để đổi tên show"
               >
-                <span className="text-xs font-semibold text-content-2 group-hover:text-accent truncate max-w-[100px] sm:max-w-[180px]">
+                <span className="text-xs font-semibold text-content-2 group-hover:text-accent truncate">
                   {show.metadata.title}
                 </span>
-                <Edit2 className="h-3 w-3 text-content-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Edit2 className="h-3 w-3 text-content-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </button>
             )}
-
-            {isDirty ? (
-              <span
-                className="hidden sm:flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium whitespace-nowrap"
-                title="Có thay đổi chưa lưu"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-status-standby animate-pulse" />
-                Chưa lưu
-              </span>
-            ) : (
-              <span
-                className="hidden sm:flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium whitespace-nowrap"
-                title="Đã lưu"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-status-go" />
-                Đã lưu
-              </span>
-            )}
           </div>
-        </div>
 
-        {/* Transport Controls (Live Playback) */}
-        <div className="flex items-center gap-1.5 bg-surface-2 border border-border-subtle rounded-lg p-1 flex-shrink-0">
-          {isRunning ? (
-            <button
-              type="button"
-              onClick={pauseClock}
-              className="inline-flex items-center gap-1 rounded bg-status-standby/20 hover:bg-status-standby/30 text-status-standby px-2 py-1 text-xs font-bold transition-colors"
-              title="Pause Clock"
+          {/* Status Dot */}
+          {isDirty ? (
+            <div
+              className="flex items-center gap-1 text-[10px] text-status-standby font-mono font-medium whitespace-nowrap flex-shrink-0"
+              title="Có thay đổi chưa lưu"
             >
-              <Pause className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Pause</span>
-            </button>
+              <span className="h-2 w-2 rounded-full bg-status-standby animate-pulse flex-shrink-0" />
+              <span className="hidden lg:inline">Chưa lưu</span>
+            </div>
           ) : (
-            <button
-              type="button"
-              onClick={startClock}
-              className="inline-flex items-center gap-1 rounded bg-status-go/20 hover:bg-status-go/30 text-status-go px-2 py-1 text-xs font-bold transition-colors"
-              title="Start Clock"
+            <div
+              className="flex items-center gap-1 text-[10px] text-content-3 font-mono font-medium whitespace-nowrap flex-shrink-0"
+              title="Đã lưu"
             >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              <span className="hidden sm:inline">Play</span>
-            </button>
+              <span className="h-2 w-2 rounded-full bg-status-go flex-shrink-0" />
+              <span className="hidden lg:inline">Đã lưu</span>
+            </div>
           )}
 
-          <button
-            type="button"
-            onClick={pauseClock}
-            className="rounded p-1 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
-            title="Stop Clock"
-          >
-            <Square className="h-3.5 w-3.5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={resetClock}
-            className="rounded p-1 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors"
-            title="Reset Clock"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </button>
-
-          <div className="h-4 w-px bg-border-subtle mx-0.5" />
-
-          {/* Go Next Cue */}
-          <button
-            type="button"
-            onClick={nextCue}
-            className="inline-flex items-center gap-1 rounded bg-accent/20 hover:bg-accent/30 text-accent px-2 py-1 text-xs font-bold transition-colors"
-            title="Chuyển Standby tiếp theo (Go Next Cue - B)"
-          >
-            <FastForward className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">Go Next</span>
-          </button>
-        </div>
-
-        {/* Standby & Active Banner */}
-        <div className="hidden lg:flex items-center gap-2 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 text-xs flex-shrink-0">
-          <div className="flex flex-col">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 font-bold">
-              Standby
-            </span>
-            <span className="font-semibold text-status-standby truncate max-w-[100px] xl:max-w-[130px]">
-              {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
-            </span>
-          </div>
-          <div className="h-6 w-px bg-border-subtle" />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] uppercase tracking-wider text-content-3 font-bold">
-                Active Go
-              </span>
-              {(isRunning || activeCue?.status === 'Go') && (
-                <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 text-[9px] font-black uppercase tracking-wider animate-pulse border border-rose-500/40">
-                  <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                  LIVE
-                </span>
-              )}
-            </div>
-            <span className="font-semibold text-status-go truncate max-w-[100px] xl:max-w-[130px]">
-              {activeCue ? `${activeCue.cueNumber} ${activeCue.title}` : 'None'}
-            </span>
-          </div>
-        </div>
-
-        {/* Big Clocks: Tabular-Nums, Vietnamese Labels, No line-wrap */}
-        <div className="flex items-center gap-2 lg:gap-3 bg-surface-2 border border-border-default rounded-lg px-2.5 py-1 font-mono flex-shrink-0 tabular-nums whitespace-nowrap">
-          {/* Wall Clock */}
-          <div className="hidden 2xl:flex flex-col items-center">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 whitespace-nowrap">
-              Giờ thực tế / Wall
-            </span>
-            <span className="text-xs font-semibold text-content-2 tabular-nums">
-              {wallClock}
-            </span>
-          </div>
-          <div className="hidden 2xl:block h-6 w-px bg-border-subtle" />
-
-          {/* Master Show Time */}
-          <div className="flex flex-col items-center">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 whitespace-nowrap">
-              Show Time
-            </span>
-            <span className="text-xs sm:text-sm font-bold text-content-1 tabular-nums">
-              {formatDuration(masterElapsedMs, { includeHours: true })}
-            </span>
-          </div>
-
-          <div className="h-6 w-px bg-border-subtle" />
-
-          {/* Cue Remainder */}
-          <div className="flex flex-col items-center">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 whitespace-nowrap">
-              Cue Remainder
-            </span>
-            <span
-              className={`text-xs sm:text-sm font-bold tabular-nums ${
-                isOverrun ? 'text-status-danger animate-pulse' : 'text-status-go'
-              }`}
-            >
-              {formatDuration(cueRemainingMs)}
-            </span>
-          </div>
-
-          <div className="h-6 w-px bg-border-subtle" />
-
-          {/* Delta */}
-          <div className="flex flex-col items-center">
-            <span className="text-[9px] uppercase tracking-wider text-content-3 whitespace-nowrap">
-              Delta
-            </span>
-            <span
-              className={`text-xs font-bold tabular-nums ${
-                deltaTimeMs < 0
-                  ? 'text-status-danger'
-                  : deltaTimeMs > 0
-                  ? 'text-content-1'
-                  : 'text-content-3'
-              }`}
-              title={deltaTimeMs < 0 ? 'Chậm tiến độ (Behind)' : 'Sớm hơn tiến độ (Ahead)'}
-            >
-              {deltaTimeMs > 0 ? `+${formatDuration(deltaTimeMs)}` : formatDuration(deltaTimeMs)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ======================================================== */}
-      {/* TIER 2: TOOLS, VIEWS, HARDWARE STATS & SECONDARY ACTIONS */}
-      {/* ======================================================== */}
-      <div className="flex h-10 items-center justify-between px-3 lg:px-4 bg-surface-1/90 gap-2 overflow-visible select-none text-xs">
-        {/* Left: View Mode Tabs */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="inline-flex rounded-lg bg-surface-2 border border-border-subtle p-0.5 text-xs">
-            <button
-              type="button"
-              onClick={() => setViewMode('rundown')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'rundown'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Cue Rundown List"
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-              <span>Rundown</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('split')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'split'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Split Dual View"
-            >
-              <SplitSquareVertical className="h-3.5 w-3.5" />
-              <span>Dual</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('timeline')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'timeline'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Timeline Tracks"
-            >
-              <Columns className="h-3.5 w-3.5 rotate-90" />
-              <span>Timeline</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('stage')}
-              className={`flex items-center gap-1 rounded px-2.5 py-1 font-medium transition-colors ${
-                viewMode === 'stage'
-                  ? 'bg-accent text-surface-0 font-bold shadow'
-                  : 'text-content-2 hover:text-content-1'
-              }`}
-              title="Stage 3D Preview"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              <span>Stage 3D</span>
-            </button>
-          </div>
-
-          {/* Hardware Stats Badges */}
-          <div className="hidden lg:flex items-center gap-2.5 font-mono text-[11px] ml-2">
+          {/* Live Hardware Badges */}
+          <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] flex-shrink-0">
             <div
               className="flex items-center gap-1 text-dept-lx"
               title={
@@ -475,13 +343,150 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Tools & Actions (Responsive collapse to "..." dropdown below 1100px) */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Operator Lock Toggle (Always prominent) */}
+        {/* Center Zone: Standby Callout, Hero Central GO, Standby Next, Hold (~320px at 960px) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Standby Callout */}
+          <div
+            className="hidden 2xl:flex items-center gap-1 rounded-lg bg-surface-2 border border-border-default px-2 py-1 text-xs text-status-standby max-w-[130px] truncate flex-shrink-0"
+            title={standbyCue ? `Standby: ${standbyCue.cueNumber} ${standbyCue.title}` : 'No standby cue'}
+          >
+            <span className="text-[10px] uppercase font-bold text-content-3">STBY:</span>
+            <span className="font-semibold truncate">
+              {standbyCue ? `${standbyCue.cueNumber} ${standbyCue.title}` : 'None'}
+            </span>
+          </div>
+
+          {/* Hero Central GO Button */}
+          <button
+            type="button"
+            onClick={() => goCue()}
+            className="h-10 px-5 sm:px-6 rounded-xl bg-status-go hover:bg-status-go/90 text-surface-0 font-black shadow-lg shadow-status-go/25 active:scale-[0.97] transition-all flex items-center gap-2 select-none cursor-pointer flex-shrink-0"
+            title="Start Clock"
+            data-testid="header-hero-go-button"
+          >
+            <Play className="h-4 w-4 fill-current flex-shrink-0" />
+            <span>GO</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-0/20 text-surface-0 font-mono text-[10px] font-bold border border-surface-0/30 select-none">
+              Space
+            </kbd>
+            {(isRunning || activeCue?.status === 'Go') && (
+              <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-status-danger/30 text-surface-0 text-[9px] font-black uppercase tracking-wider animate-pulse border border-status-danger/60">
+                <span className="h-1.5 w-1.5 rounded-full bg-status-danger" />
+                LIVE
+              </span>
+            )}
+          </button>
+
+          {/* Standby Next ("B") Button */}
+          <button
+            type="button"
+            onClick={nextCue}
+            className="h-8 px-2 sm:px-2.5 rounded-lg bg-surface-2 hover:bg-surface-3 text-status-standby border border-border-default font-bold text-xs flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer"
+            title="Chuyển Standby tiếp theo (Go Next Cue - B)"
+          >
+            <FastForward className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">STBY</span>
+            <kbd className="text-[9px] font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+              B
+            </kbd>
+          </button>
+
+          {/* Hold / Pause ("Esc") Button */}
+          <button
+            type="button"
+            onClick={() => {
+              holdCue(activeCue?.id);
+              pauseClock();
+            }}
+            className="h-8 px-2 rounded-lg bg-surface-2 hover:bg-status-hold/20 text-content-2 hover:text-status-hold border border-border-default transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer"
+            title="Stop Clock"
+          >
+            <Pause className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Hold</span>
+            <kbd className="text-[9px] font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+              Esc
+            </kbd>
+          </button>
+        </div>
+
+        {/* Right Zone: Tabular Clocks, Operator Lock, Secondary Admin Menu (~260px at 960px) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Tabular Clocks Block */}
+          <div className="flex items-center gap-1.5 bg-surface-2 border border-border-default rounded-lg px-2 py-1 font-mono flex-shrink-0 tabular-nums whitespace-nowrap">
+            {/* Wall Clock - hidden on viewports < 1536px to prevent 1280px overflow */}
+            <div className="hidden 2xl:flex flex-col items-center leading-tight">
+              <span className="text-[8px] uppercase tracking-wider text-content-3 whitespace-nowrap">
+                Wall
+              </span>
+              <span className="text-xs font-semibold text-content-2 tabular-nums">
+                {wallClock}
+              </span>
+            </div>
+            <div className="hidden 2xl:block h-5 w-px bg-border-subtle" />
+
+            {/* Master Show Time */}
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-[8px] uppercase tracking-wider text-content-3 whitespace-nowrap">
+                Show Time
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-content-1 tabular-nums">
+                {formatDuration(masterElapsedMs, { includeHours: true })}
+              </span>
+            </div>
+
+            <div className="h-5 w-px bg-border-subtle" />
+
+            {/* Cue Remainder */}
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-[8px] uppercase tracking-wider text-content-3 whitespace-nowrap">
+                Cue Remainder
+              </span>
+              <span
+                className={`text-xs sm:text-sm font-bold tabular-nums ${
+                  isOverrun ? 'text-status-danger animate-pulse' : 'text-status-go'
+                }`}
+              >
+                {formatDuration(cueRemainingMs)}
+              </span>
+            </div>
+
+            <div className="hidden xl:block h-5 w-px bg-border-subtle" />
+
+            {/* Delta */}
+            <div className="hidden xl:flex flex-col items-center leading-tight">
+              <span className="text-[8px] uppercase tracking-wider text-content-3 whitespace-nowrap">
+                Delta
+              </span>
+              <span
+                className={`text-xs font-bold tabular-nums ${
+                  deltaTimeMs < 0
+                    ? 'text-status-danger'
+                    : deltaTimeMs > 0
+                    ? 'text-content-1'
+                    : 'text-content-3'
+                }`}
+                title={deltaTimeMs < 0 ? 'Chậm tiến độ (Behind)' : 'Sớm hơn tiến độ (Ahead)'}
+              >
+                {deltaTimeMs > 0 ? `+${formatDuration(deltaTimeMs)}` : formatDuration(deltaTimeMs)}
+              </span>
+            </div>
+
+            {/* Reset Clock quick button */}
+            <button
+              type="button"
+              onClick={resetClock}
+              className="rounded p-1 text-content-3 hover:bg-surface-3 hover:text-content-1 transition-colors ml-0.5 cursor-pointer"
+              title="Reset Clock"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </button>
+          </div>
+
+          {/* Operator Lock Toggle */}
           <button
             type="button"
             onClick={() => setIsOperatorLocked(!isOperatorLocked)}
-            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1 rounded-lg px-2 sm:px-2.5 py-1 text-xs font-semibold transition-colors flex-shrink-0 cursor-pointer ${
               isOperatorLocked
                 ? 'bg-status-standby text-surface-0 font-bold ring-2 ring-status-standby/50'
                 : 'bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle'
@@ -490,216 +495,269 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isOperatorLocked ? (
               <>
-                <Lock className="h-3.5 w-3.5" />
-                <span>Locked</span>
+                <Lock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="hidden lg:inline">Locked</span>
               </>
             ) : (
               <>
-                <Unlock className="h-3.5 w-3.5 text-content-3" />
-                <span>Lock</span>
+                <Unlock className="h-3.5 w-3.5 text-content-3 flex-shrink-0" />
+                <span className="hidden lg:inline">Lock</span>
               </>
             )}
           </button>
 
-          {/* Primary Tool Buttons on Wide Screens (>= 1100px) */}
-          <div className="hidden min-[1100px]:flex items-center gap-1.5">
-            {/* Audio Mute Toggle */}
-            <button
-              type="button"
-              onClick={handleToggleMute}
-              className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold border transition-colors ${
-                isAudioMuted
-                  ? 'bg-status-danger/20 border-status-danger/40 text-status-danger'
-                  : 'bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border-border-subtle'
-              }`}
-              title={isAudioMuted ? 'Unmute Audio Alerts' : 'Mute Audio Alerts'}
-            >
-              {isAudioMuted ? (
-                <>
-                  <VolumeX className="h-3.5 w-3.5" />
-                  <span>Muted</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="h-3.5 w-3.5 text-accent" />
-                  <span>Sound</span>
-                </>
-              )}
-            </button>
-
-            {/* Stage Clock Display */}
-            <button
-              type="button"
-              onClick={handleOpenStageClock}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="Open Stage Confidence Clock"
-            >
-              <Clock className="h-3.5 w-3.5 text-status-go" />
-              <span>Stage Clock</span>
-            </button>
-
-            {/* New Project */}
-            <button
-              type="button"
-              onClick={handleNewShow}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="New Project"
-            >
-              <FilePlus className="h-3.5 w-3.5 text-content-3" />
-              <span>New</span>
-            </button>
-
-            {/* Open Project */}
-            <button
-              type="button"
-              onClick={onOpenProject}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="Open .lightstage Project"
-            >
-              <FolderOpen className="h-3.5 w-3.5 text-status-standby" />
-              <span>Open</span>
-            </button>
-
-            {/* Import */}
-            <button
-              type="button"
-              onClick={onImportClick}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="Import CSV/TSV"
-            >
-              <Upload className="h-3.5 w-3.5 text-accent" />
-              <span>Import</span>
-            </button>
-
-            {/* Export */}
-            <button
-              type="button"
-              onClick={onExportClick}
-              className="inline-flex items-center gap-1 rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle px-2 py-1 text-xs font-semibold transition-colors"
-              title="Export Reports & Project"
-            >
-              <Download className="h-3.5 w-3.5 text-status-go" />
-              <span>Export</span>
-            </button>
-
-            {/* Help "?" Button */}
-            <button
-              type="button"
-              onClick={onHelpClick}
-              className="inline-flex items-center justify-center rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-accent border border-border-subtle h-7 w-7 text-xs font-bold transition-colors"
-              title="Trợ giúp & Phím tắt (Help)"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Clean "..." Dropdown Menu for width < 1100px */}
-          <div className="relative min-[1100px]:hidden" ref={moreMenuRef}>
+          {/* Secondary Admin Menu Dropdown Button */}
+          <div
+            className="relative flex-shrink-0"
+            ref={moreMenuRef}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.stopPropagation();
+                setIsMoreMenuOpen(false);
+              }
+            }}
+          >
             <button
               type="button"
               onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-              className="inline-flex items-center justify-center rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle h-7 w-7 text-xs font-bold transition-colors"
+              className="inline-flex items-center justify-center rounded-lg bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle h-8 w-8 text-xs font-bold transition-colors cursor-pointer"
               title="Công cụ bổ sung (More Tools)"
+              data-testid="header-admin-menu-button"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>
 
-            {isMoreMenuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-48 rounded-xl border border-border-default bg-surface-1 p-1.5 shadow-2xl z-50 flex flex-col gap-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleToggleMute();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  {isAudioMuted ? (
-                    <VolumeX className="h-4 w-4 text-status-danger" />
-                  ) : (
-                    <Volume2 className="h-4 w-4 text-accent" />
-                  )}
-                  <span>{isAudioMuted ? 'Bật âm thanh (Unmute)' : 'Tắt âm cảnh báo (Mute)'}</span>
-                </button>
+            {/* Dropdown Menu Popup */}
+            <div
+              className={`absolute right-0 top-full mt-1.5 w-56 rounded-xl border border-border-default bg-surface-1 p-1.5 shadow-2xl z-50 flex flex-col gap-0.5 text-xs animate-in fade-in zoom-in-95 duration-100 select-none ${
+                isMoreMenuOpen ? '' : 'hidden'
+              }`}
+              data-testid="header-admin-menu-dropdown"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleMute();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title={isAudioMuted ? 'Unmute Audio Alerts' : 'Mute Audio Alerts'}
+              >
+                {isAudioMuted ? (
+                  <VolumeX className="h-4 w-4 text-status-danger flex-shrink-0" />
+                ) : (
+                  <Volume2 className="h-4 w-4 text-accent flex-shrink-0" />
+                )}
+                <span>{isAudioMuted ? 'Bật âm thanh (Unmute)' : 'Tắt âm cảnh báo (Mute)'}</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleOpenStageClock();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  <Clock className="h-4 w-4 text-status-go" />
-                  <span>Stage Confidence Clock</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenStageClock();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title="Open Stage Confidence Clock"
+              >
+                <Clock className="h-4 w-4 text-status-go flex-shrink-0" />
+                <span>Stage Confidence Clock</span>
+              </button>
 
-                <div className="h-px bg-border-subtle my-0.5" />
+              <div className="h-px bg-border-subtle my-0.5" />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleNewShow();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  <FilePlus className="h-4 w-4 text-content-3" />
-                  <span>Dự án mới (New Show)</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleNewShow();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title="New Project"
+              >
+                <FilePlus className="h-4 w-4 text-content-3 flex-shrink-0" />
+                <span>Dự án mới (New Show)</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenProject();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  <FolderOpen className="h-4 w-4 text-status-standby" />
-                  <span>Mở file (Open Project)</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenProject();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title="Open .lightstage Project"
+              >
+                <FolderOpen className="h-4 w-4 text-status-standby flex-shrink-0" />
+                <span>Mở file (Open Project)</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onImportClick();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  <Upload className="h-4 w-4 text-accent" />
-                  <span>Nhập file (Import CSV)</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onImportClick();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title="Import CSV/TSV"
+              >
+                <Upload className="h-4 w-4 text-accent flex-shrink-0" />
+                <span>Nhập file (Import CSV)</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onExportClick();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left"
-                >
-                  <Download className="h-4 w-4 text-status-go" />
-                  <span>Xuất file & In (Export)</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onExportClick();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left w-full cursor-pointer"
+                title="Export Reports & Project"
+              >
+                <Download className="h-4 w-4 text-status-go flex-shrink-0" />
+                <span>Xuất file & In (Export)</span>
+              </button>
 
-                <div className="h-px bg-border-subtle my-0.5" />
+              <div className="h-px bg-border-subtle my-0.5" />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    onHelpClick();
-                    setIsMoreMenuOpen(false);
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left font-semibold text-accent"
-                >
-                  <HelpCircle className="h-4 w-4" />
-                  <span>Hướng dẫn & Phím tắt (?)</span>
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => {
+                  onHelpClick();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-surface-2 text-content-1 transition-colors text-left font-semibold text-accent w-full cursor-pointer"
+                title="Trợ giúp & Phím tắt (Help)"
+              >
+                <HelpCircle className="h-4 w-4 flex-shrink-0" />
+                <span>Hướng dẫn & Phím tắt (?)</span>
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* ======================================================== */}
+      {/* STRIP 2: WORKSPACE STRIP (Exact Height: 36px / h-[36px])  */}
+      {/* ======================================================== */}
+      <div
+        className="flex h-[36px] items-center justify-between px-3 lg:px-4 bg-surface-1/90 border-t border-border-subtle/40 gap-2 select-none text-xs"
+        data-testid="header-workspace-strip"
+      >
+        {/* Left: View Mode Switcher Pills */}
+        <div className="inline-flex rounded-lg bg-surface-2 border border-border-subtle p-0.5 text-xs flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setViewMode('rundown')}
+            className={`flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors cursor-pointer ${
+              viewMode === 'rundown'
+                ? 'bg-accent text-surface-0 font-bold shadow-sm'
+                : 'text-content-2 hover:text-content-1'
+            }`}
+            title="Cue Rundown List"
+          >
+            <LayoutList className="h-3 w-3" />
+            <span>Rundown</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('split')}
+            className={`flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors cursor-pointer ${
+              viewMode === 'split'
+                ? 'bg-accent text-surface-0 font-bold shadow-sm'
+                : 'text-content-2 hover:text-content-1'
+            }`}
+            title="Split Dual View"
+          >
+            <SplitSquareVertical className="h-3 w-3" />
+            <span>Dual</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('timeline')}
+            className={`flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors cursor-pointer ${
+              viewMode === 'timeline'
+                ? 'bg-accent text-surface-0 font-bold shadow-sm'
+                : 'text-content-2 hover:text-content-1'
+            }`}
+            title="Timeline Tracks"
+          >
+            <Columns className="h-3 w-3 rotate-90" />
+            <span>Timeline</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('stage')}
+            className={`flex items-center gap-1 rounded px-2 py-0.5 font-medium transition-colors cursor-pointer ${
+              viewMode === 'stage'
+                ? 'bg-accent text-surface-0 font-bold shadow-sm'
+                : 'text-content-2 hover:text-content-1'
+            }`}
+            title="Stage 3D Preview"
+          >
+            <Eye className="h-3 w-3" />
+            <span>Stage 3D</span>
+          </button>
+        </div>
+
+        {/* Center: Contextual Role Filters & Add Cue */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1">
+            <span className="hidden md:inline text-[10px] uppercase font-semibold text-content-3 tracking-wider">
+              Filter:
+            </span>
+            <div className="inline-flex rounded-md bg-surface-2 border border-border-subtle p-0.5 text-[11px]">
+              {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as RoleFilter[]).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => handleFilterSelect(role)}
+                  className={`rounded px-1.5 sm:px-2 py-0.2 font-medium transition-colors cursor-pointer ${
+                    currentFilter === role
+                      ? 'bg-accent text-surface-0 font-bold shadow-xs'
+                      : 'text-content-3 hover:text-content-1'
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAddCue}
+            className="inline-flex items-center gap-1 rounded-md bg-surface-2 hover:bg-surface-3 border border-border-subtle px-2 py-0.5 text-[11px] font-medium text-content-1 transition-colors cursor-pointer flex-shrink-0"
+            title="Thêm Cue mới"
+          >
+            <Plus className="h-3 w-3 text-accent" />
+            <span className="hidden sm:inline">Add Cue</span>
+          </button>
+        </div>
+
+        {/* Right: Summary Stats & Inspector Drawer Toggle Button */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <span className="text-content-3 font-mono text-[11px] whitespace-nowrap hidden sm:inline">
+            {totalCues} Cues · {formatDuration(totalRuntimeMs)}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleToggleInspector}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium border transition-colors flex-shrink-0 cursor-pointer ${
+              isInspectorActive
+                ? 'bg-accent/20 border-accent/40 text-accent font-semibold'
+                : 'bg-surface-2 hover:bg-surface-3 border-border-subtle text-content-2 hover:text-content-1'
+            }`}
+            title="Mở/Đóng Inspector (I)"
+            data-testid="header-inspector-toggle"
+          >
+            <PanelRight className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Inspector</span>
+            <kbd className="px-1 py-0.2 rounded bg-surface-3 text-[10px] font-mono text-content-2 border border-border-subtle">
+              I
+            </kbd>
+          </button>
         </div>
       </div>
     </header>

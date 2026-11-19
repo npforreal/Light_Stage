@@ -14,6 +14,7 @@ Rules:
 - R4: Presentation templates/views must not instantiate repositories or perform direct queries.
 - R5: No open routes / trivial true permission callbacks (e.g. __return_true, () => true).
 - R6: File layout whitelist: files may only live in recognized directories; no rogue code in docs/ or root.
+- R7: No raw Tailwind color classes in src/ (use semantic tokens instead).
 - W1: (Warning) Hardcoded data tables/dictionaries in code instead of config/data files.
 
 Ratcheting:
@@ -47,6 +48,12 @@ OPEN_PERM_PATTERN = re.compile(
     r"(?:static\s+)?function\s*\([^)]*\)\s*(?:use\s*\([^)]*\)\s*)?(?::\s*\w+\s*)?\{\s*return\s+\(?\s*(?i:true)\s*\)?\s*;?\s*\}|"
     r"(?:static\s+)?fn\s*\([^)]*\)\s*(?::\s*\w+\s*)?=>\s*\(?\s*(?i:true)\s*\)?\b)"
     r"|allow_all\s*=\s*True"
+)
+
+# R7: No raw Tailwind color classes in src/
+RAW_COLOR_PATTERN = re.compile(
+    r"\b(bg|text|border|ring|from|to|via|fill|stroke|divide|shadow|outline|decoration|accent|caret)-"
+    r"(zinc|slate|gray|neutral|stone|cyan|amber|emerald|rose|indigo|violet|purple|blue|red|green|yellow)-\d+\b"
 )
 
 # Standard top-level directories allowed in clean projects
@@ -164,6 +171,23 @@ def check_r6_layout_whitelist(root: Path, tracked: list[str]) -> list[str]:
     return sorted(set(violations))
 
 
+def check_r7_raw_colors(root: Path, tracked: list[str]) -> list[str]:
+    """R7: No raw Tailwind color classes in src/ (use semantic tokens)."""
+    violations = []
+    valid_exts = {".ts", ".tsx", ".js", ".jsx", ".css", ".html"}
+    for rel in tracked:
+        parts = Path(rel).parts
+        if parts and parts[0] == "src" and Path(rel).suffix.lower() in valid_exts:
+            try:
+                content = (root / rel).read_text(encoding="utf-8", errors="ignore")
+                for line_no, line in enumerate(content.splitlines(), start=1):
+                    if RAW_COLOR_PATTERN.search(line):
+                        violations.append(f"R7:{rel}:{line_no}")
+            except Exception:
+                pass
+    return violations
+
+
 def collect_current_violations(root: Path) -> list[str]:
     """Run all active guard rules and return list of violation tokens."""
     tracked = get_tracked_files(root)
@@ -172,6 +196,7 @@ def collect_current_violations(root: Path) -> list[str]:
     all_v.extend(check_r2_usage_header(root, tracked))
     all_v.extend(check_r5_open_permissions(root, tracked))
     all_v.extend(check_r6_layout_whitelist(root, tracked))
+    all_v.extend(check_r7_raw_colors(root, tracked))
     return sorted(set(all_v))
 
 
@@ -196,6 +221,17 @@ def run_tests() -> int:
     assert OPEN_PERM_PATTERN.search("permission_callback => function() { return true; }")
     assert OPEN_PERM_PATTERN.search("permission_callback => fn() => true")
     assert not OPEN_PERM_PATTERN.search("permission_callback => [$this, 'check_auth']")
+
+    # R7: Raw Tailwind colors self-tests
+    assert RAW_COLOR_PATTERN.search("bg-zinc-800")
+    assert RAW_COLOR_PATTERN.search("text-rose-500")
+    assert RAW_COLOR_PATTERN.search("ring-amber-400")
+    assert RAW_COLOR_PATTERN.search("bg-cyan-950/95")
+    assert not RAW_COLOR_PATTERN.search("bg-surface-0")
+    assert not RAW_COLOR_PATTERN.search("text-content-1")
+    assert not RAW_COLOR_PATTERN.search("border-border-default")
+    assert not RAW_COLOR_PATTERN.search("status-go")
+
     print("Guard check self-tests passed cleanly.")
     return 0
 

@@ -13,6 +13,7 @@ import {
 import { useStageStore } from './store/useStageStore';
 import { useVisualStore } from './store/useVisualStore';
 import { broadcastStageClock } from './services/stageClockSync';
+import { isKeyboardProtected } from './services/shortcutRegistry';
 import { Header, ViewMode } from './components/Header';
 import { RundownTable } from './components/rundown/RundownTable';
 import { TimelineTracks } from './components/timeline/TimelineTracks';
@@ -22,7 +23,7 @@ import { ExportModal } from './components/export/ExportModal';
 import { HelpModal } from './components/HelpModal';
 import { WelcomeModal, WELCOME_STORAGE_KEY } from './components/WelcomeModal';
 import { StageClockWindow } from './components/StageClockWindow';
-import { VxControlBar } from './components/stage/VxControlBar';
+import { CueInspector } from './components/CueInspector';
 import { Lock } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -59,7 +60,10 @@ export const App: React.FC = () => {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
-  const [isOperatorLocked, setIsOperatorLocked] = useState(false);
+  const isOperatorLocked = useShowStore((s) => s.isOperatorLocked);
+  const setOperatorLocked = useShowStore((s) => s.setOperatorLocked);
+  const isInspectorOpen = useShowStore((s) => s.isInspectorOpen);
+  const toggleInspector = useShowStore((s) => s.toggleInspector);
   const [wallClock, setWallClock] = useState(() => new Date().toLocaleTimeString());
   const [recoveryMeta, setRecoveryMeta] = useState<AutoSaveMeta | null>(null);
 
@@ -187,37 +191,36 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isOperatorLocked) return; // Prevent triggering hotkeys when locked
 
-      const activeTag = document.activeElement?.tagName.toLowerCase();
-      const isContentEditable =
-        document.activeElement?.getAttribute('contenteditable') === 'true' ||
-        document.activeElement?.getAttribute('contenteditable') === '';
-
-      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || isContentEditable) {
+      if (isKeyboardProtected(e)) {
         return; // Don't intercept when user is typing
       }
 
+      const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === 'button' && (e.code === 'Space' || e.code === 'Enter')) {
         (document.activeElement as HTMLElement)?.blur();
       }
 
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
-        goCue();
+        useShowStore.getState().goCue();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
-        nextCue();
+        useShowStore.getState().nextCue();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        nextCue();
+        useShowStore.getState().nextCue();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        prevCue();
+        useShowStore.getState().prevCue();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        holdCue();
+        useShowStore.getState().holdCue();
       } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         e.preventDefault();
         setIsHelpOpen(true);
+      } else if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        useShowStore.getState().toggleInspector();
       } else if (e.key === 'F1') {
         e.preventDefault();
         useVisualStore.getState().clearLayer('background');
@@ -274,17 +277,19 @@ export const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-surface-0 text-content-1 overflow-hidden font-sans">
-      {/* 2-Tier Redesigned Header */}
+      {/* Unified Command Header (Command Bar 52px + Workspace Strip 36px) */}
       <Header
         viewMode={viewMode}
         setViewMode={setViewMode}
         isOperatorLocked={isOperatorLocked}
-        setIsOperatorLocked={setIsOperatorLocked}
+        setIsOperatorLocked={setOperatorLocked}
         onOpenProject={handleOpenProjectClick}
         onImportClick={() => setIsImportOpen(true)}
         onExportClick={() => setIsExportOpen(true)}
         onHelpClick={() => setIsHelpOpen(true)}
         wallClock={wallClock}
+        isInspectorOpen={isInspectorOpen}
+        onToggleInspector={toggleInspector}
       />
 
       <input
@@ -297,9 +302,9 @@ export const App: React.FC = () => {
 
       {/* Startup Recovery Notice Banner */}
       {recoveryMeta && (
-        <div className="bg-cyan-950/95 border-b border-cyan-700 px-4 py-2 flex items-center justify-between text-xs text-cyan-100 z-40 flex-shrink-0">
+        <div className="bg-surface-1/95 border-b border-border-default px-4 py-2 flex items-center justify-between text-xs text-content-1 z-40 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-cyan-300">Phát hiện bản tự động lưu:</span>
+            <span className="font-bold text-accent">Phát hiện bản tự động lưu:</span>
             <span>
               "{recoveryMeta.showTitle}" ({recoveryMeta.cueCount} cues) lưu lúc{' '}
               {new Date(recoveryMeta.savedAt).toLocaleTimeString()}
@@ -317,7 +322,7 @@ export const App: React.FC = () => {
                 }
                 setRecoveryMeta(null);
               }}
-              className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1 rounded shadow transition-colors"
+              className="bg-accent hover:opacity-90 active:scale-[0.98] text-surface-0 font-bold px-3 py-1 rounded shadow transition-all"
             >
               Khôi phục
             </button>
@@ -326,7 +331,7 @@ export const App: React.FC = () => {
                 clearAutoSave();
                 setRecoveryMeta(null);
               }}
-              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded transition-colors"
+              className="bg-surface-2 hover:bg-surface-3 active:scale-[0.98] text-content-2 px-3 py-1 rounded transition-all"
             >
               Bỏ qua
             </button>
@@ -336,56 +341,58 @@ export const App: React.FC = () => {
 
       {/* Operator Lock Safety Banner */}
       {isOperatorLocked && (
-        <div className="bg-amber-500/20 border-b border-amber-500/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-amber-300 z-30 flex-shrink-0">
+        <div className="bg-status-standby/15 border-b border-status-standby/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-status-standby z-30 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-amber-400 animate-pulse" />
+            <Lock className="h-4 w-4 text-status-standby animate-pulse" />
             <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Toàn bộ phím tắt điều khiển đã được vô hiệu hóa để bảo đảm an toàn live show.</span>
           </div>
           <button
-            onClick={() => setIsOperatorLocked(false)}
-            className="rounded bg-amber-500 text-slate-950 px-2.5 py-0.5 text-[11px] font-bold hover:bg-amber-400 transition-colors"
+            onClick={() => setOperatorLocked(false)}
+            className="rounded bg-status-standby text-surface-0 px-2.5 py-0.5 text-[11px] font-bold hover:opacity-90 active:scale-[0.98] transition-all"
           >
             Mở khóa
           </button>
         </div>
       )}
 
-      {/* Visual LED (VX) Live Panic & Output Control Bar */}
-      <VxControlBar />
-
-      {/* Main Workspace Area */}
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {viewMode === 'rundown' && (
-          <div className="flex-1 overflow-hidden">
-            <RundownTable />
-          </div>
-        )}
-
-        {viewMode === 'timeline' && (
-          <div className="flex-1 overflow-hidden">
-            <TimelineTracks />
-          </div>
-        )}
-
-        {viewMode === 'stage' && (
-          <div className="flex-1 overflow-hidden">
-            <Stage3DView />
-          </div>
-        )}
-
-        {viewMode === 'split' && (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Top: Rundown Table */}
-            <div className="flex-[3] border-b border-border-default overflow-hidden">
+      {/* Main Workspace Area with Right Inspector Drawer */}
+      <div className="flex flex-1 overflow-hidden relative">
+        <main className="flex flex-1 flex-col overflow-hidden min-w-0">
+          {viewMode === 'rundown' && (
+            <div className="flex-1 overflow-hidden">
               <RundownTable />
             </div>
-            {/* Bottom: Timeline Tracks */}
-            <div className="flex-[2] overflow-hidden">
+          )}
+
+          {viewMode === 'timeline' && (
+            <div className="flex-1 overflow-hidden">
               <TimelineTracks />
             </div>
-          </div>
-        )}
-      </main>
+          )}
+
+          {viewMode === 'stage' && (
+            <div className="flex-1 overflow-hidden">
+              <Stage3DView />
+            </div>
+          )}
+
+          {viewMode === 'split' && (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {/* Top: Rundown Table */}
+              <div className="flex-[3] border-b border-border-default overflow-hidden">
+                <RundownTable />
+              </div>
+              {/* Bottom: Timeline Tracks */}
+              <div className="flex-[2] overflow-hidden">
+                <TimelineTracks />
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Right Inspector Drawer */}
+        <CueInspector />
+      </div>
 
       {/* Modals */}
       <ImportModal isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} />

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useShowStore } from '../../store/useShowStore';
-import { useClockStore, formatDuration } from '../../store/useClockStore';
+import { formatDuration } from '../../store/useClockStore';
 import { Cue, CueStatus, DeviceSpecification, LightingColor, sumDeviceCounts } from '../../types/stage';
 import { parseTimeString } from '../../services/importer';
 import { ClampedPopover } from '../common/ClampedPopover';
@@ -43,6 +43,7 @@ import {
   Check,
   X,
   Palette,
+  MoreHorizontal,
 } from 'lucide-react';
 
 export type RoleFilter = 'ALL' | 'LX' | 'VX' | 'SQ' | 'ST';
@@ -57,19 +58,39 @@ export const RundownTable: React.FC = () => {
   const activeCueId = useShowStore((s) => s.activeCueId);
   const standbyCueId = useShowStore((s) => s.standbyCueId);
   const standbyCue = useShowStore((s) => s.standbyCue);
-  const goCue = useShowStore((s) => s.goCue);
   const holdCue = useShowStore((s) => s.holdCue);
   const skipCue = useShowStore((s) => s.skipCue);
   const resetCue = useShowStore((s) => s.resetCue);
   const updateCue = useShowStore((s) => s.updateCue);
   const addCue = useShowStore((s) => s.addCue);
   const deleteCue = useShowStore((s) => s.deleteCue);
-
-  const syncCueDuration = useClockStore((s) => s.syncCueDuration);
-  const startClock = useClockStore((s) => s.startClock);
+  const selectedCueId = useShowStore((s) => s.selectedCueId);
+  const selectCue = useShowStore((s) => s.selectCue);
+  const setInspectorOpen = useShowStore((s) => s.setInspectorOpen);
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
   const [editingCell, setEditingCell] = useState<EditingCellState | null>(null);
+  const [activeRowMenuCueId, setActiveRowMenuCueId] = useState<string | null>(null);
+  const rowMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (rowMenuRef.current && !rowMenuRef.current.contains(e.target as Node)) {
+        setActiveRowMenuCueId(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveRowMenuCueId(null);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Edit draft states
   const [draftTitle, setDraftTitle] = useState('');
@@ -252,12 +273,6 @@ export const RundownTable: React.FC = () => {
     setShowColorPopover(false);
   };
 
-  const handleFireGo = (cueId: string, durationMs: number) => {
-    goCue(cueId);
-    syncCueDuration(durationMs, true);
-    startClock();
-  };
-
   const handleDuplicateCue = (cue: Cue) => {
     addCue(
       cue.actId,
@@ -320,19 +335,23 @@ export const RundownTable: React.FC = () => {
     }
   };
 
-  // Unified cue status badges with 1 consistent icon + color
+  // Unified cue status badges with consistent icon + color
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
     if (isActive || status === 'Go') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 shadow-sm animate-pulse">
+        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 shadow-sm animate-pulse">
           <Play className="h-3 w-3 fill-current" />
           <span>GO</span>
+          <span className="relative flex h-2 w-2 ml-0.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-go opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-status-go" />
+          </span>
         </span>
       );
     }
     if (isStandby || status === 'Standby') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
           <AlertCircle className="h-3 w-3" />
           <span>STANDBY</span>
         </span>
@@ -340,7 +359,7 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Hold') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
           <Pause className="h-3 w-3" />
           <span>HOLD</span>
         </span>
@@ -348,7 +367,7 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Skip') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default line-through">
           <FastForward className="h-3 w-3" />
           <span>SKIP</span>
         </span>
@@ -356,30 +375,35 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Completed') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
+        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2 text-content-3 border border-border-default/60">
           <CheckCircle2 className="h-3 w-3 text-status-go/70" />
-          <span>DONE</span>
+          <span>COMPLETED</span>
         </span>
       );
     }
     // Pending
     return (
-      <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
+      <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
         <Clock className="h-3 w-3 text-content-3" />
         <span>PENDING</span>
       </span>
     );
   };
 
-  // Distinct highlight for the active GO row, calm neutral style for other rows
-  const getRowHighlight = (isActive: boolean, isStandby: boolean) => {
+  // Visual row highlight matrix (Active GO, Standby, Selected/Inspected, Normal)
+  const getRowHighlight = (isActive: boolean, isStandby: boolean, isSelected: boolean) => {
     if (isActive) {
-      return 'bg-status-go/10 border-l-4 border-l-status-go ring-1 ring-status-go/20 shadow-sm';
+      return `bg-status-go/10 border-l-4 border-l-status-go ${
+        isSelected ? 'ring-2 ring-accent' : 'ring-1 ring-status-go/30'
+      } shadow-sm`;
+    }
+    if (isSelected) {
+      return 'bg-surface-2/80 ring-1 ring-accent/60 border-l-4 border-l-accent';
     }
     if (isStandby) {
       return 'bg-status-standby/10 border-l-4 border-l-status-standby';
     }
-    return 'border-l-4 border-l-transparent hover:bg-surface-1/50 transition-colors';
+    return 'border-l-4 border-l-transparent hover:bg-surface-1/60 transition-colors';
   };
 
   return (
@@ -471,7 +495,7 @@ export const RundownTable: React.FC = () => {
                 </th>
               )}
 
-              <th className="py-2.5 px-3 text-right w-56">Calling Actions</th>
+              <th className="py-2.5 px-3 text-right w-28">Actions</th>
             </tr>
           </thead>
 
@@ -492,12 +516,21 @@ export const RundownTable: React.FC = () => {
                 {act.cues.map((cue) => {
                   const isActive = activeCueId === cue.id;
                   const isStandby = standbyCueId === cue.id;
+                  const isSelected = selectedCueId === cue.id;
                   const isEditingThisCue = editingCell?.cueId === cue.id;
 
                   return (
                     <tr
                       key={cue.id}
-                      className={`transition-colors group/row ${getRowHighlight(isActive, isStandby)}`}
+                      onClick={() => {
+                        selectCue(cue.id);
+                        setInspectorOpen(true);
+                      }}
+                      className={`transition-colors group/row cursor-pointer min-h-[44px] h-11 ${getRowHighlight(
+                        isActive,
+                        isStandby,
+                        isSelected
+                      )}`}
                     >
                       {/* Status Badge */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
@@ -823,7 +856,7 @@ export const RundownTable: React.FC = () => {
                                     </button>
                                     {hasUnclassifiedFixtures(draftLx.fixtures) && (
                                       <span
-                                        className="inline-flex items-center gap-1 text-[10px] text-amber-400"
+                                        className="inline-flex items-center gap-1 text-[10px] text-status-standby"
                                         title="Loại đèn chưa nhận diện — sẽ được vẽ ở vị trí mặc định"
                                       >
                                         <AlertTriangle className="h-3 w-3" />
@@ -980,10 +1013,10 @@ export const RundownTable: React.FC = () => {
                                   </div>
                                   {isOutOfGamut(draftLx.hex) && (
                                     <div
-                                      className="flex items-center gap-1 text-[9px] text-amber-400 bg-amber-950/40 border border-amber-800/60 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                      className="flex items-center gap-1 text-[9px] text-status-standby bg-status-standby/15 border border-status-standby/40 rounded px-1.5 py-0.5 whitespace-nowrap"
                                       title="Màu này nằm ngoài không gian màu tiêu chuẩn sRGB"
                                     >
-                                      <AlertTriangle className="h-3 w-3 text-amber-400 flex-shrink-0" />
+                                      <AlertTriangle className="h-3 w-3 text-status-standby flex-shrink-0" />
                                       <span>Gamut warning</span>
                                     </div>
                                   )}
@@ -1272,14 +1305,17 @@ export const RundownTable: React.FC = () => {
                         </td>
                       )}
 
-                      {/* Calling Actions & Row Actions */}
+                      {/* Calling Actions & Row Actions: Subtle STBY Button & Minimal ··· Menu */}
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1">
+                        <div className="inline-flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           {/* Standby Button */}
                           <button
                             type="button"
-                            onClick={() => standbyCue(cue.id)}
-                            className={`rounded px-2 py-1 text-[11px] font-bold tracking-wide transition-colors ${
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              standbyCue(cue.id);
+                            }}
+                            className={`rounded px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors ${
                               isStandby
                                 ? 'bg-status-standby text-surface-0 ring-2 ring-status-standby'
                                 : 'bg-status-standby/20 text-status-standby hover:bg-status-standby/30 border border-status-standby/40'
@@ -1288,81 +1324,105 @@ export const RundownTable: React.FC = () => {
                             STBY
                           </button>
 
-                          {/* Go Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleFireGo(cue.id, cue.durationMs)}
-                            className={`inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-bold tracking-wide transition-colors ${
-                              isActive
-                                ? 'bg-status-go text-surface-0 ring-2 ring-status-go animate-pulse'
-                                : 'bg-status-go/80 hover:bg-status-go text-surface-0 shadow'
-                            }`}
+                          {/* Secondary Operations Dropdown (···) */}
+                          <div
+                            className="relative inline-block text-left"
+                            ref={activeRowMenuCueId === cue.id ? rowMenuRef : null}
                           >
-                            <Play className="h-3 w-3 fill-current" />
-                            <span>GO</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveRowMenuCueId((prev) => (prev === cue.id ? null : cue.id));
+                              }}
+                              title="Tùy chọn khác"
+                              aria-label="Tùy chọn khác"
+                              className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </button>
 
-                          {/* Hold */}
-                          <button
-                            type="button"
-                            onClick={() => holdCue(cue.id)}
-                            title="Hold Cue"
-                            className="rounded p-1 text-content-3 hover:bg-status-hold/20 hover:text-status-hold transition-colors"
-                          >
-                            <Pause className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Skip */}
-                          <button
-                            type="button"
-                            onClick={() => skipCue(cue.id)}
-                            title="Skip Cue"
-                            className="rounded p-1 text-content-3 hover:bg-surface-2 hover:text-content-1 transition-colors"
-                          >
-                            <FastForward className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Reset */}
-                          <button
-                            type="button"
-                            onClick={() => resetCue(cue.id)}
-                            title="Reset Cue"
-                            className="rounded p-1 text-content-3 hover:bg-surface-2 hover:text-content-1 transition-colors"
-                          >
-                            <RotateCcw className="h-3.5 w-3.5" />
-                          </button>
-
-                          <div className="h-4 w-px bg-border-subtle mx-0.5" />
-
-                          {/* Add Below (+) */}
-                          <button
-                            type="button"
-                            onClick={() => handleAddCueBelow(cue)}
-                            title="Thêm Cue bên dưới"
-                            className="rounded p-1 text-content-3 hover:text-accent hover:bg-surface-2 transition-colors"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Duplicate */}
-                          <button
-                            type="button"
-                            onClick={() => handleDuplicateCue(cue)}
-                            title="Nhân đôi Cue"
-                            className="rounded p-1 text-content-3 hover:text-content-1 hover:bg-surface-2 transition-colors"
-                          >
-                            <Copy className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Delete */}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCue(cue.id)}
-                            title="Xóa Cue"
-                            className="rounded p-1 text-content-3 hover:text-status-danger hover:bg-status-danger/10 transition-colors"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                            {activeRowMenuCueId === cue.id && (
+                              <div
+                                className="absolute right-0 top-full mt-1 w-44 rounded-lg border border-border-default bg-surface-1 shadow-xl z-30 py-1 text-xs text-content-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    handleAddCueBelow(cue);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-accent"
+                                  title="Thêm Cue bên dưới"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                  <span>Thêm Cue bên dưới</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    handleDuplicateCue(cue);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
+                                  title="Nhân đôi Cue"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                  <span>Nhân đôi Cue</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    holdCue(cue.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-status-hold"
+                                  title="Hold Cue"
+                                >
+                                  <Pause className="h-3.5 w-3.5" />
+                                  <span>Tạm dừng (Hold)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    skipCue(cue.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
+                                  title="Skip Cue"
+                                >
+                                  <FastForward className="h-3.5 w-3.5" />
+                                  <span>Bỏ qua (Skip)</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    resetCue(cue.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
+                                  title="Reset Cue"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                  <span>Đặt lại (Reset)</span>
+                                </button>
+                                <div className="my-1 border-t border-border-subtle" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveRowMenuCueId(null);
+                                    handleDeleteCue(cue.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-status-danger/10 text-left text-status-danger"
+                                  title="Xóa Cue"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <span>Xóa Cue</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

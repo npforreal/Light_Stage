@@ -73,10 +73,10 @@ describe('Visual LED (VX) Engine & Store — Inspired by FreeShow', () => {
     });
 
     it('returns appropriate dot class for output status', () => {
-      expect(getOutputStatusDotClass('active')).toContain('bg-emerald-400');
-      expect(getOutputStatusDotClass('frozen')).toContain('bg-amber-400');
-      expect(getOutputStatusDotClass('blackout')).toContain('bg-rose-500');
-      expect(getOutputStatusDotClass('standby')).toContain('bg-slate-500');
+      expect(getOutputStatusDotClass('active')).toContain('bg-status-go');
+      expect(getOutputStatusDotClass('frozen')).toContain('bg-status-standby');
+      expect(getOutputStatusDotClass('blackout')).toContain('bg-status-danger');
+      expect(getOutputStatusDotClass('standby')).toContain('bg-content-3');
     });
   });
 });

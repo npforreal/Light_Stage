@@ -3,7 +3,11 @@ import { useVisualStore } from '../../store/useVisualStore';
 import { getOutputStatusDotClass } from '../../services/visualEngine';
 import { Lock, Unlock, EyeOff, Power, Monitor } from 'lucide-react';
 
-export const VxControlBar: React.FC = () => {
+export interface VxControlBarProps {
+  className?: string;
+}
+
+export const VxControlBar: React.FC<VxControlBarProps> = ({ className }) => {
   const outputs = useVisualStore((s) => s.outputs);
   const isFrozen = useVisualStore((s) => s.isFrozen);
   const isBlackout = useVisualStore((s) => s.isBlackout);
@@ -17,36 +21,40 @@ export const VxControlBar: React.FC = () => {
 
   return (
     <div
-      data-testid="vx-control-bar"
-      className="flex flex-wrap items-center justify-between gap-2 border-b border-border-default/80 bg-surface-1/90 px-3 py-1.5 text-xs select-none backdrop-blur z-20"
+      data-testid="vx-floating-dock"
+      className={
+        className ??
+        'absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-2xl bg-[#0d121a]/85 border border-white/10 px-4 py-2 shadow-2xl backdrop-blur-md select-none text-xs'
+      }
     >
-      {/* Left: Output status chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-        <span className="flex items-center gap-1 text-[11px] font-semibold text-content-3 uppercase tracking-wider mr-1">
-          <Monitor className="h-3.5 w-3.5 text-dept-vx" />
-          Outputs:
-        </span>
-        {outputs.map((out) => (
-          <div
-            key={out.id}
-            className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-mono transition-colors ${
-              out.enabled
-                ? 'border-border-default bg-surface-2 text-content-1'
-                : 'border-transparent bg-surface-0/60 text-content-3 line-through opacity-60'
-            }`}
-            title={`${out.name} (${out.aspectRatio} · ${out.resolution.width}x${out.resolution.height}) - ${out.status.toUpperCase()}`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${getOutputStatusDotClass(out.status)}`} />
-            <span className="truncate max-w-[90px]">{out.name}</span>
-            <span className="text-[9px] text-content-3">[{out.aspectRatio}]</span>
-          </div>
-        ))}
-      </div>
+      <div data-testid="vx-control-bar" className="contents">
+        {/* Output status chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+          <span className="flex items-center gap-1 text-[11px] font-semibold text-content-3 uppercase tracking-wider mr-1">
+            <Monitor className="h-3.5 w-3.5 text-dept-vx" />
+            <span>Outputs:</span>
+          </span>
+          {outputs.map((out) => (
+            <div
+              key={out.id}
+              className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-mono transition-colors ${
+                out.enabled
+                  ? 'border-border-subtle bg-surface-2 text-content-1'
+                  : 'border-transparent bg-surface-0/60 text-content-3 line-through opacity-60'
+              }`}
+              title={`${out.name} (${out.aspectRatio} · ${out.resolution.width}x${out.resolution.height}) - ${out.status.toUpperCase()}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${getOutputStatusDotClass(out.status)}`} />
+              <span className="truncate max-w-[90px]">{out.name}</span>
+              <span className="text-[9px] text-content-3">[{out.aspectRatio}]</span>
+            </div>
+          ))}
+        </div>
 
-      {/* Right: Panic actions & Layer toggles */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {/* Layer icon switches */}
-        <div className="flex items-center rounded-lg bg-surface-2 border border-border-subtle p-0.5 gap-0.5">
+        <div className="h-4 w-px bg-white/10" />
+
+        {/* Layer switches */}
+        <div className="flex items-center rounded-lg bg-surface-2/80 border border-border-subtle p-0.5 gap-0.5">
           <button
             type="button"
             onClick={() => toggleLayer('background')}
@@ -56,8 +64,9 @@ export const VxControlBar: React.FC = () => {
                 : 'text-content-3 hover:text-content-2 line-through'
             }`}
             title="Lớp Nền Video/Loop (F1)"
+            data-testid="vx-layer-background"
           >
-            Nền
+            Nền (F1)
           </button>
           <button
             type="button"
@@ -68,8 +77,9 @@ export const VxControlBar: React.FC = () => {
                 : 'text-content-3 hover:text-content-2 line-through'
             }`}
             title="Lớp Slide / Nội dung chính (F2)"
+            data-testid="vx-layer-slide"
           >
-            Slide
+            Slide (F2)
           </button>
           <button
             type="button"
@@ -80,56 +90,65 @@ export const VxControlBar: React.FC = () => {
                 : 'text-content-3 hover:text-content-2 line-through'
             }`}
             title="Lớp Phủ / Lower Third (F3)"
+            data-testid="vx-layer-overlay"
           >
-            Overlay
+            Overlay (F3)
           </button>
         </div>
 
-        {/* Clear VX Button */}
-        <button
-          type="button"
-          onClick={clearAllVx}
-          disabled={!anyLayerActive}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all shadow-sm ${
-            anyLayerActive
-              ? 'bg-amber-600/90 hover:bg-amber-500 text-white animate-pulse'
-              : 'bg-surface-2 text-content-3 cursor-not-allowed opacity-50'
-          }`}
-          title="Xoá tất cả các lớp VX trên màn hình (F4)"
-        >
-          <EyeOff className="h-3.5 w-3.5" />
-          Clear VX
-        </button>
+        <div className="h-4 w-px bg-white/10" />
 
-        {/* Freeze VX Button */}
-        <button
-          type="button"
-          onClick={toggleFreezeVx}
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
-            isFrozen
-              ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400'
-              : 'bg-surface-2 hover:bg-surface-3 text-content-2'
-          }`}
-          title="Freeze VX: Đóng băng hình ảnh trên màn hình, không đổi khi chuyển cue (Alt+F)"
-        >
-          {isFrozen ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5 text-content-3" />}
-          <span>{isFrozen ? 'ĐÃ KHÓA VX' : 'Freeze VX'}</span>
-        </button>
+        {/* Panic actions */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Clear VX Button */}
+          <button
+            type="button"
+            onClick={clearAllVx}
+            disabled={!anyLayerActive}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-all shadow-sm ${
+              anyLayerActive
+                ? 'bg-status-standby hover:opacity-90 active:scale-[0.98] text-surface-0 animate-pulse'
+                : 'bg-surface-2 text-content-3 cursor-not-allowed opacity-50'
+            }`}
+            title="Xoá tất cả các lớp VX trên màn hình (F4)"
+            data-testid="vx-panic-clear"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+            <span>Clear VX (F4)</span>
+          </button>
 
-        {/* Blackout VX Button */}
-        <button
-          type="button"
-          onClick={toggleBlackoutVx}
-          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition-colors ${
-            isBlackout
-              ? 'bg-rose-600 text-white ring-2 ring-rose-400'
-              : 'bg-surface-2 hover:bg-surface-3 text-content-2'
-          }`}
-          title="Blackout VX: Tắt toàn bộ tín hiệu ra màn hình LED"
-        >
-          <Power className="h-3.5 w-3.5 text-rose-400" />
-          <span className="hidden sm:inline">Blackout</span>
-        </button>
+          {/* Freeze VX Button */}
+          <button
+            type="button"
+            onClick={toggleFreezeVx}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
+              isFrozen
+                ? 'bg-status-standby text-surface-0 shadow-md ring-2 ring-status-standby active:scale-[0.98]'
+                : 'bg-surface-2 hover:bg-surface-3 text-content-2'
+            }`}
+            title="Freeze VX: Đóng băng hình ảnh trên màn hình, không đổi khi chuyển cue (Alt+F)"
+            data-testid="vx-panic-freeze"
+          >
+            {isFrozen ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5 text-content-3" />}
+            <span>{isFrozen ? 'ĐÃ KHÓA VX' : 'Freeze VX (Alt+F)'}</span>
+          </button>
+
+          {/* Blackout VX Button */}
+          <button
+            type="button"
+            onClick={toggleBlackoutVx}
+            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold transition-colors ${
+              isBlackout
+                ? 'bg-status-danger text-surface-0 ring-2 ring-status-danger active:scale-[0.98]'
+                : 'bg-surface-2 hover:bg-surface-3 text-content-2'
+            }`}
+            title="Blackout VX: Tắt toàn bộ tín hiệu ra màn hình LED"
+            data-testid="vx-panic-blackout"
+          >
+            <Power className="h-3.5 w-3.5 text-status-danger" />
+            <span>Blackout</span>
+          </button>
+        </div>
       </div>
     </div>
   );

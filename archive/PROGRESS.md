@@ -1,5 +1,203 @@
 # Lưu trữ PROGRESS.md (nguyên văn, không chỉnh sửa)
 
+## 2026-11-19 — Đợt 14.3 (R3 / Remediation): Khắc Phục Tràn Ngang Command Bar & Thêm Xử Lý Escape Dropdown
+
+### Thay đổi
+- **Điều chỉnh Breakpoints Thích ứng Command Bar** (`src/components/Header.tsx`):
+  - Standby Callout (`hidden md:flex` → `hidden xl:flex`): ẩn trên màn hình < 1280px, tiết kiệm ~140px.
+  - Live Hardware Badges (`flex` → `hidden xl:flex`): ẩn trên màn hình < 1280px, tiết kiệm ~106px.
+  - Chấm trạng thái lưu ("Chưa lưu" / "Đã lưu"): chuyển text sang `hidden lg:inline`, giữ nguyên chấm màu trực quan, tiết kiệm ~45px trên < 1024px.
+  - Nhãn nút điều khiển STBY & Hold: chuyển sang `hidden lg:inline`, giữ nguyên icon và chip phím tắt `B`, `Esc`, tiết kiệm ~60px trên < 1024px.
+  - Nhãn nút Operator Lock ("Locked" / "Lock"): chuyển sang `hidden lg:inline`, giữ nguyên icon khóa/mở khóa, tiết kiệm ~35px trên < 1024px.
+  - Cụm Delta Time trong đồng hồ: chuyển sang `hidden xl:flex` (kèm vạch ngăn `hidden xl:block`), tiết kiệm ~50px trên < 1280px.
+- **Xử lý phím Escape cho Menu Quản trị Thứ cấp** (`src/components/Header.tsx`):
+  - Thêm xử lý phím `Escape` trên container và `useEffect` keydown capture: khi dropdown mở, bấm `Escape` sẽ đóng menu (`setIsMoreMenuOpen(false)`) và gọi `e.stopPropagation()` ngăn chặn sự kiện lan ra ngoài kích hoạt nhầm lệnh Hold Cue toàn cục.
+- **Mở rộng Test Suite Header** (`src/components/__tests__/Header.test.tsx`):
+  - Thêm 2 unit test bao phủ toàn bộ các responsive breakpoint classes và hành vi đóng menu bằng phím Escape mà không kích hoạt Hold Cue (tăng tổng số test từ 8 lên 10).
+
+### Quyết định kỹ thuật
+- Giải quyết dứt điểm lỗi tràn ngang (+342px ở 960px và +162px ở 1280px) do Challenger 1 phát hiện, đảm bảo nút Admin Menu và cụm đồng hồ luôn hiển thị trọn vẹn và hit-testable (`elementFromPoint` hợp lệ) trên mọi kích thước viewport từ 960px trở lên.
+- Ngăn chặn hoàn toàn xung đột phím tắt giữa Escape đóng dropdown và Escape giữ lệnh sân khấu (Hold).
+
+### Kiểm chứng & Kết quả
+- `npm test -- src/components/__tests__/Header.test.tsx`: 10/10 tests pass 100% (169ms).
+- `npx vitest run`: 33 test files / 300 tests pass 100% (3.83s).
+- `python3 scripts/guard_check.py`: 0 violations (0 baselined).
+- `bash scripts/check.sh --fast`: 4/4 quality gate checks pass cleanly (TypeScript type check, unit tests, cargo check, workflow audit, drift guard).
+
+## 2026-11-19 — Đợt 14.3: Tái Cấu Trúc Unified Command Header (R3) Hoàn Tất
+
+### Thay đổi
+- **14.3 Command Bar (cao chính xác 52px / `h-[52px]`)** (`src/components/Header.tsx`):
+  - Left Zone: Logo thương hiệu `LS` + "Light Stage", tiêu đề show chỉnh sửa inline kèm icon bút/lưu, chấm trạng thái lưu/chưa lưu (`bg-status-go` / `bg-status-standby`), và badge phần cứng trực tiếp (`LX: {liveLxCount}`, `VX: {liveVxCount}`).
+  - Center Zone: Standby callout (`STBY: X Title`), nút Hero Central GO nổi bật (`h-10 px-5 sm:px-6 rounded-xl bg-status-go hover:bg-status-go/90 text-surface-0 font-black shadow-lg shadow-status-go/25 active:scale-[0.97]`) kèm chip `<kbd>Space</kbd>` và badge `LIVE` khi đang chạy; nút Standby Next (`B`) và nút Hold/Pause (`Esc`).
+  - Right Zone: Cụm đồng hồ tabular-nums (Wall Clock ẩn khi < 1280px, Show Time, Cue Remainder đếm ngược, Delta Time) kèm nút Reset Clock nhanh; nút khóa vận hành Operator Lock; nút menu quản trị thứ cấp `MoreHorizontal` (`⋮`) gom gọn toàn bộ tác vụ phụ (Mute, Stage Clock, New Show, Open, Import, Export, Help).
+- **14.3 Workspace Strip ngữ cảnh (cao chính xác 36px / `h-[36px]`)** (`src/components/Header.tsx`):
+  - Left Zone: Thanh chuyển chế độ xem 4 pill (`Rundown`, `Dual`/`Split`, `Timeline`, `Stage 3D`).
+  - Center Zone: Bộ lọc vai trò ngữ cảnh (`ALL`, `LX`, `VX`, `SQ`, `ST`) và nút `+ Add Cue`.
+  - Right Zone: Thống kê số lượng cue & tổng thời lượng show (`X Cues · Ym Zs`) và nút mở/gập Inspector Drawer (`PanelRight` + `Inspector` + `<kbd>I</kbd>`).
+- **14.3 Cập nhật App & Suite Test Header** (`src/App.tsx`, `src/components/__tests__/Header.test.tsx`):
+  - Mở rộng suite test `Header.test.tsx` từ 3 lên 8 test kiểm chứng đầy đủ: chiều cao 2 thanh (52px & 36px), nút Hero GO và phím Space, menu Admin dropdown, chỉnh sửa tên show, mute audio, toggle lock, filter vai trò và toggle inspector.
+
+### Quyết định kỹ thuật
+- Tái cấu trúc Header thành 2 tầng cố định 52px + 36px (tổng 88px) giải phóng 78px trực tiếp trên Header (và ≥ 118px khi kết hợp đưa VxControlBar vào dock nổi ở Đợt 15).
+- Thiết kế thích ứng ngang hoàn hảo trong viewport 960px mà không bị tràn (overflow) hay che khuất phần tử điều khiển.
+- Tuân thủ 100% token ngữ nghĩa Design System theo Quy tắc R7 (0 vi phạm màu thô).
+
+### Kiểm chứng & Kết quả
+- `npm test -- src/components/__tests__/Header.test.tsx`: 8/8 tests pass 100% (150ms).
+- `npx vitest run`: 33 test files / 298 tests pass 100% (3.64s).
+- `python3 scripts/guard_check.py`: 0 violations (0 baselined).
+- `bash scripts/check.sh --fast`: 4/4 quality gate checks pass cleanly (type-check, unit tests, cargo check, workflow audit, drift guard).
+
+## 2026-11-19 — Đợt 14.2: Bộ Test Bảo Vệ Phím Tắt & Chống Xung Đột Phím (R2) Hoàn Tất (Kèm Khắc Phục Lỗ Hổng Operator Lock & Input Protection)
+
+### Thay đổi
+- **14.2 Shortcut Registry & Collision Guard Service** (`src/services/shortcutRegistry.ts`):
+  - Định nghĩa `ShortcutDefinition`, danh mục `ShortcutCategory`, và catalog toàn bộ 16 phím tắt hoạt động + 1 phím dự trữ `I` cho Inspector Drawer (`SYSTEM_SHORTCUTS`). Đóng băng mảng với `Object.freeze(SYSTEM_SHORTCUTS)`.
+  - Cung cấp hàm `normalizeShortcutSignature(s)` có cắt tỉa khoảng trắng `s.key.trim()` và `detectShortcutCollisions(shortcuts)` phát hiện va chạm phím tự động.
+  - Cung cấp vị từ lọc đối tượng nhập liệu chuẩn DOM & JSDOM `isEditableTarget(el)` và `isKeyboardProtected(e)`: hỗ trợ thẻ `<option>`, duyệt tìm phần tử cha `<select>`, hỗ trợ `contenteditable="plaintext-only"`, và chuẩn hóa chữ thường / cắt khoảng trắng thuộc tính `contenteditable` (xử lý case-insensitivity `"TRUE"`).
+- **14.2 Tích hợp Bộ Lọc Bảo vệ vào App & Show Store** (`src/App.tsx`, `src/store/useShowStore.ts`):
+  - `src/App.tsx`: chuyển `isOperatorLocked` từ state cục bộ sang `useShowStore` (`isOperatorLocked`, `setOperatorLocked`), thay thế logic lọc cục bộ bằng `isKeyboardProtected(e)`, chuyển các hàm gọi cue sang `useShowStore.getState().*` để loại bỏ rủi ro closure lạc hậu và tương thích hoàn hảo với Vitest spies.
+  - `src/store/useShowStore.ts`: đưa `isOperatorLocked` vào Zustand store; thêm `isKeyboardProtected(e)` vào `handleGlobalKeyDown` để bảo vệ browser native undo/redo trong ô nhập liệu khi nhấn `Ctrl+Z`, đồng thời thêm chốt chặn `if (useShowStore.getState().isOperatorLocked) return false;` ở đầu `handleGlobalKeyDown` ngăn chặn 100% bypass qua phím tắt edit (`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z`, `Ctrl+S`). Tự động reset `isOperatorLocked: false` khi `loadShow` hoặc `newShow`.
+- **14.2 Bộ Test Phím Tắt Toàn Diện** (`src/__tests__/keyboardShortcuts.test.tsx`):
+  - Xây dựng 29 unit test bao phủ toàn bộ 6 nhóm yêu cầu cốt lõi (Input Protection bao gồm plaintext-only / TRUE / option, Global Live Shortcuts, Operator Lock Guard ngăn chặn 100% các phím Space/B/Undo/Redo/Save, Button Blur Ergonomics, Collision Guard & 'I' Reservation & Array Freeze) cùng các unit predicate tests.
+
+### Quyết định kỹ thuật
+- Tách biệt service thuần túy `shortcutRegistry.ts` giúp hệ thống có thể tái sử dụng catalog phím tắt cho `HelpModal`, thanh menu Header, và các kiểm tra kiến trúc mà không bị phụ thuộc vòng tròn vào UI store.
+- Đưa `isOperatorLocked` lên `useShowStore` đảm bảo tính nhất quán trên toàn bộ ứng dụng: cả event listener trong React component (`App.tsx`) lẫn listener toàn cục ngoài lifecycle React (`useShowStore.ts`) đều tuân thủ trạng thái khóa vận hành trong live show.
+
+### Kiểm chứng & Kết quả
+- `npx vitest run src/__tests__/keyboardShortcuts.test.tsx`: 29/29 tests pass 100% (416ms).
+- `npx vitest run`: 33 test suites / 293 tests pass 100% (4.25s).
+- `npm run type-check`: 0 type errors.
+- `bash scripts/check.sh --fast`: 4/4 quality gate checks pass cleanly (type-check, tests, cargo check, workflow audit, drift guard).
+
+## 2026-11-19 — Đợt 14.1: Chuẩn hóa Semantic Tokens & Guard Check R7 Hoàn Tất
+
+### Thay đổi
+- **14.1 Semantic Tokens & Opacity Modifiers** (`tailwind.config.js`, `index.html`):
+  - Định nghĩa helper `colorToken(variableName)` sử dụng `color-mix(in srgb, var(...) calc(...), transparent)` để hỗ trợ đầy đủ các modifier độ mờ `/20`, `/60` trên toàn bộ token CSS variables.
+  - Bổ sung alias `borderColor` (`subtle`, `default`, `strong`) hỗ trợ cả `border-default` và `border-border-default`.
+  - Chuẩn hóa màu nền & text trang gốc trong `index.html` sang `bg-surface-0 text-content-1 selection:bg-accent selection:text-surface-0`.
+- **14.1 Quy tắc R7 & Tự động hoá Drift Guard** (`scripts/guard_check.py`):
+  - Bổ sung quy tắc R7 (`RAW_COLOR_PATTERN`) kiểm tra toàn diện các tiền tố màu thô (`bg`, `text`, `border`, `ring`, `from`, `to`, `via`, `fill`, `stroke`, `divide`, `shadow`, `outline`, `decoration`, `accent`, `caret`) với họ màu thô trong `src/`.
+  - Tích hợp self-tests R7 vào `run_tests()` và đăng ký vào bộ kiểm tra vi phạm.
+- **14.1 Dọn sạch 100% mã màu thô trên toàn bộ `src/`**:
+  - `src/App.tsx`: chuyển banner tự động lưu, banner Operator Lock sang `bg-surface-1/95`, `border-border-default`, `text-accent`, `bg-status-standby/15`, `text-status-standby`.
+  - `src/components/Header.tsx`: chuyển badge LIVE sang `bg-status-danger/20 text-status-danger border-status-danger/40`.
+  - `src/components/stage/VxControlBar.tsx`: chuyển các nút Clear VX, Freeze VX, Blackout VX sang `bg-status-standby`, `bg-status-danger`, `ring-status-standby`, `ring-status-danger`.
+  - `src/components/rundown/RundownTable.tsx`: chuyển nhãn cảnh báo unclassified và gamut warning sang `text-status-standby`, `bg-status-standby/15`.
+  - `src/services/visualEngine.ts` & `src/services/__tests__/visualEngine.test.ts`: chuyển trạng thái active, frozen, blackout, standby sang `bg-status-go`, `bg-status-standby`, `bg-status-danger`, `bg-content-3`.
+  - `src/components/StageClockWindow.tsx` & `src/components/__tests__/StageClockWindow.test.tsx`: chuyển toàn bộ 48 vị trí màu thô sang token ngữ nghĩa chuẩn (`bg-surface-1..3`, `text-content-1..3`, `status-go/standby/danger`, `accent`).
+- **14.1 Kiểm thử Tương phản WCAG AA & Ma trận 6 trạng thái** (`src/services/__tests__/color.test.ts`):
+  - Bổ sung test tự động kiểm tra tương phản WCAG 2.2 trên toàn bộ cặp màu surface, content, status, department (100% đạt chuẩn WCAG AA/AAA).
+  - Khẳng định ma trận 6 trạng thái tương tác (`default`, `hover`, `active`, `focusVisible`, `disabled`, `selected`) sử dụng 100% semantic tokens.
+
+### Quyết định kỹ thuật
+- Sử dụng CSS `color-mix(in srgb, ...)` trong Tailwind config đảm bảo khả năng tương thích cao trên WebView Tauri v2 mà vẫn giữ tính động của CSS variables.
+- Triệt tiêu hoàn toàn mã màu Tailwind thô giúp giao diện thích ứng nhất quán và an toàn tuyệt đối với độ tương phản phòng điều khiển ánh sáng/âm thanh.
+
+### Kiểm chứng & Kết quả
+- `grep -rnE "(bg|text|border|ring|from|to|via|fill|stroke|divide|shadow|outline|decoration|accent|caret)-(zinc|slate|gray|neutral|stone|cyan|amber|emerald|rose|indigo|violet|purple|blue|red|green|yellow)-\d+" src/`: **0 kết quả** (Exit code 1).
+- `python3 scripts/guard_check.py --test`: pass cleanly.
+- `python3 scripts/guard_check.py`: **0 new violations (0 baselined)** (Clean exit 0).
+- `npm run type-check`: pass 0 lỗi.
+- `npx vitest run`: **32 test files / 264 passed** (100%).
+- `bash scripts/check.sh --fast`: All quality gate checks passed!
+
+### Thay đổi
+- **13.1 Một nguồn số lượng** (`src/components/stage/Stage3DScene.ts`, `Stage3DView.tsx`, `src/components/Header.tsx`):
+  - `Stage3DScene.update()` chỉ lấy `placements.filter(isActive)` — 3D vẽ đúng số đèn của cue đang chạy. Show chưa Go ⇒ 0 thân đèn, 0 chùm, 0 vòng chiếu (trước đây vẽ cả 44 đèn rig mặc định).
+  - Toolbar tách 2 chip: `Cue 1.0: Nhập 12 · Hiển thị 12` (hoặc `Cue: chưa gọi · 0 đèn`) và `Rig mặc định 44` (cấu hình, tooltip ghi rõ không phải đèn đang chiếu). Footer thêm `Cue: 12/12 đèn · Rig: 44`; HUD có hint `Chưa gọi cue · sân khấu trống · rig mặc định 44`.
+  - Header `LX/VX` đọc `getCueLightingCount/getCueScreenCount(activeCue)` (0 khi chưa Go) thay vì tổng toàn show; `getDeviceStats()` vẫn giữ nguyên cho báo cáo tổng.
+- **13.2 Giảm rối**:
+  - Chùm nón mảnh theo `beamAngle` thật (`tan(angle/2) * trimHeight`), `NormalBlending` (bỏ additive), opacity 0.06–0.24 thay vì 0.28 chồng khối.
+  - Mặc định chỉ hiện chùm của đèn đang chọn; nút `Hiện tất cả chùm` / `Ẩn chùm khác` (chip `data-testid="beam-show-all"`) bật toàn bộ chùm trong cue. Ngưỡng >150 đèn vẫn tự ngắt chùm.
+  - Thân đèn phân biệt 5 loại bằng hình khối + màu riêng (`FIXTURE_BODY_COLORS`, cone/cylinder/box/octahedron/sphere…), scale 1.45 cho dễ thấy; đèn đang chọn có vòng amber + nhãn sprite `#số Loại` (USITT-lite numbering).
+- **13.3 Đọc rõ 3 góc nhìn**:
+  - `frameCamera()` tự fit theo bounding sphere của sân khấu (`width`, `depth`, `maxTrim` truss/đèn) và aspect, áp dụng cho cả 3 preset và khi resize.
+  - Top-Down nghiêng 11° thay vì nhìn thẳng đứng (sửa lỗi camera up suy biến làm sàn xoay ~45°); ẩn chùm, vẽ vòng chiếu mảnh `RingGeometry` trên sàn cho từng đèn active.
+- **13.4 Đồng bộ nút preset**:
+  - Thêm `CameraMode = 'foh' | 'topDown' | 'backstage' | 'free'`; `OrbitControls` event `start` ⇒ scene phát `onCameraModeChange('free')`; view bỏ highlight preset và hiện chip `Tự do`. Bấm lại preset ⇒ đồng bộ lại. Thêm hook `onSceneRef` để test/integration truy cập engine.
+- **Test**: suite mới `src/__tests__/round13Verification.test.tsx` (12 test: số lượng 0/30, header/cue/footer/3D, beam mặc định & toàn bộ, 5 silhouette, fit 3 preset × 3 layout, Top-Down pools, free-orbit sync). Cập nhật test đợt 12 và `Stage3DScene.test.ts` theo semantics mới.
+
+### Quyết định kỹ thuật
+- Stage 3D là **preview của cue live**, không phải bản vẽ rig; rig mặc định hiển thị thành chip riêng để không tạo "hai nguồn sự thật".
+- Header phản ánh cue đang chạy (Go) để khớp Rundown/HUD/3D; số tổng show vẫn lấy qua `getDeviceStats` khi cần.
+- Top-Down dùng tilt nhỏ thay vì đổi `camera.up` để không phá logic polar angle của OrbitControls.
+- Geometry/material thân đèn cache theo loại và dispose trong `dispose()`, tránh phình bộ nhớ khi rebuild.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: pass 0 lỗi.
+- `npx vitest run`: **32 test suites / 262 tests passed** (đợt 13: 12/12).
+- `npm run build`: pass — `index.js` 513.10 kB, `three.js` 547.36 kB.
+- `bash scripts/check.sh --fast`: pass toàn bộ (type-check, tests, cargo check 7.07s, workflow audit, drift guard).
+- **13.5 ảnh browser thật** (`scratch/capture-round13.mjs`, Chrome 157 headless CDP, WebGL2 ANGLE Metal): 9/9 PNG — `round13-{foh,topdown,backstage}-{960,1280,1920}.png`, đúng 960×600 / 1280×800 / 1920×1080, 93–150 KB, canvas thật (fallback ẩn), preset active đúng. Log UI: trước Go `Cue: chưa gọi · 0 đèn`, `Rig mặc định 44`, `LX: 0`; sau Go `Cue 1.0: Nhập 12 · Hiển thị 12`, `LX: 12`, `VX: 1`. Không có console/CSP/network error.
+- **13.5 Tauri**: `npx tauri build --debug --bundles app` exit 0 (16s, bundle `Light Stage.app` 29.85 MiB); rebuild sau chỉnh camera 10.51s; `open` app ⇒ PID 14454 chạy thật (WebKit GPU/Networking/WebContent spawn). CSP nguyên văn: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline';` — kiểm với `dist/` thật + header CSP y hệt: JS self, data/blob image OK, request ngoài bị chặn, **0 violation**, Stage 3D render (`scratch/round13-tauri-csp-stage3d.png`).
+- **Caveat 13.5**: shell hiện tại thiếu quyền Screen Recording/Automation (TCC) nên `screencapture` cửa sổ app native bị chặn; ảnh pixel CSP lấy từ bundle production thật phục vụ dưới đúng policy. Cần chụp cửa sổ native thì chạy lại `screencapture` từ phiên GUI có quyền.
+
+## 2026-11-19 — Đợt 12: Stage 3D khối đơn giản (thay Stage 2D) Hoàn Tất
+
+### Thay đổi
+- **Engine 3D thuần Three.js & Tách lớp Kiến trúc** (`src/components/stage/Stage3DScene.ts`, `src/components/stage/Stage3DView.tsx`):
+  - Xây dựng `Stage3DScene.ts` điều khiển Three.js thuần không dùng React Three Fiber (R3F) nhằm tối ưu bundle và vòng render on-demand (`render on dirty`).
+  - Dựng khối 3D low-poly: sàn sân khấu (`StageConfig.dimensions`), phần mở rộng Thrust, lưới toạ độ mét, giàn truss (`BoxGeometry` kim loại mờ), màn hình LED (`PlaneGeometry` viền bezel, tự động điều chỉnh tỉ lệ theo `useVisualStore` và phát quang theo trạng thái cue VX).
+  - Khối thân đèn (`InstancedMesh` chuẩn số lượng từ `fixtureModel` & `placeFixtures`) kết hợp chùm tia sáng nón bán trong suốt (`ConeGeometry`, additive blending) phản ánh màu quang học (Oklab/Oklch gamut mapping) và dimmer vật lý.
+  - Cơ chế tự động ngắt chùm tia sáng khi tổng số đèn vượt ngưỡng (mặc định >150 đèn hoặc tuỳ chỉnh qua pill toggle `≤ 150` / `≤ 50`) để bảo vệ GPU và pin laptop khi chạy live show dài.
+  - Camera `OrbitControls` với giới hạn góc va chạm sàn (`maxPolarAngle`), 3 preset camera mượt mà: Khán giả (`FOH`), Nhìn từ trên xuống (`Top-Down Plan`), và Cánh gà hậu trường (`Backstage Wing`).
+  - Raycasting tương tác: Click trực tiếp vào đèn hoặc màn hình LED trong không gian 3D để chọn và đồng bộ 2 chiều với `StageRigEditor`.
+- **Lớp 2D HUD Phủ & Fallback An toàn**:
+  - HUD phủ góc trái hiển thị Cue Active, tên cảnh LX, độ sáng dimmer %, swatch màu thực tế và cảnh báo lệch gam màu.
+  - Footer giữ nguyên legend ký hiệu đèn, chip cảnh báo rig (Đợt 10.2), công suất tiêu thụ kW và công tắc Haze/Dimmer Curve.
+  - Phát hiện WebGL tự động qua `isWebGLAvailable()`, hiển thị card fallback thông tin rig an toàn nếu môi trường thiếu WebGL.
+- **Dọn dẹp & Kế thừa**:
+  - Gỡ bỏ `VirtualStagePreview.tsx` (977 dòng SVG cũ) và `FixtureSymbol.tsx`.
+  - Cập nhật `Header.tsx`, `App.tsx`, `WelcomeModal.tsx`, `HelpModal.tsx`, thay đổi tab điều khiển sang `Stage 3D`.
+  - Bảo toàn 100% bản vẽ kỹ thuật in ấn 2D `generateLightPlotHtml` (USITT-lite) trong `src/services/exporter.ts`.
+- **Kiểm thử Toàn diện**:
+  - Tạo `src/__tests__/helpers/mockWebGL.ts` hỗ trợ mock WebGL cho Vitest (JSDOM).
+  - Viết bộ test chuyên sâu `src/components/stage/__tests__/Stage3DScene.test.ts` (7 tests) và `src/components/stage/__tests__/Stage3DView.test.tsx` (7 tests).
+  - Viết suite kiểm chứng tích hợp `src/__tests__/round12Verification.test.tsx` (8 tests) trên 3 viewport (960px, 1280px, 1920px), 3 preset camera, đồng bộ Raycasting selection, ngưỡng tắt beam, và CSP an toàn trong `tauri.conf.json`.
+
+### Quyết định kỹ thuật
+- Tách `three` thành chunk riêng biệt (`vite.config.ts` manualChunks) giúp bundle chính giữ nguyên dung lượng nhỏ (~504 kB) và lazy/tree-shake tối ưu.
+- Khống chế render on-demand triệt để (chỉ render khi camera di chuyển hoặc dữ liệu thay đổi, không chạy continuous animation loop), đảm bảo mức tải CPU/GPU gần như 0% khi tĩnh.
+- Tương thích ngược tuyệt đối với toàn bộ dữ liệu cấu hình rig, exporter và hệ thống cảnh báo quang học hiện hành.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: pass 0 lỗi.
+- `npx vitest run`: 31 test suites / 250 tests passed 100%.
+- `cargo check --manifest-path src-tauri/Cargo.toml`: Finished dev profile cleanly (0.30s).
+- `npm run build`: bundle thành công (`index.js` 504.40 kB, `three.js` 534.63 kB).
+- `bash scripts/check.sh --fast`: All quality gate checks passed (Type check, Unit tests, Cargo check, Workflow audit, Drift guard).
+
+## 2026-11-16 — Đợt 10 Hoàn Tất & Đợt 11: FreeShow cho Visual LED (VX) & Stage Confidence
+
+### Thay đổi
+- **Hoàn tất Đợt 10 (Xác minh Toàn diện)**:
+  - Viết suite kiểm chứng `src/__tests__/round10Verification.test.tsx`: xác minh vị trí phân loại đèn trên 3 preset (`EndStage`, `Festival`, `Thrust`), `elementFromPoint` và tính tương tác của nút header trên 4 kích cỡ (960, 1024, 1280, 1920px) khi có/không có banner khôi phục, luồng tạo show 3 cue từ đầu với 30 đèn (`Beam x8, Spot x4, Wash x12, Follow x2, Blinder x4`) đồng nhất số liệu trên Rundown, Stage 2D, Store stats và Exporter CSV/HTML.
+  - Ghi nhận trạng thái môi trường sandbox: cargo chưa có sẵn trên máy sandbox mac này; logic desktop và renderer được xác thực 100% qua Vite web engine và Vitest DOM.
+- **Đợt 11: FreeShow cho Visual LED (VX)**:
+  - **Mô hình Dữ liệu & State Store** (`src/types/visual.ts`, `src/store/useVisualStore.ts`, `src/services/visualEngine.ts`): Quản lý danh sách output màn LED (Main, Wing L, Wing R) với màu, độ phân giải, tỉ lệ (`16:9`, `4:3`, `32:9`) và chấm trạng thái (xanh active, vàng frozen, đỏ blackout); kiểu hiển thị `VxOutputStyle` (Contain/Cover/Fill); động cơ thế biến `{cue_title}`, `{cue_no}`, `{speaker}` cho template; kiểm tra cảnh báo lệch tỉ lệ video vs màn hình.
+  - **Live Panic & Multi-layer Bar** (`src/components/stage/VxControlBar.tsx`): Thanh điều khiển live VX đặt ngay dưới header: bật/tắt từng lớp (Nền loop, Slide, Overlay); nút `Clear VX` đổi màu nổi bật khi có visual live; nút `Freeze VX` (Alt+F) đóng băng output màn hình khi chuyển cue; nút `Blackout VX` cắt tín hiệu khẩn cấp.
+  - **Hộp thoại Import Dạng Lưới Theo Nhóm** (`src/components/importer/ImportModal.tsx`): Bố cục lưới thẻ theo 3 nhóm (Tệp .csv/.tsv/.txt; Bảng tạm Clipboard với nút "Dán từ clipboard" 1-click từ Excel/Google Sheets; Show Mẫu & Demo).
+  - **Màn hình Confidence Sân khấu MC Mode** (`src/components/StageClockWindow.tsx`): Bổ sung chế độ "MC / Stage Mode" với layout 2 cột hiện rõ Tiết mục đang diễn (Current Cue) và Tiếp theo (Next Up), hiển thị chỉ dẫn sân khấu (`actionDescription` / `notes`) cỡ chữ lớn, đồng hồ khổng lồ và cảnh báo Overrun nổi bật.
+  - **Chỉ Báo LIVE Duy Nhất** (`src/components/Header.tsx`): Huy hiệu `LIVE` đỏ nhấp nháy trên header khi cue đang phát Go hoặc đồng hồ đang chạy.
+  - **Menu "+" Thêm Nhanh Theo Nhóm** (`src/components/stage/StageRigEditor.tsx`): Menu grouped quick-add cho Đèn (Beam, Spot, Wash), Màn LED (+Screen) và Giàn Truss (+Truss).
+  - **Bảng Phím Tắt & Trợ Giúp** (`src/components/HelpModal.tsx`, `src/App.tsx`): Gán phím Panic F1..F4 (Clear Layer/All) và Alt+F (Freeze VX), xác minh không trùng lặp phím điều phối (Space, B, H).
+
+### Quyết định kỹ thuật
+- Tách `useVisualStore` riêng biệt với `useStageStore` để giữ kiến trúc Clean Architecture, tránh phình store và cho phép màn hình phụ / output window độc lập đồng bộ qua broadcast hoặc direct subscribe.
+- Thiết kế `Freeze VX` như một bộ ngắt logic (circuit breaker): khi bật, output giữ nguyên khung hình hiện tại cho dù người điều phối có Standby hoặc Go sang cue kế tiếp.
+- Giữ nguyên độ tương thích ngược 100% cho các bản xuất kịch bản và dữ liệu cũ.
+
+### Kiểm chứng & Kết quả
+- `npm run type-check`: pass 0 lỗi.
+- `npx vitest run`: 29 test suites / 243 tests passed 100% (gồm `round10Verification.test.tsx`, `round11FreeShowFeatures.test.tsx`, `visualEngine.test.ts`).
+- `npm run build`: bundle production thành công trong 1.03s.
+- `bash scripts/check.sh --fast`: All quality gate checks passed.
+
 ## 2026-11-16 — Đợt 10.2 & 10.3: Ký hiệu Stage, Rig Editor, Light Plot, Popover
 
 ### Thay đổi

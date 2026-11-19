@@ -300,15 +300,15 @@ describe('Đợt 13: Stage 3D after review', () => {
       scene.dispose();
     });
 
-    it('exposes a "Hiện tất cả chùm" toggle in the view', () => {
+    it('exposes a "All Beams / Selected" toggle in the view', () => {
       const cue = buildCue30();
       loadShowWithCue(cue);
       render(<Stage3DView rendererFactory={mockControls.rendererFactory} />);
 
       const toggle = screen.getByTestId('beam-show-all');
-      expect(toggle.textContent).toBe('Hiện tất cả chùm');
+      expect(toggle.textContent).toContain('Selected');
       fireEvent.click(toggle);
-      expect(toggle.textContent).toBe('Ẩn chùm khác');
+      expect(toggle.textContent).toContain('All Beams');
     });
   });
 

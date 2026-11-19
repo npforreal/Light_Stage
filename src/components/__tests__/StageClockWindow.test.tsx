@@ -73,7 +73,7 @@ describe('Stage Confidence Clock Component & Sync Service', () => {
       expect(screen.getByTestId('giant-countdown')).toHaveTextContent('-00:45');
       expect(screen.getByTestId('stage-status-badge')).toHaveTextContent('OVERRUN');
       expect(screen.getByTestId('overrun-alert-label')).toBeInTheDocument();
-      expect(screen.getByTestId('giant-countdown')).toHaveClass('text-rose-500');
+      expect(screen.getByTestId('giant-countdown')).toHaveClass('text-status-danger');
     });
 
     it('handles fullscreen toggle button and keyboard F shortcut', async () => {
