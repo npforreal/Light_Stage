@@ -198,9 +198,9 @@ export const Stage3DView: React.FC<Stage3DViewProps> = ({
     <div className="relative flex h-full w-full flex-col bg-surface-0 text-content-1 select-none overflow-hidden" data-testid="stage-3d-view">
       {/* Main 3D Canvas / Fallback Area */}
       <div className="relative flex-1 bg-gradient-to-b from-[#0a0c10] via-surface-0 to-black overflow-hidden flex flex-col gap-2 p-2">
-        {/* Floating Pill: Glassmorphism Technical Pill centered over 3D Canvas */}
+        {/* Floating Pill: Glassmorphism Technical Pill positioned at top-right so it never occludes Live Cue Card (PLAN 18.6b) */}
         <div
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded bg-surface-1/95 border border-white/10 px-4 py-2 shadow-lg select-none text-xs"
+          className="absolute top-3 right-3 z-20 flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-[calc(100%-210px)] rounded bg-surface-1/95 border border-white/10 p-1.5 sm:px-3 sm:py-1.5 shadow-lg select-none text-xs"
           data-testid="stage-3d-floating-pill"
         >
           {/* Camera Presets Segmented Control */}
