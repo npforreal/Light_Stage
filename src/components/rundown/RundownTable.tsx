@@ -76,11 +76,15 @@ export const RundownTable: React.FC = () => {
   const [activeRowMenuCueId, setActiveRowMenuCueId] = useState<string | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll with 5-second manual pause (PLAN 18.5)
+  // Auto-scroll with 5-second manual pause (PLAN 18.5, reopened 2026-11-20).
+  // Manual intent is detected from real input (wheel / touch / scrollbar drag), never
+  // from the `scroll` event: programmatic scrollIntoView fires `scroll` too, which
+  // used to re-arm the 5s pause and swallow back-to-back GO calls.
+  const MANUAL_SCROLL_PAUSE_MS = 5000;
   const userScrolledAtRef = useRef<number>(0);
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
 
-  const handleTableScroll = () => {
+  const markManualScroll = () => {
     userScrolledAtRef.current = Date.now();
   };
 
@@ -88,14 +92,28 @@ export const RundownTable: React.FC = () => {
     const targetId = activeCueId || standbyCueId;
     if (!targetId) return;
 
-    if (Date.now() - userScrolledAtRef.current < 5000) {
-      return;
-    }
+    const scrollToTarget = () => {
+      if (Date.now() - userScrolledAtRef.current < MANUAL_SCROLL_PAUSE_MS) return false;
+      const rowEl = rowRefs.current[targetId];
+      if (!rowEl || typeof rowEl.scrollIntoView !== 'function') return false;
+      // Center the live cue so the next (standby) cue stays visible below it.
+      rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return true;
+    };
 
-    const rowEl = rowRefs.current[targetId];
-    if (rowEl && typeof rowEl.scrollIntoView === 'function') {
-      rowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (scrollToTarget()) return;
+
+    // A manual scroll is still inside its pause window: retry once the operator
+    // stops scrolling so a queued GO never leaves the live cue off-screen.
+    let attempts = 0;
+    let timer = 0;
+    const retry = () => {
+      if (scrollToTarget()) return;
+      if (++attempts >= 10) return;
+      timer = window.setTimeout(retry, 1000);
+    };
+    timer = window.setTimeout(retry, 1000);
+    return () => window.clearTimeout(timer);
   }, [activeCueId, standbyCueId]);
 
   const isDefaultSampleShow =
@@ -524,7 +542,16 @@ export const RundownTable: React.FC = () => {
       )}
 
       {/* Table Container */}
-      <div className="flex-1 overflow-auto" onScroll={handleTableScroll}>
+      <div
+        className="flex-1 overflow-auto"
+        data-testid="rundown-scroll-container"
+        onWheel={markManualScroll}
+        onTouchMove={markManualScroll}
+        onPointerDown={(e) => {
+          // Scrollbar drags target the scroller itself; row clicks must not pause auto-scroll.
+          if (e.target === e.currentTarget) markManualScroll();
+        }}
+      >
         <table className="w-full border-collapse text-left text-xs min-w-[760px] sm:min-w-0">
           <thead className="sticky top-0 z-10 border-b border-border-default bg-surface-1 text-content-3 font-semibold">
             <tr>
@@ -599,6 +626,11 @@ export const RundownTable: React.FC = () => {
                       ref={(el) => {
                         rowRefs.current[cue.id] = el;
                       }}
+                      data-cue-id={cue.id}
+                      data-cue-number={cue.cueNumber}
+                      data-cue-status={cue.status}
+                      data-cue-active={isActive || undefined}
+                      data-cue-standby={isStandby || undefined}
                       onClick={() => {
                         selectCue(cue.id);
                         setInspectorOpen(true);

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { RundownTable } from '../rundown/RundownTable';
 import { useShowStore } from '../../store/useShowStore';
 import { createDefaultShow } from '../../types/stage';
@@ -228,5 +228,104 @@ describe('RundownTable Component', () => {
     const cue = useShowStore.getState().getAllCues()[0];
     expect(cue.totalLightingFixtures).toBe(14);
     expect(cue.departments.lx?.fixtureCount).toBe(14);
+  });
+});
+
+describe('RundownTable auto-scroll (PLAN 18.5, reopened 2026-11-20)', () => {
+  const originalScrollIntoView = Element.prototype.scrollIntoView;
+  let scrollSpy: ReturnType<typeof vi.fn>;
+
+  const seedCues = (count: number) => {
+    const store = useShowStore.getState();
+    store.loadShow(createDefaultShow('Rapid Fire Show'));
+    const actId = useShowStore.getState().show.acts[0].id;
+    for (let i = 2; i <= count; i++) {
+      useShowStore.getState().addCue(actId, { title: `Cue ${i}`, durationMs: 2000 });
+    }
+    const cues = useShowStore.getState().getAllCues();
+    expect(cues).toHaveLength(count);
+    useShowStore.setState({ standbyCueId: cues[0].id });
+  };
+
+  beforeEach(() => {
+    scrollSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollSpy as unknown as Element['scrollIntoView'];
+  });
+
+  afterEach(() => {
+    Element.prototype.scrollIntoView = originalScrollIntoView;
+    vi.useRealTimers();
+  });
+
+  it('scrolls again on back-to-back GO calls even when the table emits scroll events', () => {
+    seedCues(12);
+    render(<RundownTable />);
+    const container = screen.getByTestId('rundown-scroll-container');
+    scrollSpy.mockClear();
+
+    act(() => {
+      useShowStore.getState().goCue();
+    });
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    expect(scrollSpy).toHaveBeenLastCalledWith({ behavior: 'smooth', block: 'center' });
+
+    // A real browser emits `scroll` for the programmatic scrollIntoView above.
+    // That must NOT be mistaken for a manual scroll (root cause of review #2).
+    fireEvent.scroll(container);
+
+    act(() => {
+      useShowStore.getState().goCue();
+    });
+    expect(scrollSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('centers the live cue so the next standby cue stays visible', () => {
+    seedCues(12);
+    render(<RundownTable />);
+    scrollSpy.mockClear();
+
+    act(() => {
+      useShowStore.getState().goCue();
+    });
+
+    const options = scrollSpy.mock.calls.at(-1)?.[0] as ScrollIntoViewOptions;
+    expect(options.block).toBe('center');
+    // Standby cue (the next one) is armed automatically, so no second scroll
+    expect(useShowStore.getState().standbyCueId).toBe(useShowStore.getState().getAllCues()[1].id);
+  });
+
+  it('pauses after a real wheel scroll, then catches up once the pause expires', () => {
+    vi.useFakeTimers();
+    seedCues(12);
+    render(<RundownTable />);
+    const container = screen.getByTestId('rundown-scroll-container');
+    scrollSpy.mockClear();
+
+    fireEvent.wheel(container, { deltaY: 320 });
+
+    act(() => {
+      useShowStore.getState().goCue();
+    });
+    expect(scrollSpy).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(6100);
+    });
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not treat a row click (pointerdown) as a manual table scroll', () => {
+    seedCues(12);
+    render(<RundownTable />);
+    const cueRow = screen.getByText('Pre-Show / Walk-in').closest('tr');
+    expect(cueRow).not.toBeNull();
+    scrollSpy.mockClear();
+
+    fireEvent.pointerDown(cueRow!);
+
+    act(() => {
+      useShowStore.getState().goCue();
+    });
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
   });
 });

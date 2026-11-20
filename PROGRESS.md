@@ -3,6 +3,28 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-20 — Đợt 18: vá hồi quy tự cuộn rundown (#2 / 18.5)
+
+### Nguyên nhân gốc (người dùng báo, đã đối chiếu mã)
+- `RundownTable.tsx` gắn `onScroll={handleTableScroll}` lên khung bảng. Chính lệnh `scrollIntoView` tự cuộn cũng phát ra `scroll` → tự đánh dấu "người dùng vừa cuộn tay" và chặn lần tự cuộn kế tiếp 5 giây.
+- Hệ quả: GO dồn dập (stinger/sự cố) làm cue live nằm dưới mép bảng (cao 279px, cue ở y=279). Chỉ cuộn đúng khi hai lần GO cách nhau > ~5s.
+
+### Sửa
+- Bỏ listener `onScroll`; nhận thao tác cuộn tay bằng `onWheel`, `onTouchMove`, `onPointerDown` (chỉ khi `target === currentTarget`, tức kéo thanh cuộn — click hàng vẫn không tính).
+- `scrollIntoView({ block: 'center' })` thay `'nearest'` → cue live ở giữa khung, cue Standby kế tiếp vẫn thấy.
+- Thêm retry bắt kịp: nếu đang trong thời gian tạm dừng, hẹn kiểm lại mỗi 1s (tối đa 10s) để cue live không bị bỏ rơi khi người dùng ngừng cuộn.
+- Thêm `data-cue-id`, `data-cue-number`, `data-cue-status`, `data-cue-active`, `data-cue-standby` trên `<tr>` để đo bằng browser.
+
+### Kiểm chứng
+- Test mới trong `RundownTable.test.tsx` (4 test): GO 2 lần < 1s + dispatch `scroll` của trình duyệt; center + standby kế tiếp; wheel → tạm dừng → bắt kịp sau 5s; pointerdown trên row không tính là cuộn.
+  - **Đã chứng minh test bắt được lỗi:** gắn lại `onScroll` tạm thời → test "back-to-back GO" **FAIL** (1 failed / 12 passed); gỡ ra → pass.
+- `npx vitest run src/components/__tests__/RundownTable.test.tsx` → **13/13 pass**.
+- `node scratch/verify-autoscroll.mjs` (browser thật 960×640, 12 cue, ảnh `scratch/rundown-autoscroll-960x640.png`):
+  - GO #1→#6 cách 260ms: mỗi lần `active visible=true top=250` (viewport 193..419), standby kế tiếp `visible=true`, scrollTop 0→64→123→182→241→300.
+  - Cuộn tay (wheel): scrollTop 359→543; GO ngay sau đó **không** tự cuộn (`visible=false`, đúng chủ đích tạm dừng); sau 5s → `visible=true` (retry bắt kịp).
+- `bash scripts/check.sh --fast` → **ALL PASS** (TypeScript, 40 test file / 377 pass + 5 todo, cargo check, audit, guard 0 vi phạm).
+
+
 ## 2026-11-20 — Đợt 18 (tiếp): 18.6a header 960px + script evidence + Tauri/Stage Clock
 
 ### Thay đổi
