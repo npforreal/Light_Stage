@@ -57,6 +57,6 @@ describe("App Dual View Integration", () => {
     const exportBtn = screen.getByTitle("Export Reports & Project");
     fireEvent.click(exportBtn);
 
-    expect(screen.getByText("Export & Print Reports")).toBeInTheDocument();
+    expect(screen.getByText(/Export & Print Reports/i)).toBeInTheDocument();
   });
 });

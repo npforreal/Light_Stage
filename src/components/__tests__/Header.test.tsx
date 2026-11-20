@@ -319,10 +319,11 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     const standbyCallout = screen.getByText('STBY:').closest('div');
     expect(standbyCallout?.className).toContain('hidden 2xl:flex');
 
-    // 2. Live Hardware Badges container is hidden below xl (1280px)
+    // 2. Live Hardware Badges container remains visible down to 960px (PLAN 18.6a: removed hidden xl:flex)
     const lxBadge = screen.getByTestId('header-lx-count');
     const badgesContainer = lxBadge.parentElement;
-    expect(badgesContainer?.className).toContain('hidden xl:flex');
+    expect(badgesContainer?.className).not.toContain('hidden xl:flex');
+    expect(badgesContainer?.className).toContain('flex items-center');
 
     // 3. Status Dot Text ("Đã lưu") is hidden below lg (1024px)
     const statusText = screen.getByText('Đã lưu');
@@ -338,10 +339,11 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     const lockText = screen.getByText('Khóa');
     expect(lockText.className).toContain('hidden lg:inline');
 
-    // 6. Delta Time block is hidden below xl (1280px)
+    // 6. Delta Time block remains visible down to 960px (PLAN 18.6a: removed hidden xl:flex)
     const deltaLabel = screen.getByText('Delta');
     const deltaBlock = deltaLabel.closest('div');
-    expect(deltaBlock?.className).toContain('hidden xl:flex');
+    expect(deltaBlock?.className).not.toContain('hidden xl:flex');
+    expect(deltaBlock?.className).toContain('flex flex-col');
 
     // 7. Wall Clock block is hidden below 2xl (1536px) to prevent 1280px overflow
     const wallLabel = screen.getByText('Wall');

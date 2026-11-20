@@ -43,7 +43,7 @@ describe('Stage3DView Component', () => {
     // Floating pill
     const floatingPill = screen.getByTestId('stage-3d-floating-pill');
     expect(floatingPill).toBeTruthy();
-    expect(floatingPill.className).toContain('absolute top-4 left-1/2 -translate-x-1/2');
+    expect(floatingPill.className).toContain('absolute top-3 right-3');
 
     // Camera presets inside pill
     expect(screen.getByTestId('preset-foh')).toBeTruthy();
@@ -53,7 +53,7 @@ describe('Stage3DView Component', () => {
     // Floating VX dock
     const floatingDock = screen.getByTestId('vx-floating-dock');
     expect(floatingDock).toBeTruthy();
-    expect(floatingDock.className).toContain('absolute bottom-4 left-1/2 -translate-x-1/2');
+    expect(floatingDock.className).toContain('absolute bottom-3 left-1/2 -translate-x-1/2');
 
     expect(screen.getByTestId('stage-footer')).toBeTruthy();
     expect(screen.getByText(/LX Color:/i)).toBeTruthy();

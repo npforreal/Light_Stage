@@ -10,7 +10,7 @@ describe('HelpModal Component', () => {
     expect(screen.getByText(/Hướng dẫn & Phím tắt Vận hành/i)).toBeInTheDocument();
     expect(screen.getByText(/Kích hoạt GO \(Go Cue\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Chuẩn bị \(Standby Next\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Tạm dừng \(Hold Cue\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Tạm dừng / Tiếp tục (Hold / Resume)')).toBeInTheDocument();
     expect(screen.getByText(/Chế độ Khóa Vận Hành \(Operator Lock\)/i)).toBeInTheDocument();
   });
 

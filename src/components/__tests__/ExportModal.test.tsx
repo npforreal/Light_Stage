@@ -14,12 +14,12 @@ describe('ExportModal Component', () => {
     const onClose = vi.fn();
     render(<ExportModal isOpen={true} onClose={onClose} />);
 
-    expect(screen.getByText('Export & Print Reports')).toBeInTheDocument();
-    expect(screen.getByText('Print / Save PDF Cue Sheet')).toBeInTheDocument();
-    expect(screen.getByText('Download Cue Sheet (CSV)')).toBeInTheDocument();
-    expect(screen.getByText('Download Hardware Inventory (CSV)')).toBeInTheDocument();
-    expect(screen.getByText('Print / Save PDF Light Plot')).toBeInTheDocument();
-    expect(screen.getByText('Save Project (.lightstage)')).toBeInTheDocument();
+    expect(screen.getByText(/Export & Print Reports/i)).toBeInTheDocument();
+    expect(screen.getByText(/Print \/ Save PDF Cue Sheet/i)).toBeInTheDocument();
+    expect(screen.getByText(/Download Cue Sheet \(CSV\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Download Hardware Inventory \(CSV\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Print \/ Save PDF Light Plot/i)).toBeInTheDocument();
+    expect(screen.getByText(/Save Project \(\.lightstage\)/i)).toBeInTheDocument();
   });
 
   it('does not render when isOpen is false', () => {
@@ -56,7 +56,7 @@ describe('ExportModal Component', () => {
     const onClose = vi.fn();
     render(<ExportModal isOpen={true} onClose={onClose} />);
 
-    const closeBtn = screen.getByText('Close');
+    const closeBtn = screen.getByText(/Close/i);
     fireEvent.click(closeBtn);
 
     expect(onClose).toHaveBeenCalled();

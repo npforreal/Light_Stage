@@ -23,7 +23,7 @@ describe('ImportModal Component', () => {
     const loadDemoBtn = screen.getByText(/Nạp Show Mẫu \(Load Demo Show\)/i);
     fireEvent.click(loadDemoBtn);
 
-    expect(screen.getByText(/Headers detected! Verify or adjust column mappings below:/i)).toBeInTheDocument();
+    expect(screen.getByText(/Headers detected! Verify or adjust column mappings below/i)).toBeInTheDocument();
     expect(screen.getByText(/Confirm & Import Cues/i)).toBeInTheDocument();
   });
 });

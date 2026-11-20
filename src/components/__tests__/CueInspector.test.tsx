@@ -75,9 +75,11 @@ describe('CueInspector Component (Đợt 15.1 & 15.2 / R4)', () => {
     fireEvent.click(holdBtn);
     expect(holdSpy).toHaveBeenCalledWith(firstCue.id);
 
-    // Click Skip
+    // Click Skip (18.4: requires confirmation step)
     const skipBtn = screen.getByText('Skip');
     fireEvent.click(skipBtn);
+    const confirmSkipBtn = screen.getByTestId('skip-confirm-button');
+    fireEvent.click(confirmSkipBtn);
     expect(skipSpy).toHaveBeenCalledWith(firstCue.id);
   });
 
