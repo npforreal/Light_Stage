@@ -3,6 +3,30 @@
 > Quy ước: Mục mới nhất luôn được thêm vào ĐẦU tệp (ngay dưới phần mở đầu này).
 > Lịch sử cũ nằm trong `archive/PROGRESS.md` (chỉ đọc khi cần tra cứu).
 
+## 2026-11-20 — Đợt 18 (tiếp): 18.6a header 960px + script evidence + Tauri/Stage Clock
+
+### Thay đổi
+- **18.6a — header vừa 960px (hồi quy đã đóng):** `Header.tsx` ẩn wordmark "Light Stage" dưới `lg` (giữ badge `LS`), nhãn đồng hồ rút gọn `Show` / `Cue` / `Delta` dưới `lg` (bản đầy đủ `Show Time` / `Cue Remainder` / `Delta (Sớm|Trễ)` từ `lg`), ẩn chip `B`/`Esc` dưới `lg` (vẫn còn `title` + `aria-label`), GO `px-4 lg:px-6`.
+  - Kiểm ảnh hưởng: `Delta` giờ có 2 node (compact + full) → thêm `data-testid="header-delta-label-compact|full"`; cập nhật 3 test dùng `getByText('Delta')` (`Header.test.tsx`, `round18Verification.test.tsx`, `realUserJourney.test.tsx`).
+  - Test mới: "keeps the 960px command bar compact so Lock + Tools stay inside the viewport" (assert class co giãn + `aria-label` Khóa/Tools).
+- **Script evidence:** `scratch/capture-layout-evidence.mjs` — thêm `captureScreenshot(cdp)` (hết lỗi `is not defined`), hàm `assertHeaderFitsViewport` (header/bar/doc `scrollWidth`, `clippedButtons`, `truncatedTexts`, `zoneRects`), đo 3 trạng thái default/locked/hold và gate mới; Hold state cũng được audit `elementFromPoint` đầy đủ.
+- **Script mới:** `scratch/verify-stage-clock.mjs` — mở popup qua menu Tools bằng `Runtime.evaluate { userGesture: true }`, bắt target `?view=stage-clock`, bấm GO ở cửa sổ chính, assert trạng thái/đếm lùi + chụp 2 ảnh.
+
+### Kết quả kiểm chứng
+- `node scratch/capture-layout-evidence.mjs` → **ALL ACCEPTANCE PASSED**:
+  - Default: `header.scrollWidth=960`, `doc.scrollWidth=960`, clipped=[], truncated=[], 18/18 nút clickable, zones 12→303 | 367→582 | 646→948.
+  - Operator Locked: 960/960, clipped=[], zones 12→303 | 368→583 | 648→948.
+  - Cue Hold (Resume): 960/960, clipped=[], truncated=[], zones 12→310 | 319→638 | 646→948.
+  - Dropdown Tools: 7/7 item clickable, 0 clipped. Ảnh: `scratch/viewport-960x640.png`, `scratch/operator-locked-960x640.png`, `scratch/cue-hold-960x640.png`.
+- `node scratch/verify-stage-clock.mjs` → **PASS**: popup mở từ Tools, `STANDBY` → `GO`, cue "Pre-Show / Walk-in", countdown `04:58` → `04:56`.
+- `bash scripts/check.sh --fast` → **OK** (TypeScript, toàn bộ vitest, cargo check, workflow audit, guard check 0 vi phạm).
+- `npm run tauri build -- --debug --bundles app` → **EXIT=0**, bundle `Light Stage.app` **29.99 MiB**; mở app: tiến trình sống, **2 cửa sổ** (main 1280×800 + stage clock 1024×769). Người dùng xác nhận cửa sổ phụ chuyển GO + đếm lùi đúng.
+  - Giới hạn môi trường: `osascript` bị từ chối Apple Events (-1743), `screencapture` không có quyền Screen Recording, không có `cliclick` → không tự động chụp/click bản native; đã kiểm bằng Quartz window list + xác nhận trực tiếp của người dùng.
+
+### Còn lại của 18.10
+- Chạy lại bằng browser thật #4 (import thiếu tên / thời lượng `abc`), #5 (Skip cần xác nhận), #2 (tự cuộn 960×640 với ≥ 6 cue), rồi `bash scripts/check.sh` đủ + archive.
+
+
 ## 2026-11-20 — Đợt 18: Hoàn tất vá lỗi từ review người dùng (18.1–18.10)
 
 ### Thay đổi & Khắc phục Lỗi cốt lõi
