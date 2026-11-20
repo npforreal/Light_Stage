@@ -7,6 +7,7 @@ import {
   ShowMetadata,
   ShowSettings,
   createDefaultShow,
+  createBlankShow,
   createCue,
   calculateCueDeviceCounts,
 } from '../types/stage';
@@ -39,8 +40,10 @@ export interface ShowState {
   undo: () => void;
   redo: () => void;
 
-  // Operator Lock Action
+  // Operator Lock Action & Feedback
   setOperatorLocked: (locked: boolean) => void;
+  operatorLockFeedback: string | null;
+  triggerOperatorLockFeedback: (msg?: string) => void;
   setAutosaveError: (message: string | null) => void;
 
   // Inspector & Selection Actions
@@ -72,11 +75,13 @@ export interface ShowState {
   goCue: (cueId?: string) => void;
   goNextCue: () => void;
   holdCue: (cueId?: string) => void;
+  resumeCue: (cueId?: string) => void;
   skipCue: (cueId: string) => void;
   resetCue: (cueId: string) => void;
   resetAllCues: () => void;
   nextCue: () => void;
   prevCue: () => void;
+  clearShow: () => void;
 
   // Selectors
   getAllCues: () => Cue[];
@@ -121,8 +126,32 @@ export const useShowStore = create<ShowState>((set, get) => {
     selectedCueId: null,
     isInspectorOpen: false,
     isOperatorLocked: false,
+    operatorLockFeedback: null,
     autosaveError: null,
     setOperatorLocked: (locked: boolean) => set({ isOperatorLocked: locked }),
+    triggerOperatorLockFeedback: (msg?: string) => {
+      set({ operatorLockFeedback: msg || 'Đang khóa vận hành' });
+      setTimeout(() => {
+        if (get().operatorLockFeedback) {
+          set({ operatorLockFeedback: null });
+        }
+      }, 1500);
+    },
+    clearShow: () => {
+      const blank = createBlankShow();
+      set({
+        show: blank,
+        isDirty: false,
+        activeCueId: null,
+        standbyCueId: null,
+        selectedCueId: null,
+        isInspectorOpen: false,
+        past: [],
+        future: [],
+        canUndo: false,
+        canRedo: false,
+      });
+    },
     setAutosaveError: (message: string | null) => set({ autosaveError: message }),
     selectCue: (cueId: string | null) =>
       set({
@@ -489,8 +518,11 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     standbyCue: (cueId: string) => {
       const state = get();
-      // Operator Lock: only blocks cue commands (see PLAN 16.1). Viewing/clock/save stay live.
-      if (state.isOperatorLocked) return;
+      // Operator Lock: only blocks cue commands (see PLAN 16.1 & 18.1). Viewing/clock/save stay live.
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const allCues = state.getAllCues();
       const targetCue = allCues.find((c) => c.id === cueId);
       if (!targetCue) return;
@@ -517,7 +549,10 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     goCue: (cueId?: string) => {
       const state = get();
-      if (state.isOperatorLocked) return;
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 
@@ -607,11 +642,49 @@ export const useShowStore = create<ShowState>((set, get) => {
       state.goCue();
     },
 
-    holdCue: (cueId?: string) => {
+    resumeCue: (cueId?: string) => {
       const state = get();
-      if (state.isOperatorLocked) return;
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const targetId = cueId || state.activeCueId;
       if (!targetId) return;
+
+      const targetCue = state.getCueById(targetId);
+      if (!targetCue) return;
+
+      const updatedActs = state.show.acts.map((act) => ({
+        ...act,
+        cues: act.cues.map((cue) =>
+          cue.id === targetId ? { ...cue, status: 'Go' as const } : cue
+        ),
+      }));
+
+      useClockStore.getState().resumeClock();
+
+      set({
+        show: { ...state.show, acts: updatedActs },
+      });
+    },
+
+    holdCue: (cueId?: string) => {
+      const state = get();
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
+      const targetId = cueId || state.activeCueId;
+      if (!targetId) return;
+
+      const targetCue = state.getCueById(targetId);
+      if (!targetCue) return;
+
+      // If already in Hold status, Hold acts as a resume toggle (PLAN 18.2)
+      if (targetCue.status === 'Hold') {
+        state.resumeCue(targetId);
+        return;
+      }
 
       const updatedActs = state.show.acts.map((act) => ({
         ...act,
@@ -629,6 +702,10 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     skipCue: (cueId: string) => {
       const state = get();
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const allCues = state.getAllCues();
       const currentIndex = allCues.findIndex((c) => c.id === cueId);
       if (currentIndex === -1) return;
@@ -698,7 +775,10 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     nextCue: () => {
       const state = get();
-      if (state.isOperatorLocked) return;
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 
@@ -713,7 +793,10 @@ export const useShowStore = create<ShowState>((set, get) => {
 
     prevCue: () => {
       const state = get();
-      if (state.isOperatorLocked) return;
+      if (state.isOperatorLocked) {
+        state.triggerOperatorLockFeedback();
+        return;
+      }
       const allCues = state.getAllCues();
       if (allCues.length === 0) return;
 

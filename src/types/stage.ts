@@ -184,7 +184,40 @@ export function calculateCueDeviceCounts(departments: DepartmentCues): {
 }
 
 /**
- * Factory helper: creates a fresh blank Show
+ * Factory helper: creates a fresh blank Show (without demo cues)
+ */
+export function createBlankShow(title = 'Untitled Show'): Show {
+  const now = new Date().toISOString();
+  const defaultActId = `act-${Date.now()}-1`;
+
+  return {
+    id: `show-${Date.now()}`,
+    schemaVersion: 1,
+    metadata: {
+      title,
+      venue: 'Main Stage',
+      version: '1.0.0',
+      createdAt: now,
+      updatedAt: now,
+    },
+    acts: [
+      {
+        id: defaultActId,
+        title: 'Act 1',
+        order: 1,
+        cues: [],
+      },
+    ],
+    settings: {
+      autoStandbyNext: true,
+      countdownWarningSec: 10,
+      defaultCueDurationMs: 60000,
+    },
+  };
+}
+
+/**
+ * Factory helper: creates a fresh Show with sample demo cue
  */
 export function createDefaultShow(title = 'Untitled Show'): Show {
   const now = new Date().toISOString();
