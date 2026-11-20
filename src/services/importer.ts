@@ -15,11 +15,27 @@ export interface ColumnMapping {
   notes?: string;
 }
 
+export interface ImportRowIssue {
+  rowIndex: number; // 1-based data row index
+  type: 'missing_title' | 'invalid_duration';
+  message: string;
+  rawDuration?: string;
+}
+
+export interface ConvertOptions {
+  skipMissingTitle?: boolean;
+}
+
 export interface ImportResult {
   acts: Act[];
   totalCues: number;
   totalLighting: number;
   totalScreens: number;
+  importedCount: number;
+  skippedCount: number;
+  defaultDurationCount: number;
+  warnings: string[];
+  issues: ImportRowIssue[];
   errors: string[];
 }
 
@@ -234,21 +250,41 @@ export function autoDetectColumnMapping(headers: string[]): ColumnMapping {
 export function convertRowsToActs(
   rows: Record<string, string>[],
   mapping: ColumnMapping,
-  defaultActTitle = 'Act 1'
+  defaultActTitle = 'Act 1',
+  options: ConvertOptions = {}
 ): ImportResult {
   const actsMap = new Map<string, Act>();
   const errors: string[] = [];
+  const issues: ImportRowIssue[] = [];
   let totalLighting = 0;
   let totalScreens = 0;
   let totalCues = 0;
+  let importedCount = 0;
+  let skippedCount = 0;
+  let defaultDurationCount = 0;
 
+  const skipMissingTitle = options.skipMissingTitle !== false;
   let actOrder = 1;
 
   for (let idx = 0; idx < rows.length; idx++) {
     const row = rows[idx];
     const rawTitle = (row[mapping.title] || '').trim();
     if (!rawTitle) {
-      continue; // Skip empty rows
+      if (skipMissingTitle) {
+        issues.push({
+          rowIndex: idx + 1,
+          type: 'missing_title',
+          message: `Dòng ${idx + 1}: thiếu tên/tiết mục (bỏ qua)`,
+        });
+        skippedCount++;
+        continue;
+      } else {
+        issues.push({
+          rowIndex: idx + 1,
+          type: 'missing_title',
+          message: `Dòng ${idx + 1}: thiếu tên/tiết mục, dùng tên mặc định`,
+        });
+      }
     }
 
     const rawAct = mapping.act && row[mapping.act] ? row[mapping.act].trim() : defaultActTitle;
@@ -266,7 +302,38 @@ export function convertRowsToActs(
     const targetAct = actsMap.get(actTitle)!;
     const cueIndex = targetAct.cues.length + 1;
     const cueNumber = (mapping.cueNumber && row[mapping.cueNumber]?.trim()) || `${targetAct.order}.${cueIndex}`;
-    const durationMs = mapping.duration ? parseTimeToMs(row[mapping.duration]) || 60000 : 60000;
+    const cueTitle = rawTitle || `(Chưa đặt tên - Cue ${cueIndex})`;
+
+    // Duration extraction & warning logic (PLAN 18.3)
+    let durationMs = 60000;
+    const rawDuration = mapping.duration && row[mapping.duration] ? row[mapping.duration].trim() : '';
+    if (rawDuration) {
+      const parsedSeconds = parseTimeString(rawDuration);
+      const isExplicitZero = rawDuration === '0' || rawDuration === '00:00' || rawDuration === '0:00' || rawDuration === '0s';
+      if (parsedSeconds === 0 && !isExplicitZero) {
+        durationMs = 60000;
+        defaultDurationCount++;
+        issues.push({
+          rowIndex: idx + 1,
+          type: 'invalid_duration',
+          rawDuration,
+          message: `Dòng ${idx + 1}: thời lượng "${rawDuration}" không đọc được, dùng mặc định 01:00`,
+        });
+      } else {
+        durationMs = parsedSeconds * 1000;
+      }
+    } else {
+      durationMs = 60000;
+      if (mapping.duration) {
+        defaultDurationCount++;
+        issues.push({
+          rowIndex: idx + 1,
+          type: 'invalid_duration',
+          rawDuration: '',
+          message: `Dòng ${idx + 1}: ô thời lượng trống, dùng mặc định 01:00`,
+        });
+      }
+    }
 
     // Extract LX hardware & notes
     const lxText = (mapping.lx && row[mapping.lx]?.trim()) || '';
@@ -289,7 +356,7 @@ export function convertRowsToActs(
     const notesText = (mapping.notes && row[mapping.notes]?.trim()) || '';
 
     const newCue: Cue = {
-      ...createCue(targetAct.id, cueNumber, rawTitle, durationMs),
+      ...createCue(targetAct.id, cueNumber, cueTitle, durationMs),
       departments: {
         lx: lxText || parsedColor
           ? {
@@ -319,6 +386,7 @@ export function convertRowsToActs(
     totalLighting += lxCount;
     totalScreens += vxCount;
     totalCues++;
+    importedCount++;
   }
 
   return {
@@ -326,6 +394,11 @@ export function convertRowsToActs(
     totalCues,
     totalLighting,
     totalScreens,
+    importedCount,
+    skippedCount,
+    defaultDurationCount,
+    warnings: issues.map((i) => i.message),
+    issues,
     errors,
   };
 }
