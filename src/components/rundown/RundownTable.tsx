@@ -67,11 +67,41 @@ export const RundownTable: React.FC = () => {
   const selectedCueId = useShowStore((s) => s.selectedCueId);
   const selectCue = useShowStore((s) => s.selectCue);
   const setInspectorOpen = useShowStore((s) => s.setInspectorOpen);
+  const isOperatorLocked = useShowStore((s) => s.isOperatorLocked);
+  const triggerOperatorLockFeedback = useShowStore((s) => s.triggerOperatorLockFeedback);
+  const clearShow = useShowStore((s) => s.clearShow);
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
   const [editingCell, setEditingCell] = useState<EditingCellState | null>(null);
   const [activeRowMenuCueId, setActiveRowMenuCueId] = useState<string | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll with 5-second manual pause (PLAN 18.5)
+  const userScrolledAtRef = useRef<number>(0);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+
+  const handleTableScroll = () => {
+    userScrolledAtRef.current = Date.now();
+  };
+
+  useEffect(() => {
+    const targetId = activeCueId || standbyCueId;
+    if (!targetId) return;
+
+    if (Date.now() - userScrolledAtRef.current < 5000) {
+      return;
+    }
+
+    const rowEl = rowRefs.current[targetId];
+    if (rowEl && typeof rowEl.scrollIntoView === 'function') {
+      rowEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [activeCueId, standbyCueId]);
+
+  const isDefaultSampleShow =
+    show.acts.length === 1 &&
+    show.acts[0].cues.length === 1 &&
+    show.acts[0].cues[0].title === 'Pre-Show / Walk-in';
 
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
@@ -337,9 +367,24 @@ export const RundownTable: React.FC = () => {
 
   // Unified cue status badges with consistent icon + color
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
+    // 18.2: Hold takes precedence over active GO
+    if (status === 'Hold') {
+      return (
+        <span
+          data-testid="status-badge-hold"
+          className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-black bg-status-hold/20 text-status-hold border border-status-hold/60 ring-2 ring-status-hold/40 animate-pulse"
+        >
+          <Pause className="h-3 w-3 fill-current" aria-hidden="true" />
+          <span>HOLD</span>
+        </span>
+      );
+    }
     if (isActive || status === 'Go') {
       return (
-        <span className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 animate-pulse">
+        <span
+          data-testid="status-badge-go"
+          className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-2 ring-status-go/40 animate-pulse"
+        >
           <Play className="h-3 w-3 fill-current" aria-hidden="true" />
           <span>GO</span>
           <span className="relative flex h-2 w-2 ml-0.5">
@@ -351,23 +396,21 @@ export const RundownTable: React.FC = () => {
     }
     if (isStandby || status === 'Standby') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40">
+        <span
+          data-testid="status-badge-standby"
+          className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold bg-status-standby/20 text-status-standby border border-status-standby/60 ring-1 ring-status-standby/40"
+        >
           <AlertCircle className="h-3 w-3" aria-hidden="true" />
           <span>STANDBY</span>
         </span>
       );
     }
-    if (status === 'Hold') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
-          <Pause className="h-3 w-3" aria-hidden="true" />
-          <span>HOLD</span>
-        </span>
-      );
-    }
     if (status === 'Skip') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default line-through">
+        <span
+          data-testid="status-badge-skip"
+          className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default line-through"
+        >
           <FastForward className="h-3 w-3" aria-hidden="true" />
           <span>SKIP</span>
         </span>
@@ -375,7 +418,10 @@ export const RundownTable: React.FC = () => {
     }
     if (status === 'Completed') {
       return (
-        <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default/60">
+        <span
+          data-testid="status-badge-completed"
+          className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2 text-content-3 border border-border-default/60"
+        >
           <CheckCircle2 className="h-3 w-3 text-status-go/70" aria-hidden="true" />
           <span>COMPLETED</span>
         </span>
@@ -383,15 +429,23 @@ export const RundownTable: React.FC = () => {
     }
     // Pending
     return (
-      <span className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2/60 text-content-3 border border-border-default/40">
+      <span
+        data-testid="status-badge-pending"
+        className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium bg-surface-2/60 text-content-3 border border-border-default/40"
+      >
         <Clock className="h-3 w-3 text-content-3" aria-hidden="true" />
         <span>PENDING</span>
       </span>
     );
   };
 
-  // Visual row highlight matrix (Active GO, Standby, Selected/Inspected, Normal)
-  const getRowHighlight = (isActive: boolean, isStandby: boolean, isSelected: boolean) => {
+  // Visual row highlight matrix (Active GO, Hold, Standby, Selected/Inspected, Normal)
+  const getRowHighlight = (isActive: boolean, isStandby: boolean, isSelected: boolean, isHold?: boolean) => {
+    if (isHold) {
+      return `bg-status-hold/15 border-l-4 border-l-status-hold ${
+        isSelected ? 'ring-2 ring-accent' : 'ring-1 ring-status-hold/40'
+      }`;
+    }
     if (isActive) {
       return `bg-status-go/10 border-l-4 border-l-status-go ${
         isSelected ? 'ring-2 ring-accent' : 'ring-1 ring-status-go/30'
@@ -446,18 +500,41 @@ export const RundownTable: React.FC = () => {
         </div>
       </div>
 
+      {/* Sample Cue Banner with Clear to Blank option (PLAN 18.7b) */}
+      {isDefaultSampleShow && (
+        <div
+          data-testid="sample-data-banner"
+          className="flex items-center justify-between px-3 py-1.5 bg-accent/10 border-b border-accent/30 text-xs text-content-1 flex-shrink-0"
+        >
+          <div className="flex items-center gap-1.5 text-accent font-semibold">
+            <span className="rounded bg-accent/20 px-1.5 py-0.5 text-xs font-bold border border-accent/40">
+              Dữ liệu mẫu
+            </span>
+            <span>Bảng hiện chứa cue mẫu "Pre-Show / Walk-in" để minh họa tính năng.</span>
+          </div>
+          <button
+            type="button"
+            onClick={clearShow}
+            data-testid="start-from-blank-btn"
+            className="rounded bg-surface-2 hover:bg-surface-3 text-content-1 border border-border-default px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer"
+          >
+            Bắt đầu từ trắng
+          </button>
+        </div>
+      )}
+
       {/* Table Container */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full border-collapse text-left text-xs">
+      <div className="flex-1 overflow-auto" onScroll={handleTableScroll}>
+        <table className="w-full border-collapse text-left text-xs min-w-[760px] sm:min-w-0">
           <thead className="sticky top-0 z-10 border-b border-border-default bg-surface-1 text-content-3 font-semibold">
             <tr>
-              <th className="py-2.5 px-3 w-24">Status</th>
-              <th className="py-2.5 px-3 w-16">Cue #</th>
-              <th className="py-2.5 px-4 min-w-[200px]">Title & Description</th>
-              <th className="py-2.5 px-3 w-24">Duration</th>
+              <th className="py-2.5 px-2.5 w-20 sm:w-24">Status</th>
+              <th className="py-2.5 px-2 w-12 sm:w-16">Cue #</th>
+              <th className="py-2.5 px-3 min-w-[150px]">Title & Description</th>
+              <th className="py-2.5 px-2.5 w-20 sm:w-24">Duration</th>
 
               {(roleFilter === 'ALL' || roleFilter === 'LX') && (
-                <th className="py-2.5 px-3 min-w-[170px] text-dept-lx">
+                <th className="py-2.5 px-2.5 min-w-[120px] text-dept-lx">
                   <div className="flex items-center gap-1">
                     <Lightbulb className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Lighting (LX)</span>
@@ -466,7 +543,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'VX') && (
-                <th className="py-2.5 px-3 min-w-[150px] text-dept-vx">
+                <th className="py-2.5 px-2.5 min-w-[110px] text-dept-vx">
                   <div className="flex items-center gap-1">
                     <Tv className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Visual LED (VX)</span>
@@ -475,7 +552,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'SQ') && (
-                <th className="py-2.5 px-3 min-w-[140px] text-dept-sq">
+                <th className="py-2.5 px-2.5 min-w-[100px] text-dept-sq">
                   <div className="flex items-center gap-1">
                     <Volume2 className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Sound (SQ)</span>
@@ -484,7 +561,7 @@ export const RundownTable: React.FC = () => {
               )}
 
               {(roleFilter === 'ALL' || roleFilter === 'ST') && (
-                <th className="py-2.5 px-3 min-w-[140px] text-dept-st">
+                <th className="py-2.5 px-2.5 min-w-[110px] text-dept-st">
                   <div className="flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Stage Action</span>
@@ -492,7 +569,7 @@ export const RundownTable: React.FC = () => {
                 </th>
               )}
 
-              <th className="py-2.5 px-3 text-right w-28">Actions</th>
+              <th className="py-2.5 px-2.5 text-right w-24">Actions</th>
             </tr>
           </thead>
 
@@ -519,6 +596,9 @@ export const RundownTable: React.FC = () => {
                   return (
                     <tr
                       key={cue.id}
+                      ref={(el) => {
+                        rowRefs.current[cue.id] = el;
+                      }}
                       onClick={() => {
                         selectCue(cue.id);
                         setInspectorOpen(true);
@@ -526,7 +606,8 @@ export const RundownTable: React.FC = () => {
                       className={`transition-colors group/row cursor-pointer min-h-[44px] h-11 ${getRowHighlight(
                         isActive,
                         isStandby,
-                        isSelected
+                        isSelected,
+                        cue.status === 'Hold'
                       )}`}
                     >
                       {/* Status Badge */}
@@ -569,8 +650,13 @@ export const RundownTable: React.FC = () => {
                             className="group flex flex-col"
                             title="Nhấp đúp hoặc bấm để sửa Tiêu đề (Enter để lưu)"
                           >
-                            <span className="font-medium text-content-1 group-hover:text-accent">
-                              {cue.title}
+                            <span className="font-medium text-content-1 group-hover:text-accent flex items-center gap-1.5">
+                              <span>{cue.title}</span>
+                              {isDefaultSampleShow && cue.title === 'Pre-Show / Walk-in' && (
+                                <span className="rounded bg-accent/20 text-accent border border-accent/40 px-1.5 py-0.2 text-xs font-semibold select-none">
+                                  Dữ liệu mẫu
+                                </span>
+                              )}
                             </span>
                             {cue.notes && (
                               <span className="text-xs text-content-3 italic">
@@ -1320,13 +1406,22 @@ export const RundownTable: React.FC = () => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (isOperatorLocked) {
+                                triggerOperatorLockFeedback('Đang khóa vận hành');
+                                return;
+                              }
                               standbyCue(cue.id);
                             }}
+                            disabled={isOperatorLocked}
+                            aria-disabled={isOperatorLocked || undefined}
                             className={`rounded px-2.5 py-1 text-xs font-bold transition-colors ${
-                              isStandby
+                              isOperatorLocked
+                                ? 'opacity-40 cursor-not-allowed bg-surface-2 text-content-3 border border-border-default'
+                                : isStandby
                                 ? 'bg-status-standby text-surface-0 ring-2 ring-status-standby'
                                 : 'bg-status-standby/20 text-status-standby hover:bg-status-standby/30 border border-status-standby/40'
                             }`}
+                            title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : isStandby ? 'Đang Standby' : 'Set Standby'}
                           >
                             STBY
                           </button>
@@ -1382,10 +1477,19 @@ export const RundownTable: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     setActiveRowMenuCueId(null);
+                                    if (isOperatorLocked) {
+                                      triggerOperatorLockFeedback('Đang khóa vận hành');
+                                      return;
+                                    }
                                     holdCue(cue.id);
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-status-hold"
-                                  title="Hold Cue"
+                                  aria-disabled={isOperatorLocked || undefined}
+                                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+                                    isOperatorLocked
+                                      ? 'opacity-40 cursor-not-allowed text-content-3'
+                                      : 'hover:bg-surface-2 text-content-2 hover:text-status-hold'
+                                  }`}
+                                  title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Hold Cue'}
                                 >
                                   <Pause className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Tạm dừng (Hold)</span>
@@ -1394,10 +1498,19 @@ export const RundownTable: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     setActiveRowMenuCueId(null);
+                                    if (isOperatorLocked) {
+                                      triggerOperatorLockFeedback('Đang khóa vận hành');
+                                      return;
+                                    }
                                     skipCue(cue.id);
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
-                                  title="Skip Cue"
+                                  aria-disabled={isOperatorLocked || undefined}
+                                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+                                    isOperatorLocked
+                                      ? 'opacity-40 cursor-not-allowed text-content-3'
+                                      : 'hover:bg-surface-2 text-content-2 hover:text-content-1'
+                                  }`}
+                                  title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Skip Cue'}
                                 >
                                   <FastForward className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Bỏ qua (Skip)</span>
@@ -1406,10 +1519,19 @@ export const RundownTable: React.FC = () => {
                                   type="button"
                                   onClick={() => {
                                     setActiveRowMenuCueId(null);
+                                    if (isOperatorLocked) {
+                                      triggerOperatorLockFeedback('Đang khóa vận hành');
+                                      return;
+                                    }
                                     resetCue(cue.id);
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-surface-2 text-left text-content-2 hover:text-content-1"
-                                  title="Reset Cue"
+                                  aria-disabled={isOperatorLocked || undefined}
+                                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors ${
+                                    isOperatorLocked
+                                      ? 'opacity-40 cursor-not-allowed text-content-3'
+                                      : 'hover:bg-surface-2 text-content-2 hover:text-content-1'
+                                  }`}
+                                  title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Reset Cue'}
                                 >
                                   <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                                   <span>Đặt lại (Reset)</span>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Play,
@@ -81,16 +81,26 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
   const updateCue = useShowStore((s) => s.updateCue);
   const standbyCue = useShowStore((s) => s.standbyCue);
   const holdCue = useShowStore((s) => s.holdCue);
+  const resumeCue = useShowStore((s) => s.resumeCue);
   const skipCue = useShowStore((s) => s.skipCue);
   const selectCue = useShowStore((s) => s.selectCue);
+  const isOperatorLocked = useShowStore((s) => s.isOperatorLocked);
+  const triggerOperatorLockFeedback = useShowStore((s) => s.triggerOperatorLockFeedback);
   const activeCueId = useShowStore((s) => s.activeCueId);
   const standbyCueId = useShowStore((s) => s.standbyCueId);
   const show = useShowStore((s) => s.show);
   const allCues = React.useMemo(() => show.acts.flatMap((a) => a.cues), [show.acts]);
 
+  const [isConfirmingSkip, setIsConfirmingSkip] = useState(false);
+
   const isVisible = propIsOpen !== undefined ? propIsOpen : storeIsOpen;
   const targetCueId = propCueId !== undefined ? propCueId : storeSelectedCueId;
   const cue = allCues.find((c) => c.id === targetCueId);
+
+  // Reset skip confirmation when cue changes
+  useEffect(() => {
+    setIsConfirmingSkip(false);
+  }, [targetCueId]);
 
   // Accordion collapsed/expanded states
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -106,6 +116,7 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
   };
 
   const handleClose = () => {
+    setIsConfirmingSkip(false);
     if (propOnClose) {
       propOnClose();
     } else {
@@ -118,6 +129,14 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
   }
 
   const renderStatusBadge = (status: CueStatus, isActive: boolean, isStandby: boolean) => {
+    if (status === 'Hold') {
+      return (
+        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
+          <Pause className="h-2.5 w-2.5" aria-hidden="true" />
+          <span>HOLD</span>
+        </span>
+      );
+    }
     if (isActive || status === 'Go') {
       return (
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-go/20 text-status-go border border-status-go/60 ring-1 ring-status-go/40">
@@ -131,14 +150,6 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
         <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-standby/20 text-status-standby border border-status-standby/60">
           <AlertCircle className="h-2.5 w-2.5" aria-hidden="true" />
           <span>STANDBY</span>
-        </span>
-      );
-    }
-    if (status === 'Hold') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold bg-status-hold/20 text-status-hold border border-status-hold/60">
-          <Pause className="h-2.5 w-2.5" aria-hidden="true" />
-          <span>HOLD</span>
         </span>
       );
     }
@@ -398,38 +409,124 @@ export const CueInspector: React.FC<CueInspectorProps> = ({
           </button>
         </div>
 
-        {/* Fast Calling Actions Toolbar */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border-default/80 bg-surface-0/50 gap-1.5 flex-shrink-0 text-xs">
-          <button
-            type="button"
-            onClick={() => standbyCue(cue.id)}
-            className={`flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold transition-all ${
-              isStandby
-                ? 'bg-status-standby text-surface-0 ring-1 ring-status-standby'
-                : 'bg-status-standby/15 hover:bg-status-standby/25 text-status-standby border border-status-standby/40'
-            }`}
-          >
-            <AlertCircle className="h-3 w-3" aria-hidden="true" />
-            <span>Set Standby</span>
-          </button>
+        {/* Fast Calling Actions Toolbar (PLAN 18.2 Hold/Resume, 18.4 Skip confirmation, 18.7a Locked state) */}
+        <div className="flex flex-col border-b border-border-default/80 bg-surface-0/50 flex-shrink-0 text-xs">
+          <div className="flex items-center justify-between px-3 py-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (isOperatorLocked) {
+                  triggerOperatorLockFeedback('Đang khóa vận hành');
+                  return;
+                }
+                standbyCue(cue.id);
+              }}
+              disabled={isOperatorLocked}
+              aria-disabled={isOperatorLocked || undefined}
+              title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Set Standby'}
+              data-testid="inspector-standby-button"
+              className={`flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold transition-all ${
+                isOperatorLocked
+                  ? 'opacity-40 cursor-not-allowed bg-surface-2 text-content-3 border border-border-default'
+                  : isStandby
+                  ? 'bg-status-standby text-surface-0 ring-1 ring-status-standby'
+                  : 'bg-status-standby/15 hover:bg-status-standby/25 text-status-standby border border-status-standby/40'
+              }`}
+            >
+              <AlertCircle className="h-3 w-3" aria-hidden="true" />
+              <span>Set Standby</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => holdCue(cue.id)}
-            className="flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold bg-status-hold/15 hover:bg-status-hold/25 text-status-hold border border-status-hold/40 transition-all"
-          >
-            <Pause className="h-3 w-3" aria-hidden="true" />
-            <span>Hold</span>
-          </button>
+            {cue.status === 'Hold' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isOperatorLocked) {
+                    triggerOperatorLockFeedback('Đang khóa vận hành');
+                    return;
+                  }
+                  resumeCue(cue.id);
+                }}
+                disabled={isOperatorLocked}
+                aria-disabled={isOperatorLocked || undefined}
+                title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Tiếp tục chạy cue (Resume)'}
+                data-testid="inspector-resume-button"
+                className="flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold bg-status-hold/25 hover:bg-status-hold/35 text-status-hold border border-status-hold/60 ring-1 ring-status-hold/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Play className="h-3 w-3 fill-current" aria-hidden="true" />
+                <span>Resume</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isOperatorLocked) {
+                    triggerOperatorLockFeedback('Đang khóa vận hành');
+                    return;
+                  }
+                  holdCue(cue.id);
+                }}
+                disabled={isOperatorLocked}
+                aria-disabled={isOperatorLocked || undefined}
+                title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Tạm dừng cue (Hold)'}
+                data-testid="inspector-hold-button"
+                className="flex-1 flex items-center justify-center gap-1 rounded py-1 px-2 font-bold bg-status-hold/15 hover:bg-status-hold/25 text-status-hold border border-status-hold/40 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Pause className="h-3 w-3" aria-hidden="true" />
+                <span>Hold</span>
+              </button>
+            )}
 
-          <button
-            type="button"
-            onClick={() => skipCue(cue.id)}
-            className="flex items-center justify-center gap-1 rounded py-1 px-2 font-medium bg-surface-2 hover:bg-surface-3 text-content-2 border border-border-default transition-all"
-          >
-            <FastForward className="h-3 w-3" aria-hidden="true" />
-            <span>Skip</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (isOperatorLocked) {
+                  triggerOperatorLockFeedback('Đang khóa vận hành');
+                  return;
+                }
+                setIsConfirmingSkip(true);
+              }}
+              disabled={isOperatorLocked}
+              aria-disabled={isOperatorLocked || undefined}
+              title={isOperatorLocked ? 'Đang khóa — mở khóa để gọi cue' : 'Bỏ qua cue này (Skip)'}
+              data-testid="inspector-skip-button"
+              className="flex items-center justify-center gap-1 rounded py-1 px-2 font-medium bg-surface-2 hover:bg-surface-3 text-content-2 border border-border-default transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FastForward className="h-3 w-3" aria-hidden="true" />
+              <span>Skip</span>
+            </button>
+          </div>
+
+          {/* Skip Confirmation Row (PLAN 18.4) */}
+          {isConfirmingSkip && (
+            <div
+              data-testid="skip-confirm-dialog"
+              className="flex items-center justify-between px-3 py-1.5 bg-status-danger/10 border-t border-status-danger/30 text-xs text-content-1 animate-in fade-in duration-100"
+            >
+              <span className="font-semibold text-status-danger">Bỏ qua cue #{cue.cueNumber}?</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  data-testid="skip-confirm-button"
+                  onClick={() => {
+                    skipCue(cue.id);
+                    setIsConfirmingSkip(false);
+                  }}
+                  className="px-2 py-0.5 rounded bg-status-danger text-surface-0 font-bold hover:bg-status-danger/90 transition-colors"
+                >
+                  Xác nhận
+                </button>
+                <button
+                  type="button"
+                  data-testid="skip-cancel-button"
+                  onClick={() => setIsConfirmingSkip(false)}
+                  className="px-2 py-0.5 rounded bg-surface-2 hover:bg-surface-3 text-content-2 transition-colors border border-border-default"
+                >
+                  Huỷ
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Accordions Container */}
