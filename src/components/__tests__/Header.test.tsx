@@ -340,15 +340,56 @@ describe('Header Component — Unified Command Header (Đợt 14.3 / R3)', () =>
     expect(lockText.className).toContain('hidden lg:inline');
 
     // 6. Delta Time block remains visible down to 960px (PLAN 18.6a: removed hidden xl:flex)
-    const deltaLabel = screen.getByText('Delta');
+    const deltaLabel = screen.getByTestId('header-delta-label-compact');
     const deltaBlock = deltaLabel.closest('div');
     expect(deltaBlock?.className).not.toContain('hidden xl:flex');
     expect(deltaBlock?.className).toContain('flex flex-col');
+    // Compact "Delta" below lg, full "(Sớm)/(Trễ)" label from lg up (PLAN 18.6a reopen)
+    expect(deltaLabel.className).toContain('lg:hidden');
+    expect(screen.getByTestId('header-delta-label-full').className).toContain('hidden lg:inline');
 
     // 7. Wall Clock block is hidden below 2xl (1536px) to prevent 1280px overflow
     const wallLabel = screen.getByText('Wall');
     const wallBlock = wallLabel.closest('div');
     expect(wallBlock?.className).toContain('hidden 2xl:flex');
+  });
+
+  it('keeps the 960px command bar compact so Lock + Tools stay inside the viewport (PLAN 18.6a reopen)', () => {
+    render(
+      <Header
+        viewMode="split"
+        setViewMode={vi.fn()}
+        isOperatorLocked={false}
+        setIsOperatorLocked={vi.fn()}
+        onOpenProject={vi.fn()}
+        onImportClick={vi.fn()}
+        onExportClick={vi.fn()}
+        onHelpClick={vi.fn()}
+        wallClock="19:30:00"
+      />
+    );
+
+    // 1. Brand wordmark collapses to the "LS" badge below lg (1024px)
+    expect(screen.getByText('Light Stage').className).toContain('hidden lg:inline');
+
+    // 2. Clock labels use short forms below lg, full labels from lg up
+    expect(screen.getByText('Show').className).toContain('lg:hidden');
+    expect(screen.getByText('Cue').className).toContain('lg:hidden');
+    expect(screen.getByText('Show Time').className).toContain('hidden lg:inline');
+    expect(screen.getByText('Cue Remainder').className).toContain('hidden lg:inline');
+    expect(screen.getByTestId('header-delta-label-compact').className).toContain('lg:hidden');
+    expect(screen.getByTestId('header-delta-label-full').className).toContain('hidden lg:inline');
+
+    // 3. Shortcut kbd chips (B / Esc) collapse below lg; tooltips + aria-label keep them discoverable
+    expect(screen.getByText('B').className).toContain('hidden lg:inline');
+    expect(screen.getByText('Esc').className).toContain('hidden lg:inline');
+
+    // 4. Hero GO tightens its horizontal padding below lg
+    expect(screen.getByTestId('header-hero-go-button').className).toContain('px-4 lg:px-6');
+
+    // 5. Lock and Tools buttons stay present with accessible names (measured 100% clickable at 960px)
+    expect(screen.getByTestId('header-operator-lock-button')).toHaveAttribute('aria-label', 'Khóa vận hành');
+    expect(screen.getByTestId('header-admin-menu-button')).toHaveAttribute('aria-label', 'Công cụ bổ sung');
   });
 
   it('dismisses Admin Dropdown menu on Escape key and stops event propagation', () => {

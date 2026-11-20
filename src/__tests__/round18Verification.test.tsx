@@ -273,8 +273,9 @@ describe('Round 18 Comprehensive Verification Suite (User Reviews & Safety Fixes
       expect(lxCounter).toBeInTheDocument();
       expect(vxCounter).toBeInTheDocument();
 
-      // Delta label
-      expect(screen.getByText('Delta')).toBeInTheDocument();
+      // Delta label (compact below lg, full label from lg up)
+      expect(screen.getByTestId('header-delta-label-compact')).toBeInTheDocument();
+      expect(screen.getByTestId('header-delta-label-full')).toBeInTheDocument();
     });
   });
 

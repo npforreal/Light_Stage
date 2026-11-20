@@ -26,7 +26,7 @@ describe("Real-World User Journey & Usability Simulation", () => {
     // 2. Người dùng thấy đồng hồ trung tâm với các chỉ số chuyên môn
     expect(screen.getByText("Show Time")).toBeInTheDocument();
     expect(screen.getByText("Cue Remainder")).toBeInTheDocument();
-    expect(screen.getByText("Delta")).toBeInTheDocument();
+    expect(screen.getByTestId('header-delta-label-compact')).toBeInTheDocument();
 
     // 3. Người dùng thấy thống kê phần cứng tự động
     expect(screen.getByText(/LX:/)).toBeInTheDocument();

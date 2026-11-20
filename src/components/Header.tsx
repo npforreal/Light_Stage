@@ -273,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="font-bold text-xs sm:text-sm text-content-1 whitespace-nowrap">
+            <span className="hidden lg:inline font-bold text-xs sm:text-sm text-content-1 whitespace-nowrap">
               Light Stage
             </span>
             <span className="hidden xl:inline-block rounded bg-surface-2 px-1.5 py-0.2 text-xs text-content-3 font-mono">
@@ -409,7 +409,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => goCue()}
             disabled={isOperatorLocked}
             aria-disabled={isOperatorLocked || undefined}
-            className="h-10 px-5 sm:px-6 rounded bg-status-go hover:bg-status-go/90 disabled:hover:bg-status-go text-surface-0 font-black active:scale-[0.97] transition-all flex items-center gap-2 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 flex-shrink-0"
+            className="h-10 px-4 lg:px-6 rounded bg-status-go hover:bg-status-go/90 disabled:hover:bg-status-go text-surface-0 font-black active:scale-[0.97] transition-all flex items-center gap-2 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 flex-shrink-0"
             title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Start Clock'}
             data-testid="header-hero-go-button"
           >
@@ -444,7 +444,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <FastForward className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden lg:inline">STBY</span>
-            <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+            <kbd className="hidden lg:inline text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
               B
             </kbd>
           </button>
@@ -469,7 +469,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
               <span className="hidden sm:inline">Resume</span>
-              <kbd className="text-xs font-mono text-content-1 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+              <kbd className="hidden lg:inline text-xs font-mono text-content-1 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
                 Esc
               </kbd>
             </button>
@@ -493,7 +493,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Pause className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="hidden lg:inline">Hold</span>
-              <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+              <kbd className="hidden lg:inline text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
                 Esc
               </kbd>
             </button>
@@ -502,7 +502,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Zone: Tabular Clocks, Operator Lock, Secondary Admin Menu (~260px at 960px) */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          {/* Tabular Clocks Block */}
+          {/* Tabular Clocks Block (compact labels below lg so 960px keeps Lock + Tools in view) */}
           <div className="flex items-center gap-1.5 bg-surface-2 border border-border-default rounded px-2 py-1 font-mono flex-shrink-0 tabular-nums whitespace-nowrap">
             {/* Wall Clock - hidden on viewports < 1536px to prevent 1280px overflow */}
             <div className="hidden 2xl:flex flex-col items-center leading-tight">
@@ -516,9 +516,13 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="hidden 2xl:block h-5 w-px bg-border-subtle" />
 
             {/* Master Show Time */}
-            <div className="flex flex-col items-center leading-tight">
+            <div
+              className="flex flex-col items-center leading-tight"
+              title="Tổng thời gian show đã chạy (Show Time)"
+            >
               <span className="text-xs font-medium text-content-3 whitespace-nowrap">
-                Show Time
+                <span className="lg:hidden">Show</span>
+                <span className="hidden lg:inline">Show Time</span>
               </span>
               <span className="text-xs sm:text-sm font-bold text-content-1 tabular-nums">
                 {formatDuration(masterElapsedMs, { includeHours: true })}
@@ -528,9 +532,13 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="h-5 w-px bg-border-subtle" />
 
             {/* Cue Remainder */}
-            <div className="flex flex-col items-center leading-tight">
+            <div
+              className="flex flex-col items-center leading-tight"
+              title="Thời gian còn lại của cue đang chạy (Cue Remainder)"
+            >
               <span className="text-xs font-medium text-content-3 whitespace-nowrap">
-                Cue Remainder
+                <span className="lg:hidden">Cue</span>
+                <span className="hidden lg:inline">Cue Remainder</span>
               </span>
               <span
                 className={`text-xs sm:text-sm font-bold tabular-nums ${
@@ -546,7 +554,10 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Delta with explicit (Sớm)/(Trễ) label & helpful tooltip (PLAN 18.6a, 18.9) */}
             <div className="flex flex-col items-center leading-tight">
               <span className="text-xs font-medium text-content-3 whitespace-nowrap">
-                {deltaTimeMs > 0 ? 'Delta (Sớm)' : deltaTimeMs < 0 ? 'Delta (Trễ)' : 'Delta'}
+                <span className="lg:hidden" data-testid="header-delta-label-compact">Delta</span>
+                <span className="hidden lg:inline" data-testid="header-delta-label-full">
+                  {deltaTimeMs > 0 ? 'Delta (Sớm)' : deltaTimeMs < 0 ? 'Delta (Trễ)' : 'Delta'}
+                </span>
               </span>
               <span
                 className={`text-xs font-bold tabular-nums ${
