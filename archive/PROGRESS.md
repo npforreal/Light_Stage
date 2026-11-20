@@ -1,5 +1,39 @@
 # Lưu trữ PROGRESS.md (nguyên văn, không chỉnh sửa)
 
+## 2026-11-19 — Đợt 16.7: xác minh đóng đợt 16
+
+### Kiểm chứng
+- `bash scripts/check.sh` (đủ, không `--fast`) → **0 failure**, 1 warning (workflow audit: PROGRESS dài, sẽ archive).
+- `python3 scripts/audit_workflow.py` → 0 failure; cảnh báo duy nhất là PROGRESS > 150 dòng trước khi archive.
+- `python3 scripts/guard_check.py` → 0 new violations.
+- User journey bằng browser thật trên `localhost:1420`:
+  - Khóa → banner "Các lệnh gọi cue đã bị vô hiệu hóa"; Space/B/Esc không đổi cue (`live=false`, `LX: 0`).
+  - Khóa → `?` mở Help, `i` mở/đóng Inspector (vẫn chạy).
+  - Mở khóa → Space: `live=true`, `LX: 12`.
+  - Import file hỏng (`acts:[null]`) → modal "Không mở được dự án | Invalid project data: acts[0] must be an object | Chọn lại file hoặc mở bản autosave…"; show hiện tại giữ nguyên; **0 console error**.
+- `npm run tauri build -- --debug --bundles app` → build OK, `Light Stage.app` 29.86 MiB; mở app thật → tiến trình `Contents/MacOS/app` sống (PID 58246).
+  - Ghi chú: bước đóng gói `.dmg` của `bundle_dmg.sh` bị treo do macOS chặn AppleScript/Finder automation (`Not authorized to send Apple events`), không phải lỗi app; đã build riêng bundle `app` để xác minh.
+- Sau khi ghi log: chạy `python3 scripts/archive_logs.py` để đưa log đợt cũ sang `archive/`.
+
+## 2026-11-19 — Đợt 16.6: hardening CSP (bỏ `script-src 'unsafe-inline'`)
+
+### Thay đổi
+- `src-tauri/tauri.conf.json` CSP:
+  - Trước: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline';`
+  - Sau: `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost`
+- Giữ `style-src 'unsafe-inline'` (Tailwind/React ghi style inline, không thể bỏ nếu không refactor toàn bộ).
+- Thêm `font-src 'self' data:` để sẵn cho font self-host ở 17.2.
+- Thêm `connect-src 'self' ipc: http://ipc.localhost` cho IPC của Tauri v2.
+
+### Quyết định kỹ thuật
+- `index.html` không có `<script>` inline; Vite build phát module script ngoài → `script-src 'self'` đủ cho bản production.
+- Không đánh `[x]` chỉ dựa vào lý thuyết: đã kiểm bằng bản build thật + CSP meta trên server tĩnh trước khi chốt.
+
+### Kiểm chứng
+- `npm run build` OK; inject đúng chuỗi CSP vào `dist/index.html`, phục vụ `python3 -m http.server 1431`.
+- Browser thật mở `http://localhost:1431`: `document.title` đúng, `#root` có 1 con, header "Light Stage" render, **0 console error** (không có vi phạm CSP).
+- `tauri build --debug` được kiểm ở 16.7 để chắc chắn webview Tauri không khác trình duyệt.
+
 ## 2026-11-19 — Đợt 16.5: lazy-load Stage 3D, chunk khởi động < 500 kB
 
 ### Thay đổi

@@ -32,3 +32,5 @@ scratch/
 .env.*
 !.env.example
 __pycache__/
+
+.github/
