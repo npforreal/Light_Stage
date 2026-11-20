@@ -90,6 +90,7 @@ export const App: React.FC = () => {
   const [isWelcomeOpen, setIsWelcomeOpen] = useState(false);
   const isOperatorLocked = useShowStore((s) => s.isOperatorLocked);
   const setOperatorLocked = useShowStore((s) => s.setOperatorLocked);
+  const operatorLockFeedback = useShowStore((s) => s.operatorLockFeedback);
   const isInspectorOpen = useShowStore((s) => s.isInspectorOpen);
   const toggleInspector = useShowStore((s) => s.toggleInspector);
   const autosaveError = useShowStore((s) => s.autosaveError);
@@ -315,15 +316,25 @@ export const App: React.FC = () => {
       if (importError) return;
 
       // --- Group 2: Operator Lock blocks cue commands below this line ---
-      if (isOperatorLocked) return;
-
-      const activeTag = document.activeElement?.tagName.toLowerCase();
-      if (activeTag === 'button' && (e.code === 'Space' || e.code === 'Enter')) {
-        (document.activeElement as HTMLElement)?.blur();
+      if (isOperatorLocked) {
+        // (a) khi đang khóa, Space/Enter đều preventDefault() trước khi return (không để hành vi mặc định của nút chạy)
+        if (e.code === 'Space' || e.code === 'Enter' || e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          const active = document.activeElement as HTMLElement | null;
+          if (active && active.tagName.toLowerCase() === 'button') {
+            active.blur();
+          }
+        }
+        useShowStore.getState().triggerOperatorLockFeedback('Đang khóa vận hành — không thể gọi cue');
+        return;
       }
 
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
+        const active = document.activeElement as HTMLElement | null;
+        if (active && active.tagName.toLowerCase() === 'button') {
+          active.blur();
+        }
         useShowStore.getState().goCue();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
@@ -470,25 +481,37 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Operator Lock Safety Banner */}
-      {isOperatorLocked && (
-        <div className="bg-status-standby/15 border-b border-status-standby/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-status-standby z-30 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-status-standby animate-pulse" />
-            <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Các lệnh gọi cue đã bị vô hiệu hóa. Phím tắt xem/trợ giúp, lưu và VX panic vẫn hoạt động.</span>
-          </div>
-          <button
-            onClick={() => setOperatorLocked(false)}
-            className="rounded bg-status-standby text-surface-0 px-2.5 py-0.5 text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all"
-          >
-            Mở khóa
-          </button>
-        </div>
-      )}
-
       {/* Main Workspace Area with Right Inspector Drawer */}
       <div className="flex flex-1 overflow-hidden relative">
         <main className="flex flex-1 flex-col overflow-hidden min-w-0">
+          {/* Operator Lock Safety Banner inside main so right Inspector drawer NEVER shifts (PLAN 18.4) */}
+          {isOperatorLocked && (
+            <div
+              data-testid="operator-lock-banner"
+              className="bg-status-standby/15 border-b border-status-standby/40 px-4 py-1.5 flex items-center justify-between text-xs font-bold text-status-standby z-30 flex-shrink-0"
+            >
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 text-status-standby animate-pulse flex-shrink-0" />
+                <span>CHẾ ĐỘ KHÓA VẬN HÀNH (OPERATOR LOCK): Các lệnh gọi cue đã bị vô hiệu hóa. Phím tắt xem/trợ giúp, lưu và VX panic vẫn hoạt động.</span>
+                {operatorLockFeedback && (
+                  <span
+                    data-testid="lock-feedback-badge"
+                    className="ml-2 px-2 py-0.5 rounded bg-status-danger text-surface-0 font-black animate-pulse"
+                  >
+                    {operatorLockFeedback}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setOperatorLocked(false)}
+                data-testid="unlock-banner-button"
+                className="rounded bg-status-standby text-surface-0 px-2.5 py-0.5 text-xs font-bold hover:opacity-90 active:scale-[0.98] transition-all flex-shrink-0"
+              >
+                Mở khóa
+              </button>
+            </div>
+          )}
           {viewMode === 'rundown' && (
             <div className="flex-1 overflow-hidden">
               <RundownTable />

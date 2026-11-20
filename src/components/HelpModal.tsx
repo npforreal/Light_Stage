@@ -114,8 +114,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                     <td className="py-2 px-3 font-mono font-bold text-status-hold">
                       <kbd className="px-1.5 py-0.5 rounded bg-surface-2 border border-border-default text-content-1">Escape</kbd>
                     </td>
-                    <td className="py-2 px-3 font-semibold text-content-1">Tạm dừng (Hold Cue)</td>
-                    <td className="py-2 px-3 text-content-3">Tạm giữ cue đang chạy khi có sự cố phát sinh.</td>
+                    <td className="py-2 px-3 font-semibold text-content-1">Tạm dừng / Tiếp tục (Hold / Resume)</td>
+                    <td className="py-2 px-3 text-content-3">Nhấn lần đầu tạm dừng cue & đồng hồ (HOLD); nhấn lần 2 hoặc nút Resume để tiếp tục chạy.</td>
                   </tr>
                   <tr>
                     <td className="py-2 px-3 font-mono font-bold text-content-2">

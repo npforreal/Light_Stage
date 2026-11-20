@@ -83,6 +83,8 @@ export const Header: React.FC<HeaderProps> = ({
   const goCue = useShowStore((s) => s.goCue);
   const nextCue = useShowStore((s) => s.nextCue);
   const holdCue = useShowStore((s) => s.holdCue);
+  const resumeCue = useShowStore((s) => s.resumeCue);
+  const triggerOperatorLockFeedback = useShowStore((s) => s.triggerOperatorLockFeedback);
   const addCue = useShowStore((s) => s.addCue);
   const getAllCues = useShowStore((s) => s.getAllCues);
 
@@ -97,6 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(show.metadata.title);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [stageClockBlocked, setStageClockBlocked] = useState(false);
   const [localRoleFilter, setLocalRoleFilter] = useState<RoleFilter>(roleFilter ?? 'ALL');
   const [localInspectorOpen, setLocalInspectorOpen] = useState(false);
 
@@ -180,8 +183,12 @@ export const Header: React.FC<HeaderProps> = ({
     newShow('Dự Án Show Mới');
   };
 
-  const handleOpenStageClock = () => {
-    openStageClockWindow();
+  const handleOpenStageClock = async () => {
+    const isTauri = typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
+    const win = await openStageClockWindow();
+    if (!isTauri && !win) {
+      setStageClockBlocked(true);
+    }
   };
 
   const handleFilterSelect = (role: RoleFilter) => {
@@ -354,8 +361,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Live Hardware Badges */}
-          <div className="hidden xl:flex items-center gap-2 font-mono text-xs flex-shrink-0">
+          {/* Live Hardware Badges (visible across all supported viewports >= 960px) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 font-mono text-xs flex-shrink-0">
             <div
               className="flex items-center gap-1 text-dept-lx"
               title={
@@ -411,12 +418,17 @@ export const Header: React.FC<HeaderProps> = ({
             <kbd className="px-1.5 py-0.5 rounded bg-surface-0/20 text-surface-0 font-mono text-xs font-bold border border-surface-0/30 select-none">
               Space
             </kbd>
-            {(isRunning || activeCue?.status === 'Go') && (
+            {activeCue?.status === 'Hold' ? (
+              <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-status-hold/30 text-surface-0 text-xs font-black uppercase animate-pulse border border-status-hold/60">
+                <span className="h-1.5 w-1.5 rounded-full bg-status-hold" />
+                HOLD
+              </span>
+            ) : (isRunning || activeCue?.status === 'Go') ? (
               <span className="flex items-center gap-1 px-1.5 py-0.2 rounded bg-status-danger/30 text-surface-0 text-xs font-black uppercase animate-pulse border border-status-danger/60">
                 <span className="h-1.5 w-1.5 rounded-full bg-status-danger" />
                 LIVE
               </span>
-            )}
+            ) : null}
           </button>
 
           {/* Standby Next ("B") Button */}
@@ -425,6 +437,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={nextCue}
             disabled={isOperatorLocked}
             aria-disabled={isOperatorLocked || undefined}
+            aria-label="Chuyển Standby tiếp theo"
             className="h-8 px-2 sm:px-2.5 rounded bg-surface-2 hover:bg-surface-3 text-status-standby border border-border-default font-bold text-xs flex items-center gap-1 transition-colors flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Chuyển Standby tiếp theo (Go Next Cue - B)'}
             data-testid="header-standby-button"
@@ -436,25 +449,55 @@ export const Header: React.FC<HeaderProps> = ({
             </kbd>
           </button>
 
-          {/* Hold / Pause ("Esc") Button */}
-          <button
-            type="button"
-            onClick={() => {
-              holdCue(activeCue?.id);
-              pauseClock();
-            }}
-            className="h-8 px-2 rounded bg-surface-2 hover:bg-status-hold/20 text-content-2 hover:text-status-hold border border-border-default transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isOperatorLocked}
-            aria-disabled={isOperatorLocked || undefined}
-            title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Stop Clock'}
-            data-testid="header-hold-button"
-          >
-            <Pause className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden lg:inline">Hold</span>
-            <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
-              Esc
-            </kbd>
-          </button>
+          {/* Hold / Resume ("Esc") Button */}
+          {activeCue?.status === 'Hold' ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (isOperatorLocked) {
+                  triggerOperatorLockFeedback('Đang khóa vận hành');
+                  return;
+                }
+                resumeCue(activeCue?.id);
+              }}
+              className="h-8 px-2 sm:px-2.5 rounded bg-status-hold/25 hover:bg-status-hold/35 text-status-hold border border-status-hold/60 font-bold transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-status-hold/40"
+              disabled={isOperatorLocked}
+              aria-disabled={isOperatorLocked || undefined}
+              aria-label="Tiếp tục chạy cue"
+              title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Tiếp tục chạy cue (Resume - Esc)'}
+              data-testid="header-resume-button"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+              <span className="hidden sm:inline">Resume</span>
+              <kbd className="text-xs font-mono text-content-1 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+                Esc
+              </kbd>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (isOperatorLocked) {
+                  triggerOperatorLockFeedback('Đang khóa vận hành');
+                  return;
+                }
+                holdCue(activeCue?.id);
+                pauseClock();
+              }}
+              className="h-8 px-2 rounded bg-surface-2 hover:bg-status-hold/20 text-content-2 hover:text-status-hold border border-border-default transition-colors text-xs flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isOperatorLocked}
+              aria-disabled={isOperatorLocked || undefined}
+              aria-label="Tạm dừng cue (Hold - Esc)"
+              title={isOperatorLocked ? LOCKED_CUE_TOOLTIP : 'Stop Clock'}
+              data-testid="header-hold-button"
+            >
+              <Pause className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden lg:inline">Hold</span>
+              <kbd className="text-xs font-mono text-content-3 px-1 py-0.2 rounded bg-surface-3 border border-border-subtle">
+                Esc
+              </kbd>
+            </button>
+          )}
         </div>
 
         {/* Right Zone: Tabular Clocks, Operator Lock, Secondary Admin Menu (~260px at 960px) */}
@@ -498,22 +541,28 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
 
-            <div className="hidden xl:block h-5 w-px bg-border-subtle" />
+            <div className="h-5 w-px bg-border-subtle" />
 
-            {/* Delta */}
-            <div className="hidden xl:flex flex-col items-center leading-tight">
+            {/* Delta with explicit (Sớm)/(Trễ) label & helpful tooltip (PLAN 18.6a, 18.9) */}
+            <div className="flex flex-col items-center leading-tight">
               <span className="text-xs font-medium text-content-3 whitespace-nowrap">
-                Delta
+                {deltaTimeMs > 0 ? 'Delta (Sớm)' : deltaTimeMs < 0 ? 'Delta (Trễ)' : 'Delta'}
               </span>
               <span
                 className={`text-xs font-bold tabular-nums ${
                   deltaTimeMs < 0
                     ? 'text-status-danger'
                     : deltaTimeMs > 0
-                    ? 'text-content-1'
+                    ? 'text-status-go'
                     : 'text-content-3'
                 }`}
-                title={deltaTimeMs < 0 ? 'Chậm tiến độ (Behind)' : 'Sớm hơn tiến độ (Ahead)'}
+                title={
+                  deltaTimeMs > 0
+                    ? `Sớm ${formatDuration(deltaTimeMs)} so với kế hoạch (Ahead of schedule)`
+                    : deltaTimeMs < 0
+                    ? `Trễ ${formatDuration(Math.abs(deltaTimeMs))} so với kế hoạch (Behind schedule)`
+                    : 'Đúng tiến độ theo kế hoạch'
+                }
               >
                 {deltaTimeMs > 0 ? `+${formatDuration(deltaTimeMs)}` : formatDuration(deltaTimeMs)}
               </span>
@@ -531,16 +580,31 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Operator Lock Toggle */}
+          {/* Operator Lock Toggle (PLAN 18.1: space/enter prevention & intentional click unlock) */}
           <button
             type="button"
-            onClick={() => setIsOperatorLocked(!isOperatorLocked)}
+            onClick={(e) => {
+              if (isOperatorLocked) {
+                setIsOperatorLocked(false);
+              } else {
+                setIsOperatorLocked(true);
+                e.currentTarget.blur();
+              }
+            }}
+            onKeyDown={(e) => {
+              if (isOperatorLocked && (e.code === 'Space' || e.code === 'Enter' || e.key === ' ' || e.key === 'Enter')) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            aria-label={isOperatorLocked ? 'Đã khóa vận hành — mở khóa' : 'Khóa vận hành'}
             className={`inline-flex items-center gap-1 rounded px-2 sm:px-2.5 py-1 text-xs font-semibold transition-colors flex-shrink-0 cursor-pointer ${
               isOperatorLocked
                 ? 'bg-status-standby text-surface-0 font-bold ring-2 ring-status-standby/50'
                 : 'bg-surface-2 hover:bg-surface-3 text-content-2 hover:text-content-1 border border-border-subtle'
             }`}
             title={isOperatorLocked ? 'Operator Locked: Hotkeys disabled' : 'Unlocked: Hotkeys active'}
+            data-testid="header-operator-lock-button"
           >
             {isOperatorLocked ? (
               <>
@@ -787,6 +851,45 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Stage Clock Popup Blocked Notification (PLAN 18.8) */}
+      {stageClockBlocked && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clock-blocked-title"
+          data-testid="stage-clock-blocked-modal"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        >
+          <div className="w-full max-w-md rounded border border-border-default bg-surface-1 p-5 shadow-xl text-content-1 space-y-3">
+            <div className="flex items-center gap-2 text-status-standby font-bold text-sm">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+              <h3 id="clock-blocked-title">Trình duyệt chặn cửa sổ phụ</h3>
+            </div>
+            <p className="text-xs text-content-2 leading-relaxed">
+              Trình duyệt của bạn đang chặn popup mở màn hình Stage Confidence Clock. Vui lòng cấp quyền cho phép mở cửa sổ popup cho trang web này, hoặc bấm vào nút bên dưới để mở trực tiếp trong tab mới:
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-default">
+              <a
+                href={typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?view=stage-clock` : '#'}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setStageClockBlocked(false)}
+                className="rounded bg-accent hover:bg-accent/90 text-surface-0 px-3 py-1.5 text-xs font-bold transition-colors"
+              >
+                Mở Stage Clock trong tab mới
+              </a>
+              <button
+                type="button"
+                onClick={() => setStageClockBlocked(false)}
+                className="rounded bg-surface-2 px-3 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
