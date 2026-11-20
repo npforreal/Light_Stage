@@ -103,9 +103,9 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
             </div>
             <div>
               <h3 id="export-modal-title" className="font-bold text-content-1 text-base">
-                Export & Print Reports
+                Xuất & In báo cáo (Export & Print Reports)
               </h3>
-              <p className="text-xs text-content-3">PDF cue sheets & light plot, CSV, .lightstage project</p>
+              <p className="text-xs text-content-3">Báo cáo kịch bản PDF, sơ đồ ánh sáng, CSV và file dự án .lightstage</p>
             </div>
           </div>
           <button
@@ -119,7 +119,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
 
         {/* Role Selector for Cue Sheets */}
         <div className="mb-4 space-y-1.5">
-          <label className="text-xs font-semibold text-content-3">Target Role / Department Filter:</label>
+          <label className="text-xs font-semibold text-content-3">Lọc theo bộ phận / vai trò:</label>
           <div className="inline-flex w-full rounded bg-surface-0 p-1 text-xs border border-border-default gap-1">
             {(['ALL', 'LX', 'VX', 'SQ', 'ST'] as const).map((r) => (
               <button
@@ -152,10 +152,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Print / Save PDF Cue Sheet
+                  In / Lưu PDF Kịch bản Cue Sheet (Print / Save PDF Cue Sheet)
                 </div>
                 <div className="text-xs text-content-3">
-                  A4 Landscape formatted for stage crew with department filters
+                  Định dạng A4 ngang tối ưu cho ekip với bộ lọc theo bộ phận
                 </div>
               </div>
             </div>
@@ -173,10 +173,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Print / Save PDF Light Plot
+                  In / Lưu PDF Sơ đồ Bố trí Đèn (Print / Save PDF Light Plot)
                 </div>
                 <div className="text-xs text-content-3">
-                  Top-down rig plan, numbered symbols and fixture schedule
+                  Sơ đồ giàn đèn từ trên xuống, ký hiệu đánh số và bảng thống kê thiết bị
                 </div>
               </div>
             </div>
@@ -194,10 +194,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Download Cue Sheet (CSV)
+                  Tải Kịch bản Cue Sheet (CSV) / Download Cue Sheet (CSV)
                 </div>
                 <div className="text-xs text-content-3">
-                  Full rundown columns, UTF-8 BOM so Vietnamese text stays intact
+                  Đầy đủ các cột rundown, mã hóa UTF-8 BOM giữ nguyên tiếng Việt
                 </div>
               </div>
             </div>
@@ -215,10 +215,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Download Hardware Inventory (CSV)
+                  Tải Bảng Thiết bị (CSV) / Download Hardware Inventory (CSV)
                 </div>
                 <div className="text-xs text-content-3">
-                  Equipment peak concurrent usage & total show fixture breakdown
+                  Thống kê công suất cao điểm và tổng số lượng thiết bị show
                 </div>
               </div>
             </div>
@@ -236,10 +236,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               </div>
               <div>
                 <div className="text-xs font-bold text-content-1 group-hover:text-accent">
-                  Save Project (.lightstage)
+                  Lưu File Dự án (.lightstage) / Save Project (.lightstage)
                 </div>
                 <div className="text-xs text-content-3">
-                  Native JSON schema backup with full show data & settings
+                  Bản sao lưu cấu trúc JSON đầy đủ dữ liệu show và cài đặt
                 </div>
               </div>
             </div>
@@ -253,7 +253,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
             onClick={onClose}
             className="rounded bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
           >
-            Close
+            Đóng (Close)
           </button>
         </div>
       </div>

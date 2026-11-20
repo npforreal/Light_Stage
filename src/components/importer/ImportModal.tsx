@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { parseCsv, autoDetectColumnMapping, convertRowsToActs, ColumnMapping } from '../../services/importer';
 import { useShowStore } from '../../store/useShowStore';
-import { Upload, FileSpreadsheet, X, Check, Download, Sparkles } from 'lucide-react';
+import { Upload, FileSpreadsheet, X, Check, Download, Sparkles, AlertTriangle } from 'lucide-react';
 
 export interface ImportModalProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   const [mapping, setMapping] = useState<ColumnMapping>({ title: '' });
   const [step, setStep] = useState<'input' | 'mapping' | 'preview'>('input');
   const [importMode, setImportMode] = useState<'replace' | 'append'>('replace');
+  const [skipMissingTitle, setSkipMissingTitle] = useState(true);
 
   if (!isOpen) return null;
 
@@ -101,7 +102,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   };
 
   const handleConfirmImport = () => {
-    const result = convertRowsToActs(parsedRows, mapping, 'Act 1');
+    const result = convertRowsToActs(parsedRows, mapping, 'Act 1', { skipMissingTitle });
     if (result.acts.length === 0) return;
 
     if (importMode === 'replace') {
@@ -128,7 +129,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
     setRawText('');
   };
 
-  const previewResult = step === 'mapping' ? convertRowsToActs(parsedRows, mapping) : null;
+  const previewResult = step === 'mapping' ? convertRowsToActs(parsedRows, mapping, 'Act 1', { skipMissingTitle }) : null;
 
   return (
     <div
@@ -271,12 +272,37 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
           {step === 'mapping' && (
             <div className="space-y-4 text-xs">
               <div className="rounded bg-surface-2 border border-border-default p-3 text-content-2">
-                Headers detected! Verify or adjust column mappings below:
+                Đã nhận diện tiêu đề! Kiểm tra hoặc tùy chỉnh ánh xạ cột bên dưới (Headers detected! Verify or adjust column mappings below:)
               </div>
+
+              {previewResult && previewResult.issues.length > 0 && (
+                <div data-testid="import-issues-alert" className="rounded border border-status-standby/50 bg-status-standby/10 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-status-standby flex items-center gap-1.5">
+                      <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                      <span>{previewResult.issues.length} dòng cần xem:</span>
+                    </span>
+                    <label className="flex items-center gap-1.5 text-xs text-content-2 cursor-pointer font-medium">
+                      <input
+                        type="checkbox"
+                        checked={skipMissingTitle}
+                        onChange={(e) => setSkipMissingTitle(e.target.checked)}
+                        className="rounded border-border-default text-accent"
+                      />
+                      <span>Bỏ qua dòng thiếu tên</span>
+                    </label>
+                  </div>
+                  <ul className="text-xs text-content-2 list-disc list-inside space-y-0.5 max-h-24 overflow-y-auto">
+                    {previewResult.issues.map((issue, idx) => (
+                      <li key={idx} className="font-mono">{issue.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Title / Tiết mục (Required)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Tiết mục / Tên cue (Bắt buộc)</label>
                   <select
                     value={mapping.title}
                     onChange={(e) => setMapping({ ...mapping, title: e.target.value })}
@@ -289,13 +315,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Cue Number / STT</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Số thứ tự / STT cue</label>
                   <select
                     value={mapping.cueNumber || ''}
                     onChange={(e) => setMapping({ ...mapping, cueNumber: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None - Auto generate)</option>
+                    <option value="">(Tự động tạo)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -303,13 +329,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Duration / Thời lượng</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Thời lượng</label>
                   <select
                     value={mapping.duration || ''}
                     onChange={(e) => setMapping({ ...mapping, duration: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None - Default 1 min)</option>
+                    <option value="">(Mặc định 01:00)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -317,13 +343,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Lighting / Ánh sáng (LX)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Ánh sáng (LX)</label>
                   <select
                     value={mapping.lx || ''}
                     onChange={(e) => setMapping({ ...mapping, lx: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None)</option>
+                    <option value="">(Không chọn)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -331,13 +357,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Visual LED / Màn hình (VX)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Màn hình LED (VX)</label>
                   <select
                     value={mapping.vx || ''}
                     onChange={(e) => setMapping({ ...mapping, vx: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None)</option>
+                    <option value="">(Không chọn)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -345,13 +371,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Sound / Âm thanh (SQ)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Âm thanh (SQ)</label>
                   <select
                     value={mapping.sq || ''}
                     onChange={(e) => setMapping({ ...mapping, sq: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None)</option>
+                    <option value="">(Không chọn)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -359,13 +385,13 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Stage Action / Hoạt cảnh (ST)</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Hoạt cảnh sân khấu (ST)</label>
                   <select
                     value={mapping.stage || ''}
                     onChange={(e) => setMapping({ ...mapping, stage: e.target.value || undefined })}
                     className="w-full rounded border border-border-default bg-surface-0 p-2 text-content-1"
                   >
-                    <option value="">(None)</option>
+                    <option value="">(Không chọn)</option>
                     {parsedHeaders.map((h) => (
                       <option key={h} value={h}>{h}</option>
                     ))}
@@ -373,7 +399,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 </div>
 
                 <div>
-                  <label className="text-content-3 font-semibold mb-1 block">Import Mode</label>
+                  <label className="text-content-3 font-semibold mb-1 block">Chế độ nhập</label>
                   <div className="flex gap-2 mt-1">
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -399,8 +425,8 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
 
               {previewResult && (
                 <div className="border border-border-default rounded p-3 bg-surface-0 mt-3">
-                  <div className="font-semibold text-content-1 mb-2">
-                    Preview: {previewResult.acts.reduce((acc, a) => acc + a.cues.length, 0)} cues detected across {previewResult.acts.length} acts
+                  <div data-testid="import-stats-summary" className="font-semibold text-content-1 mb-2">
+                    Thống kê: {previewResult.importedCount} cue nhập, {previewResult.skippedCount} bỏ qua, {previewResult.defaultDurationCount} dùng giá trị mặc định ({previewResult.acts.length} act)
                   </div>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {previewResult.acts.flatMap((a) => a.cues).slice(0, 5).map((c, i) => (
@@ -432,7 +458,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 onClick={() => setStep('input')}
                 className="rounded bg-surface-2 px-3 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors"
               >
-                Back
+                Quay lại
               </button>
               <button
                 type="button"
@@ -440,7 +466,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 className="inline-flex items-center gap-1.5 rounded bg-accent hover:bg-accent/90 text-surface-0 px-4 py-1.5 text-xs font-bold transition-colors"
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
-                <span>Confirm & Import Cues</span>
+                <span>Xác nhận & Nhập cue (Confirm & Import Cues)</span>
               </button>
             </>
           ) : (
@@ -450,7 +476,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                 onClick={onClose}
                 className="rounded bg-surface-2 px-4 py-1.5 text-xs font-semibold text-content-2 hover:bg-surface-3 transition-colors border border-border-default"
               >
-                Close
+                Đóng
               </button>
             </div>
           )}
